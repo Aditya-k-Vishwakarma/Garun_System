@@ -2,6 +2,21 @@
 
 A modern, responsive government grievance management system built with React JSX and Tailwind CSS.
 
+## ⚡ Quickstart
+
+1. Install Node.js 16+.
+2. In a terminal, run:
+
+```powershell
+cd frontend
+npm install
+npm start
+```
+
+Then open http://localhost:3000
+
+Test emails: `admin@gmail.com`, `incharge@gmail.com`, `user@gmail.com` (any password)
+
 ## 🚀 Features
 
 ### Authentication System
