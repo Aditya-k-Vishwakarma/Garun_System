@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UrbanGuard - Indore Detection</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css"/>
+
+<style>
+body { margin:0; font-family:Arial,sans-serif; background:#f3f4f6; }
+.container { display:flex; flex-direction:column; align-items:center; padding:10px; }
+#detectForm { width:70%; background:#fff; padding:12px; border-radius:6px; box-shadow:0 1px 3px rgba(0,0,0,0.1); margin-bottom:10px; display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
+#detectForm input { padding:6px; border-radius:4px; border:1px solid #ccc; }
+#map { width:70%; height:500px; margin-bottom:10px; border-radius:6px; box-shadow:0 1px 3px rgba(0,0,0,0.2); }
+#results { width:70%; display:flex; flex-direction:column; background:#fff; padding:10px; border-radius:6px; box-shadow:0 1px 3px rgba(0,0,0,0.1); margin-bottom:20px; }
+#detectedList { max-height:200px; overflow-y:auto; margin-bottom:10px; }
+#charts { display:flex; justify-content:space-between; gap:10px; width:100%; margin-bottom:10px; }
+canvas { width:42%; height:200px; }
+.legend-box { display:flex; align-items:center; margin:5px 0; }
+.legend-color { width:15px; height:15px; margin-right:6px; border-radius:3px; }
+.construction-item { margin-bottom:6px; padding:6px; background:#f9fafb; border-radius:4px; box-shadow:0 1px 2px rgba(0,0,0,0.05); cursor:pointer; transition: transform 0.2s; }
+.construction-item:hover { transform: scale(1.05); background:#e0f2fe; }
+.toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#2563eb; color:#fff; padding:10px 18px; border-radius:6px; box-shadow:0 1px 5px rgba(0,0,0,0.3); opacity:0; transition:0.5s; }
+.btn { padding:6px 12px; border:none; border-radius:4px; background:#2563eb; color:#fff; cursor:pointer; transition:0.3s; }
+.btn:hover { background:#1d4ed8; }
+#pieChartContainer {
+  width: 70%;
+  margin: 30px auto 20px auto;
+}
+
+#pieChart {
+  width: 60% !important;
+  height: 250px !important; /* adjust height as you like */
+}
+.legend-container {
+  padding:8px;
+  border:1px solid #e5e7eb;
+  border-radius:6px;
+  background:#f9fafb;
+}
+
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Detect Form -->
+  <div id="detectForm">
+    <h3>Detect Illegal Construction</h3>
+    <input type="number" id="wardNumber" placeholder="Ward Number" min="1" max="85">
+    <input type="text" id="wardName" placeholder="Ward Name">
+    <button id="detectBtn" class="btn">Detect Ward</button>
+    <button id="showAllBtn" class="btn">Show Full Indore</button>
+  </div>
+
+  <!-- Map -->
+  <div id="map"></div>
+
+  <!-- Results below map -->
+  <div id="results">
+    <div id="detectedList">
+      <h4>Detected Constructions:</h4>
+    </div>
+    <div id="pieChartContainer" style="width:70%; margin:10px auto 20px auto; display:flex; align-items:center; justify-content:space-between;">
+  <canvas id="pieChart"></canvas>
+  <div>
+    <h4>Legend:</h4>
+    <div class="legend-box"><div class="legend-color" style="background:red;"></div>Illegal</div>
+    <div class="legend-box"><div class="legend-color" style="background:green;"></div>Legal</div>
+  </div>
+</div>
+
+
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+// Initialize Map
+const map = L.map('map').setView([22.7196,75.8577],12);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19, attribution:'© OpenStreetMap'}).addTo(map);
+
+const toast=document.getElementById('toast');
+const detectedList=document.getElementById('detectedList');
+let markers=[], heatLayer, wardSummary={}, markerCluster=L.markerClusterGroup();
+let barChartInstance, pieChartInstance;
+
+// 85 wards data with lat/lng
+const wards=[
+  { name: 'Sirpur', lat: 22.7006, lng: 75.8133 },
+  { name: 'Chandan Nagar', lat: 22.7128, lng: 75.8208 },
+  { name: 'Kalani Nagar', lat: 22.7217, lng: 75.8235 },
+  { name: 'Sukhdev Nagar', lat: 22.726955, lng: 75.823616 },
+  { name: 'Raj Nagar', lat: 22.6696, lng: 75.8294 },
+  { name: 'Malharganj', lat: 22.7201, lng: 75.8443 },
+  { name: 'Janata Colony', lat: 22.7409, lng: 75.8746 },
+  { name: 'Juna Risala', lat: 22.7238, lng: 75.8501 },
+  { name: 'Vrindavan', lat: 22.7179, lng: 75.8573 },
+  { name: 'Banganga', lat: 22.7496, lng: 75.8429 },
+  {name:'Bhagiratpura', lat:22.7650, lng:75.8550}, {name:'Govind Colony', lat:22.7700, lng:75.8580},
+  {name:'Sangam Nagar', lat:22.7750, lng:75.8520}, {name:'Ashok Nagar', lat:22.7800, lng:75.8570},
+  {name:'Bijasan', lat:22.7850, lng:75.8600}, {name:'Nandbag', lat:22.7900, lng:75.8530},
+  {name:'Kushwa Nagar', lat:22.7950, lng:75.8560}, {name:'Santkabir', lat:22.8000, lng:75.8520},
+  {name:'Vishvkarma', lat:22.8050, lng:75.8570}, {name:'Gori Nagar', lat:22.8100, lng:75.8590},
+  {name:'Shyam Nagar', lat:22.8150, lng:75.8530}, {name:'Pandit Deen Dayal Upadhyay', lat:22.8200, lng:75.8570},
+  {name:'Swargi Rajesh Joshi', lat:22.8250, lng:75.8600}, {name:'Sant Balaji Nath Maharaj', lat:22.8300, lng:75.8540},
+  {name:'Shree Ganesh', lat:22.8350, lng:75.8560}, {name:'Jeend Mata', lat:22.8400, lng:75.8520},
+  {name:'Pashupati Nath', lat:22.8450, lng:75.8570}, {name:'Ma Tulaja Bhawani', lat:22.8500, lng:75.8590},
+  {name:'Dr. Shyama Prasad Mukharji', lat:22.8550, lng:75.8530}, {name:'Sant Ravi Das', lat:22.8600, lng:75.8570},
+  {name:'Maharaja Chatrasal', lat:22.8650, lng:75.8600}, {name:'Atal Bihari Wajpai', lat:22.8700, lng:75.8540},
+  {name:'Sukhliya', lat:22.8750, lng:75.8570}, {name:'Sahid Bhagat Singh', lat:22.8800, lng:75.8590},
+  {name:'Lasudiya Mori', lat:22.8850, lng:75.8520}, {name:'Nipaniya', lat:22.8900, lng:75.8560},
+  {name:'Sai Kirpa', lat:22.8950, lng:75.8600}, {name:'Haji Colony', lat:22.9000, lng:75.8540},
+  {name:'Naharshawali', lat:22.9050, lng:75.8570}, {name:'Khajrana Ganesh', lat:22.9100, lng:75.8590},
+  {name:'Kelash Puri', lat:22.9150, lng:75.8530}, {name:'Suwami Vivekanand', lat:22.9200, lng:75.8560},
+  {name:'Shree Nagar', lat:22.9250, lng:75.8600}, {name:'H.I.G', lat:22.9300, lng:75.8540},
+  {name:'Dr. Bhimrao Ambedkar', lat:22.9350, lng:75.8570}, {name:'Somnath', lat:22.9400, lng:75.8590},
+  {name:'Sardar Wallabh bhai', lat:22.9450, lng:75.8530}, {name:'Geeta Bhawan', lat:22.9500, lng:75.8560},
+  {name:'Tilak Nagar', lat:22.9550, lng:75.8600}, {name:'Brajeshwari', lat:22.9600, lng:75.8540},
+  {name:'Bhagwati Nagar', lat:22.9650, lng:75.8570}, {name:'Musakhedi', lat:22.9700, lng:75.8590},
+  {name:'Dr. Molana Ajad Nagar', lat:22.9750, lng:75.8530}, {name:'Residence', lat:22.9800, lng:75.8560},
+  {name:'South Tukuganj', lat:22.9850, lng:75.8600}, {name:'Shanelatagunj', lat:22.9900, lng:75.8540},
+  {name:'Devi Ahilyabai', lat:22.9950, lng:75.8570}, {name:'Imli Bazar', lat:23.0000, lng:75.8590},
+  {name:'Harsaddi', lat:23.0050, lng:75.8530}, {name:'Ranipura', lat:23.0100, lng:75.8560},
+  {name:'Tatiya Sarwate', lat:23.0150, lng:75.8600}, {name:'Rauji Bazar', lat:23.0200, lng:75.8540},
+  {name:'Nolakhkha', lat:23.0250, lng:75.8570}, {name:'Chitawad', lat:23.0300, lng:75.8590},
+  {name:'Sant Kawar ram', lat:23.0350, lng:75.8530}, {name:'Sahid Hemu Kalani', lat:23.0400, lng:75.8560},
+  {name:'Maharaja Holkar', lat:23.0450, lng:75.8600}, {name:'Bambai Bazar', lat:23.0500, lng:75.8540},
+  {name:'Jawahar Marg', lat:23.0550, lng:75.8570}, {name:'Loknayak Nagar', lat:23.0600, lng:75.8590},
+  {name:'Dravind Nagar', lat:23.0650, lng:75.8530}, {name:'Lokmaniya Nagar', lat:23.0700, lng:75.8560},
+  {name:'Lakshman Singh Choun', lat:23.0750, lng:75.8600}, {name:'Vishnupuri', lat:23.0800, lng:75.8540},
+  {name:'Palda', lat:23.0850, lng:75.8570}, {name:'Mundla Nayta', lat:23.0900, lng:75.8590},
+  {name:'Bilawali', lat:23.0950, lng:75.8530}, {name:'Chohitram', lat:23.1000, lng:75.8560},
+  {name:'Sukh Niwas', lat:23.1050, lng:75.8600}, {name:'Dr. Rajendra Prasad', lat:23.1100, lng:75.8540},
+  {name:'Annpurna', lat:23.1150, lng:75.8570}, {name:'Sudama Nagar', lat:23.1200, lng:75.8590},
+  {name:'Gumasta Nagar', lat:23.1250, lng:75.8530}, {name:'Duwarkapuri', lat:23.1300, lng:75.8560},
+  {name:'Prajapat Nagar', lat:23.1350, lng:75.8600}
+];
+
+// Fixed constructions (3 per ward)
+const fixedConstructions = wards.map(w=>{
+  return { wardName: w.name, wardNumber: wards.indexOf(w)+1, constructions:[
+    {status:'Illegal', severity:'Medium', confidence:90, lat:w.lat+0.001, lng:w.lng+0.001, address:`${w.name}, Indore, MP`},
+    {status:'Legal', severity:null, confidence:95, lat:w.lat-0.001, lng:w.lng-0.001, address:`${w.name}, Indore, MP`},
+    {status:'Illegal', severity:'High', confidence:88, lat:w.lat, lng:w.lng+0.002, address:`${w.name}, Indore, MP`}
+  ]};
+});
+
+// Auto-fill ward name
+document.getElementById('wardNumber').addEventListener('input', e=>{
+  const num=parseInt(e.target.value);
+  document.getElementById('wardName').value=(num>=1 && num<=85)?wards[num-1].name:'';
+});
+
+// Toast
+function showToast(msg){
+  toast.textContent=msg;
+  toast.style.opacity=1;
+  setTimeout(()=>{ toast.style.opacity=0; },2500);
+}
+
+// Reset map & charts
+function resetMap(){
+  markers.forEach(m=>markerCluster.removeLayer(m));
+  markers=[];
+  if(heatLayer) map.removeLayer(heatLayer);
+  detectedList.innerHTML='<h4>Detected Constructions:</h4>'; wardSummary={};
+  if(barChartInstance) barChartInstance.destroy();
+  if(pieChartInstance) pieChartInstance.destroy();
+}
+
+// Show constructions
+function showConstructions(data){
+  if(markerCluster) markerCluster.clearLayers();
+  const heatPoints=[]; const bounds=[];
+  data.forEach(ward=>{
+    ward.constructions.forEach(cons=>{
+      const color=cons.status==='Illegal'?'red':'green';
+      const icon=L.divIcon({html:`<div style="background:${color}; width:16px; height:16px; border-radius:50%; border:2px solid #fff;"></div>`,className:'custom-icon',iconSize:[16,16]});
+      const marker=L.marker([cons.lat,cons.lng],{icon});
+      marker.bindTooltip(`<b>Ward #${ward.wardNumber}: ${ward.wardName}</b><br>Status: ${cons.status}<br>${cons.status==='Illegal'?`Severity: ${cons.severity}<br>`:''}Confidence: ${cons.confidence}%<br>Address: ${cons.address}<br>Lat: ${cons.lat.toFixed(5)}, Lng: ${cons.lng.toFixed(5)}`);
+      markerCluster.addLayer(marker); markers.push(marker); bounds.push([cons.lat,cons.lng]);
+
+      const div=document.createElement('div');
+      div.className='construction-item';
+      div.innerHTML = `<b>${ward.wardName}</b> - ${cons.status} ${cons.status==='Illegal' ? `(${cons.severity})` : '<span style="color:green;">Legal</span>'} - ${cons.confidence}%`;
+      div.onclick=()=>{ map.setView([cons.lat,cons.lng],16); marker.openTooltip(); }
+      detectedList.appendChild(div);
+
+      heatPoints.push([cons.lat,cons.lng, cons.status==='Illegal'?0.9:0.5]);
+      wardSummary[ward.wardName]=(wardSummary[ward.wardName]||0)+1;
+    });
+  });
+  map.addLayer(markerCluster);
+  heatLayer=L.heatLayer(heatPoints,{radius:25,blur:15,maxZoom:17}).addTo(map);
+  if(bounds.length) map.fitBounds(bounds,{padding:[50,50]});
+
+
+  // Pie chart
+  const illegalCount = markers.filter(m => m.options.icon.options.html.includes('red')).length;
+const legalCount = markers.filter(m => m.options.icon.options.html.includes('green')).length;
+const pieCtx = document.getElementById('pieChart').getContext('2d');
+if (pieChartInstance) pieChartInstance.destroy();
+pieChartInstance = new Chart(pieCtx, {
+  type: 'pie',
+  data: {
+    labels: ['Illegal', 'Legal'],
+    datasets: [{
+      data: [illegalCount, legalCount],
+      backgroundColor: ['#ff4d4d', '#4cd137'],
+      hoverOffset: 10
+    }]
+  },
+  options: {
+    plugins: {
+      legend: { position: 'bottom' }
+    }
+  }
+});
+
+  showToast(`Detection complete for ${data.length} ward(s)!`);
+}
+
+// Detect ward
+function detectWard(){ 
+  resetMap();
+  const wNumber=parseInt(document.getElementById('wardNumber').value);
+  const wName=document.getElementById('wardName').value.trim();
+  if(!wNumber && !wName){ showToast("Please enter Ward Number or Name!"); return; }
+  const wardIndex = wNumber ? wNumber-1 : wards.findIndex(n=>n.name.toLowerCase()===wName.toLowerCase());
+  if(wardIndex<0 || wardIndex>=wards.length){ showToast("Ward not found!"); return; }
+  showConstructions([fixedConstructions[wardIndex]]);
+}
+
+// Show full Indore
+function showFullIndore(){ resetMap(); showConstructions(fixedConstructions); }
+
+document.getElementById('detectBtn').addEventListener('click',detectWard);
+document.getElementById('showAllBtn').addEventListener('click',showFullIndore);
+</script>
+</body>
+</html>
