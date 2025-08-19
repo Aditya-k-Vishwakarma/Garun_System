@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   AlertTriangle, 
   FileText, 
@@ -21,6 +21,7 @@ import toast from 'react-hot-toast';
 
 const CitizenDashboard = () => {
   const { user, logout } = useContext(AuthContext);
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
 
   const handleLogout = () => {
@@ -163,7 +164,10 @@ const CitizenDashboard = () => {
               <p className="text-gray-600 text-sm mb-4">
                 Report new issues with photo/video upload, location tagging, and category selection
               </p>
-              <button className="btn-primary w-full">
+              <button 
+                onClick={() => navigate('/register-complaint')}
+                className="btn-primary w-full"
+              >
                 File New Complaint
               </button>
             </div>
@@ -179,7 +183,10 @@ const CitizenDashboard = () => {
               <p className="text-gray-600 text-sm mb-4">
                 Monitor progress from New → In-progress → Resolved → Closed with real-time updates
               </p>
-              <button className="btn-success w-full">
+              <button 
+                onClick={() => navigate('/track-complaint')}
+                className="btn-success w-full"
+              >
                 Track Status
               </button>
             </div>
@@ -195,7 +202,10 @@ const CitizenDashboard = () => {
               <p className="text-gray-600 text-sm mb-4">
                 Upload and verify your property documents with government officials
               </p>
-              <button className="btn-secondary w-full">
+              <button 
+                onClick={() => navigate('/property-verification')}
+                className="btn-secondary w-full"
+              >
                 Verify Documents
               </button>
             </div>
@@ -211,7 +221,10 @@ const CitizenDashboard = () => {
               <p className="text-gray-600 text-sm mb-4">
                 Submit building plans and get approval from municipal authorities
               </p>
-              <button className="btn-primary w-full">
+              <button 
+                onClick={() => navigate('/building-approval')}
+                className="btn-primary w-full"
+              >
                 Apply Now
               </button>
             </div>
@@ -227,7 +240,10 @@ const CitizenDashboard = () => {
               <p className="text-gray-600 text-sm mb-4">
                 Chat directly with officials and get real-time updates on your complaints
               </p>
-              <button className="btn-secondary w-full">
+              <button 
+                onClick={() => navigate('/direct-communication')}
+                className="btn-secondary w-full"
+              >
                 Open Chat
               </button>
             </div>
@@ -243,7 +259,10 @@ const CitizenDashboard = () => {
               <p className="text-gray-600 text-sm mb-4">
                 Submit complaints anonymously with limited tracking for sensitive issues
               </p>
-              <button className="btn-secondary w-full">
+              <button 
+                onClick={() => navigate('/anonymous-complaint')}
+                className="btn-secondary w-full"
+              >
                 Submit Anonymously
               </button>
             </div>
@@ -254,7 +273,7 @@ const CitizenDashboard = () => {
         <div className="card p-6">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-gray-900">Recent Complaints</h3>
-            <Link to="/complaints" className="text-primary-600 hover:text-primary-700 text-sm font-medium">
+            <Link to="/track-complaint" className="text-primary-600 hover:text-primary-700 text-sm font-medium">
               View All
             </Link>
           </div>

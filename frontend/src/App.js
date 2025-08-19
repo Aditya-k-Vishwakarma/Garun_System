@@ -10,6 +10,14 @@ import InchargeDashboard from './components/dashboards/InchargeDashboard';
 import Profile from './components/profile/Profile';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
+// New Components
+import ComplaintForm from './components/complaints/ComplaintForm';
+import ComplaintTracking from './components/complaints/ComplaintTracking';
+import PropertyVerification from './components/property/PropertyVerification';
+import BuildingApproval from './components/building/BuildingApproval';
+import DirectCommunication from './components/communication/DirectCommunication';
+import AnonymousComplaint from './components/complaints/AnonymousComplaint';
+
 function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -63,6 +71,45 @@ function App() {
               <ProtectedRoute>
                 <Profile />
               </ProtectedRoute>
+            } />
+
+            {/* Complaint Routes */}
+            <Route path="/register-complaint" element={
+              <ProtectedRoute>
+                <ComplaintForm />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/track-complaint" element={
+              <ProtectedRoute>
+                <ComplaintTracking />
+              </ProtectedRoute>
+            } />
+
+            {/* Property Routes */}
+            <Route path="/property-verification" element={
+              <ProtectedRoute>
+                <PropertyVerification />
+              </ProtectedRoute>
+            } />
+
+            {/* Building Approval Routes */}
+            <Route path="/building-approval" element={
+              <ProtectedRoute>
+                <BuildingApproval />
+              </ProtectedRoute>
+            } />
+
+            {/* Communication Routes */}
+            <Route path="/direct-communication" element={
+              <ProtectedRoute>
+                <DirectCommunication />
+              </ProtectedRoute>
+            } />
+
+            {/* Anonymous Complaint Route */}
+            <Route path="/anonymous-complaint" element={
+              <AnonymousComplaint />
             } />
             
             <Route path="*" element={<Navigate to="/" />} />
