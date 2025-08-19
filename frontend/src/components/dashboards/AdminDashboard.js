@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { 
   Shield, 
   Users, 
@@ -22,7 +22,25 @@ import {
   DocumentText,
   MessageCircle,
   Filter,
-  Search
+  Search,
+  Camera,
+  Plane,
+  Database,
+  Activity,
+  ClipboardList,
+  Globe,
+  Wifi,
+  Satellite,
+  Zap,
+  ShieldCheck,
+  AlertOctagon,
+  TrendingDown,
+  Users2,
+  Building,
+  FileSpreadsheet,
+  BarChart2,
+  PieChart,
+  LineChart
 } from 'lucide-react';
 import AuthContext from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
@@ -32,6 +50,11 @@ const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [showChat, setShowChat] = useState(false);
+  const [showFieldSurveyModal, setShowFieldSurveyModal] = useState(false);
+  const [showDroneFleetModal, setShowDroneFleetModal] = useState(false);
+  const [showDataOverviewModal, setShowDataOverviewModal] = useState(false);
+  const [showCommunicationHub, setShowCommunicationHub] = useState(false);
+  const [showAuditTrail, setShowAuditTrail] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -95,6 +118,47 @@ const AdminDashboard = () => {
     { id: 'ICR003', location: 'Ward 7, Sector C', reporter: 'Ward Officer', severity: 'Low', status: 'Resolved', date: '2024-01-13', coordinates: '28.7041°N, 77.1025°E' }
   ];
 
+  // Enhanced data for Admin Dashboard
+  const fieldSurveys = [
+    { id: 'FS001', incharge: 'Rajesh Kumar', location: 'Ward 5, Sector A', type: 'Drone Survey', status: 'Completed', date: '2024-01-15', droneModel: 'DJI Mavic 3', dataCollected: 'Images, Lidar, GPS', coordinates: '28.7041°N, 77.1025°E' },
+    { id: 'FS002', incharge: 'Priya Sharma', location: 'Ward 3, Sector B', type: 'Manual Survey', status: 'In Progress', date: '2024-01-15', droneModel: 'N/A', dataCollected: 'Photos, Measurements', coordinates: '28.7041°N, 77.1025°E' },
+    { id: 'FS003', incharge: 'Amit Patel', location: 'Ward 7, Sector C', type: 'Drone Survey', status: 'Scheduled', date: '2024-01-16', droneModel: 'DJI Mavic 3', dataCollected: 'Pending', coordinates: '28.7041°N, 77.1025°E' }
+  ];
+
+  const droneFleet = [
+    { id: 'DRONE001', model: 'DJI Mavic 3 Enterprise', status: 'Active', operator: 'Rajesh Kumar', lastMission: '2024-01-15', batteryLevel: 85, sensors: ['GPS', 'Lidar', 'Camera', 'ADS-B'], location: 'Ward 5', missionType: 'Survey' },
+    { id: 'DRONE002', model: 'DJI Mavic 3 Enterprise', status: 'Maintenance', operator: 'Priya Sharma', lastMission: '2024-01-14', batteryLevel: 45, sensors: ['GPS', 'Camera'], location: 'Hangar', missionType: 'Inspection' },
+    { id: 'DRONE003', model: 'Custom Quadcopter', status: 'Active', operator: 'Amit Patel', lastMission: '2024-01-15', batteryLevel: 92, sensors: ['GPS', 'Thermal', 'Multispectral'], location: 'Ward 7', missionType: 'Agriculture' }
+  ];
+
+  const dataCollectionOverview = [
+    { sheet: 'Ward 5 Survey Data', records: 1247, lastUpdated: '2024-01-15 14:30', incharge: 'Rajesh Kumar', status: 'Complete', dataTypes: ['GPS', 'Images', 'Measurements'] },
+    { sheet: 'Ward 3 Construction Data', records: 892, lastUpdated: '2024-01-15 16:45', incharge: 'Priya Sharma', status: 'In Progress', dataTypes: ['Photos', 'Documents', 'Coordinates'] },
+    { sheet: 'Ward 7 Infrastructure Data', records: 1567, lastUpdated: '2024-01-15 12:15', incharge: 'Amit Patel', status: 'Pending Review', dataTypes: ['Lidar', 'Thermal', 'Satellite'] }
+  ];
+
+  const realTimeActivityFeed = [
+    { id: 1, user: 'Rajesh Kumar (Incharge)', action: 'Started Field Survey', location: 'Ward 5', time: '2 minutes ago', type: 'survey', priority: 'normal' },
+    { id: 2, user: 'Priya Sharma (Incharge)', action: 'Uploaded Survey Data', location: 'Ward 3', time: '5 minutes ago', type: 'data', priority: 'normal' },
+    { id: 3, user: 'Citizen User', action: 'Submitted Complaint', location: 'Ward 7', time: '8 minutes ago', type: 'complaint', priority: 'high' },
+    { id: 4, user: 'Amit Patel (Incharge)', action: 'Connected Drone', location: 'Ward 7', time: '12 minutes ago', type: 'drone', priority: 'normal' },
+    { id: 5, user: 'System', action: 'SLA Alert Triggered', location: 'Ward 2', time: '15 minutes ago', type: 'alert', priority: 'critical' }
+  ];
+
+  const communicationMessages = [
+    { id: 1, from: 'Rajesh Kumar', to: 'Admin', message: 'Field survey completed in Ward 5. Data uploaded successfully.', time: '2 minutes ago', status: 'read', priority: 'normal' },
+    { id: 2, from: 'Priya Sharma', to: 'Admin', message: 'Need approval for additional drone deployment in Ward 3.', time: '15 minutes ago', status: 'unread', priority: 'high' },
+    { id: 3, from: 'Amit Patel', to: 'Admin', message: 'Thermal sensor malfunction detected on DRONE003. Requesting maintenance.', time: '1 hour ago', status: 'read', priority: 'medium' },
+    { id: 4, from: 'System', to: 'All', message: 'Scheduled maintenance for all drones tomorrow 9 AM.', time: '2 hours ago', status: 'read', priority: 'normal' }
+  ];
+
+  const auditTrail = [
+    { id: 1, user: 'Rajesh Kumar', action: 'Approved Building Permission', target: 'BPR001', timestamp: '2024-01-15 14:30:25', ipAddress: '192.168.1.100', status: 'Success' },
+    { id: 2, user: 'Admin', action: 'Modified User Permissions', target: 'User: Priya Sharma', timestamp: '2024-01-15 14:25:10', ipAddress: '192.168.1.001', status: 'Success' },
+    { id: 3, user: 'System', action: 'Automatic Backup', target: 'Database', timestamp: '2024-01-15 14:00:00', ipAddress: 'System', status: 'Success' },
+    { id: 4, user: 'Amit Patel', action: 'Updated Survey Data', target: 'Ward 7 Data', timestamp: '2024-01-15 13:45:30', ipAddress: '192.168.1.105', status: 'Success' }
+  ];
+
   const handleStatusChange = (type, id, newStatus) => {
     toast.success(`${type} status updated to ${newStatus}`);
     // In real app, this would update the backend
@@ -103,6 +167,47 @@ const AdminDashboard = () => {
   const handleResponseSubmit = (id, response) => {
     toast.success('Response submitted successfully');
     // In real app, this would update the backend
+  };
+
+  const handleSurveyApproval = (surveyId, action) => {
+    toast.success(`Field survey ${action} successfully`);
+    // In real app, this would update the backend
+  };
+
+  const handleDroneDeployment = (droneId, action) => {
+    toast.success(`Drone ${action} successfully`);
+    // In real app, this would update the backend
+  };
+
+  const handleDataApproval = (dataId, action) => {
+    toast.success(`Data ${action} successfully`);
+    // In real app, this would update the backend
+  };
+
+  const sendBroadcastMessage = (message) => {
+    toast.success('Broadcast message sent to all users');
+    // In real app, this would send to all users
+  };
+
+  const getActivityIcon = (type) => {
+    switch (type) {
+      case 'survey': return <Camera className="h-4 w-4" />;
+      case 'data': return <Database className="h-4 w-4" />;
+      case 'complaint': return <FileText className="h-4 w-4" />;
+      case 'drone': return <Plane className="h-4 w-4" />;
+      case 'alert': return <AlertTriangle className="h-4 w-4" />;
+      default: return <Activity className="h-4 w-4" />;
+    }
+  };
+
+  const getPriorityColor = (priority) => {
+    switch (priority) {
+      case 'critical': return 'text-red-600 bg-red-100';
+      case 'high': return 'text-orange-600 bg-orange-100';
+      case 'medium': return 'text-yellow-600 bg-yellow-100';
+      case 'normal': return 'text-green-600 bg-green-100';
+      default: return 'text-gray-600 bg-gray-100';
+    }
   };
 
   return (
@@ -252,6 +357,47 @@ const AdminDashboard = () => {
           </div>
         </div>
 
+        {/* Real-time Activity Feed */}
+        <div className="card p-6 mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-gray-900">Real-time Activity Feed</h3>
+            <div className="flex items-center space-x-3">
+              <span className="text-sm text-gray-500">Live updates from all dashboards</span>
+              <div className="flex space-x-2">
+                <button className="btn-secondary text-xs px-3 py-1">
+                  <Filter className="h-3 w-3 mr-1" />
+                  Filter
+                </button>
+                <button className="btn-primary text-xs px-3 py-1">
+                  <Activity className="h-3 w-3 mr-1" />
+                  Refresh
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <div className="space-y-3 max-h-96 overflow-y-auto">
+            {realTimeActivityFeed.map((activity) => (
+              <div key={activity.id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                <div className={`p-2 rounded-full ${getPriorityColor(activity.priority)}`}>
+                  {getActivityIcon(activity.type)}
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium text-gray-900">{activity.user}</p>
+                    <span className="text-xs text-gray-500">{activity.time}</span>
+                  </div>
+                  <p className="text-sm text-gray-600">{activity.action}</p>
+                  <p className="text-xs text-gray-500">Location: {activity.location}</p>
+                </div>
+                <div className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(activity.priority)}`}>
+                  {activity.priority}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Priority Alerts */}
         <div className="card p-6 mb-8">
           <div className="flex items-center justify-between mb-6">
@@ -285,6 +431,68 @@ const AdminDashboard = () => {
                   }`}>
                     {alert.count} items
                   </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Field Survey Monitoring */}
+        <div className="card p-6 mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-gray-900">Field Survey Monitoring</h3>
+            <div className="flex items-center space-x-3">
+              <span className="text-sm text-gray-500">Track all surveys from Incharge Dashboard</span>
+              <button 
+                onClick={() => setShowFieldSurveyModal(true)}
+                className="btn-primary text-xs px-3 py-1"
+              >
+                <Camera className="h-3 w-3 mr-1" />
+                View All
+              </button>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {fieldSurveys.map((survey) => (
+              <div key={survey.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-medium text-gray-900">{survey.id}</span>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    survey.status === 'Completed' ? 'bg-green-100 text-green-800' :
+                    survey.status === 'In Progress' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-blue-100 text-blue-800'
+                  }`}>
+                    {survey.status}
+                  </span>
+                </div>
+                <div className="space-y-2 mb-4">
+                  <p className="text-sm text-gray-600"><span className="font-medium">Incharge:</span> {survey.incharge}</p>
+                  <p className="text-sm text-gray-600"><span className="font-medium">Location:</span> {survey.location}</p>
+                  <p className="text-sm text-gray-600"><span className="font-medium">Type:</span> {survey.type}</p>
+                  <p className="text-sm text-gray-600"><span className="font-medium">Drone:</span> {survey.droneModel}</p>
+                  <p className="text-sm text-gray-600"><span className="font-medium">Data:</span> {survey.dataCollected}</p>
+                  <p className="text-sm text-gray-600"><span className="font-medium">Coordinates:</span> {survey.coordinates}</p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => handleSurveyApproval(survey.id, 'approved')}
+                    className="btn-success text-xs px-3 py-1"
+                  >
+                    Approve
+                  </button>
+                  <button
+                    onClick={() => handleSurveyApproval(survey.id, 'rejected')}
+                    className="btn-danger text-xs px-3 py-1"
+                  >
+                    Reject
+                  </button>
+                  <button
+                    onClick={() => setSelectedRequest(survey)}
+                    className="btn-secondary text-xs px-3 py-1"
+                  >
+                    Details
+                  </button>
                 </div>
               </div>
             ))}
@@ -368,6 +576,68 @@ const AdminDashboard = () => {
           </div>
         </div>
 
+        {/* Drone Fleet Management */}
+        <div className="card p-6 mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-gray-900">Drone Fleet Management</h3>
+            <div className="flex items-center space-x-3">
+              <span className="text-sm text-gray-500">Monitor all drone operations and sensor data</span>
+              <button 
+                onClick={() => setShowDroneFleetModal(true)}
+                className="btn-primary text-xs px-3 py-1"
+              >
+                <Plane className="h-3 w-3 mr-1" />
+                Manage Fleet
+              </button>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {droneFleet.map((drone) => (
+              <div key={drone.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-medium text-gray-900">{drone.id}</span>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    drone.status === 'Active' ? 'bg-green-100 text-green-800' :
+                    drone.status === 'Maintenance' ? 'bg-red-100 text-red-800' :
+                    'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {drone.status}
+                  </span>
+                </div>
+                <div className="space-y-2 mb-4">
+                  <p className="text-sm text-gray-600"><span className="font-medium">Model:</span> {drone.model}</p>
+                  <p className="text-sm text-gray-600"><span className="font-medium">Operator:</span> {drone.operator}</p>
+                  <p className="text-sm text-gray-600"><span className="font-medium">Location:</span> {drone.location}</p>
+                  <p className="text-sm text-gray-600"><span className="font-medium">Mission:</span> {drone.missionType}</p>
+                  <p className="text-sm text-gray-600"><span className="font-medium">Battery:</span> {drone.batteryLevel}%</p>
+                  <p className="text-sm text-gray-600"><span className="font-medium">Sensors:</span> {drone.sensors.join(', ')}</p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => handleDroneDeployment(drone.id, 'deployed')}
+                    className="btn-success text-xs px-3 py-1"
+                  >
+                    Deploy
+                  </button>
+                  <button
+                    onClick={() => handleDroneDeployment(drone.id, 'recalled')}
+                    className="btn-danger text-xs px-3 py-1"
+                  >
+                    Recall
+                  </button>
+                  <button
+                    onClick={() => setSelectedRequest(drone)}
+                    className="btn-secondary text-xs px-3 py-1"
+                  >
+                    Details
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Document Verification Requests */}
         <div className="card p-6 mb-8">
           <div className="flex items-center justify-between mb-6">
@@ -413,6 +683,66 @@ const AdminDashboard = () => {
                     className="btn-secondary text-xs px-3 py-1"
                   >
                     View Details
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Data Collection Overview */}
+        <div className="card p-6 mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-gray-900">Data Collection Overview</h3>
+            <div className="flex items-center space-x-3">
+              <span className="text-sm text-gray-500">Monitor all Excel data and changes from Incharge Dashboard</span>
+              <button 
+                onClick={() => setShowDataOverviewModal(true)}
+                className="btn-primary text-xs px-3 py-1"
+              >
+                <Database className="h-3 w-3 mr-1" />
+                View All Data
+              </button>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {dataCollectionOverview.map((data, index) => (
+              <div key={index} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-medium text-gray-900">{data.sheet}</span>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    data.status === 'Complete' ? 'bg-green-100 text-green-800' :
+                    data.status === 'In Progress' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-blue-100 text-blue-800'
+                  }`}>
+                    {data.status}
+                  </span>
+                </div>
+                <div className="space-y-2 mb-4">
+                  <p className="text-sm text-gray-600"><span className="font-medium">Records:</span> {data.records.toLocaleString()}</p>
+                  <p className="text-sm text-gray-600"><span className="font-medium">Incharge:</span> {data.incharge}</p>
+                  <p className="text-sm text-gray-600"><span className="font-medium">Last Updated:</span> {data.lastUpdated}</p>
+                  <p className="text-sm text-gray-600"><span className="font-medium">Data Types:</span> {data.dataTypes.join(', ')}</p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => handleDataApproval(data.sheet, 'approved')}
+                    className="btn-success text-xs px-3 py-1"
+                  >
+                    Approve
+                  </button>
+                  <button
+                    onClick={() => handleDataApproval(data.sheet, 'review')}
+                    className="btn-secondary text-xs px-3 py-1"
+                  >
+                    Review
+                  </button>
+                  <button
+                    onClick={() => setSelectedRequest(data)}
+                    className="btn-primary text-xs px-3 py-1"
+                  >
+                    Details
                   </button>
                 </div>
               </div>
@@ -486,6 +816,74 @@ const AdminDashboard = () => {
           </div>
         </div>
 
+        {/* Communication Hub */}
+        <div className="card p-6 mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-gray-900">Communication Hub</h3>
+            <div className="flex items-center space-x-3">
+              <span className="text-sm text-gray-500">Centralized messaging system for all users</span>
+              <button 
+                onClick={() => setShowCommunicationHub(true)}
+                className="btn-primary text-xs px-3 py-1"
+              >
+                <MessageSquare className="h-3 w-3 mr-1" />
+                Open Hub
+              </button>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <h4 className="font-medium text-gray-900">Recent Messages</h4>
+              <div className="space-y-3 max-h-64 overflow-y-auto">
+                {communicationMessages.slice(0, 3).map((message) => (
+                  <div key={message.id} className={`p-3 rounded-lg border ${
+                    message.status === 'unread' ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200'
+                  }`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-gray-900">{message.from}</span>
+                      <span className="text-xs text-gray-500">{message.time}</span>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-2">{message.message}</p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-500">To: {message.to}</span>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        message.priority === 'high' ? 'bg-red-100 text-red-800' :
+                        message.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-green-100 text-green-800'
+                      }`}>
+                        {message.priority}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <h4 className="font-medium text-gray-900">Quick Actions</h4>
+              <div className="space-y-3">
+                <button className="w-full btn-secondary text-left px-3 py-2">
+                  <MessageSquare className="h-4 w-4 mr-2 inline" />
+                  Send Broadcast Message
+                </button>
+                <button className="w-full btn-secondary text-left px-3 py-2">
+                  <Users className="h-4 w-4 mr-2 inline" />
+                  Notify All Incharges
+                </button>
+                <button className="w-full btn-secondary text-left px-3 py-2">
+                  <AlertTriangle className="h-4 w-4 mr-2 inline" />
+                  Send Emergency Alert
+                </button>
+                <button className="w-full btn-secondary text-left px-3 py-2">
+                  <FileText className="h-4 w-4 mr-2 inline" />
+                  Generate Report
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Illegal Construction Reports */}
         <div className="card p-6 mb-8">
           <div className="flex items-center justify-between mb-6">
@@ -535,6 +933,56 @@ const AdminDashboard = () => {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* Audit Trail */}
+        <div className="card p-6 mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-gray-900">Audit Trail</h3>
+            <div className="flex items-center space-x-3">
+              <span className="text-sm text-gray-500">Track all system changes and approvals</span>
+              <button 
+                onClick={() => setShowAuditTrail(true)}
+                className="btn-primary text-xs px-3 py-1"
+              >
+                <ClipboardList className="h-3 w-3 mr-1" />
+                View Full Trail
+              </button>
+            </div>
+          </div>
+          
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Target</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP Address</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {auditTrail.map((entry) => (
+                  <tr key={entry.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{entry.timestamp}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{entry.user}</td>
+                    <td className="px-6 py-4 text-sm text-gray-900">{entry.action}</td>
+                    <td className="px-6 py-4 text-sm text-gray-900">{entry.target}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{entry.ipAddress}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        entry.status === 'Success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      }`}>
+                        {entry.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
 
@@ -646,7 +1094,7 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        {/* Quick Actions */}
+        {/* Enhanced Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="card p-6 text-center hover:shadow-medium transition-shadow cursor-pointer">
             <div className="mx-auto h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
@@ -678,6 +1126,41 @@ const AdminDashboard = () => {
             </div>
             <h3 className="text-sm font-medium text-gray-900 mb-2">Broadcast</h3>
             <p className="text-xs text-gray-600">Send system-wide notifications</p>
+          </div>
+        </div>
+
+        {/* Additional Quick Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
+          <div className="card p-6 text-center hover:shadow-medium transition-shadow cursor-pointer">
+            <div className="mx-auto h-12 w-12 bg-teal-100 rounded-lg flex items-center justify-center mb-4">
+              <Camera className="h-6 w-6 text-teal-600" />
+            </div>
+            <h3 className="text-sm font-medium text-gray-900 mb-2">Survey Monitor</h3>
+            <p className="text-xs text-gray-600">Monitor all field surveys</p>
+          </div>
+
+          <div className="card p-6 text-center hover:shadow-medium transition-shadow cursor-pointer">
+            <div className="mx-auto h-12 w-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">
+              <Plane className="h-6 w-6 text-indigo-600" />
+            </div>
+            <h3 className="text-sm font-medium text-gray-900 mb-2">Drone Control</h3>
+            <p className="text-xs text-gray-600">Manage drone fleet operations</p>
+          </div>
+
+          <div className="card p-6 text-center hover:shadow-medium transition-shadow cursor-pointer">
+            <div className="mx-auto h-12 w-12 bg-pink-100 rounded-lg flex items-center justify-center mb-4">
+              <Database className="h-6 w-6 text-pink-600" />
+            </div>
+            <h3 className="text-sm font-medium text-gray-900 mb-2">Data Monitor</h3>
+            <p className="text-xs text-gray-600">Track all data collection</p>
+          </div>
+
+          <div className="card p-6 text-center hover:shadow-medium transition-shadow cursor-pointer">
+            <div className="mx-auto h-12 w-12 bg-yellow-100 rounded-lg flex items-center justify-center mb-4">
+              <ClipboardList className="h-6 w-6 text-yellow-600" />
+            </div>
+            <h3 className="text-sm font-medium text-gray-900 mb-2">Audit Log</h3>
+            <p className="text-xs text-gray-600">View system audit trail</p>
           </div>
         </div>
       </div>
@@ -759,6 +1242,390 @@ const AdminDashboard = () => {
                 <button className="btn-success">Approve</button>
                 <button className="btn-danger">Reject</button>
                 <button className="btn-secondary">Request More Info</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Field Survey Modal */}
+      {showFieldSurveyModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg w-full max-w-6xl mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="bg-blue-600 text-white p-4 flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Field Survey Monitoring</h3>
+              <button
+                onClick={() => setShowFieldSurveyModal(false)}
+                className="text-white hover:text-gray-200"
+              >
+                <XCircle className="h-6 w-6" />
+              </button>
+            </div>
+            <div className="p-6">
+              <div className="mb-6">
+                <h4 className="text-xl font-bold text-gray-900 mb-2">All Field Surveys</h4>
+                <p className="text-gray-600">Monitor and manage all field surveys conducted by Incharge users</p>
+              </div>
+              
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Survey ID</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Incharge</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {fieldSurveys.map((survey) => (
+                      <tr key={survey.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{survey.id}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{survey.incharge}</td>
+                        <td className="px-6 py-4 text-sm text-gray-900">{survey.location}</td>
+                        <td className="px-6 py-4 text-sm text-gray-900">{survey.type}</td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            survey.status === 'Completed' ? 'bg-green-100 text-green-800' :
+                            survey.status === 'In Progress' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-blue-100 text-blue-800'
+                          }`}>
+                            {survey.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{survey.date}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div className="flex items-center space-x-2">
+                            <button
+                              onClick={() => handleSurveyApproval(survey.id, 'approved')}
+                              className="btn-success text-xs px-3 py-1"
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => handleSurveyApproval(survey.id, 'rejected')}
+                              className="btn-danger text-xs px-3 py-1"
+                            >
+                              Reject
+                            </button>
+                            <button
+                              onClick={() => setSelectedRequest(survey)}
+                              className="btn-secondary text-xs px-3 py-1"
+                            >
+                              Details
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Drone Fleet Modal */}
+      {showDroneFleetModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg w-full max-w-6xl mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="bg-indigo-600 text-white p-4 flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Drone Fleet Management</h3>
+              <button
+                onClick={() => setShowDroneFleetModal(false)}
+                className="text-white hover:text-gray-200"
+              >
+                <XCircle className="h-6 w-6" />
+              </button>
+            </div>
+            <div className="p-6">
+              <div className="mb-6">
+                <h4 className="text-xl font-bold text-gray-900 mb-2">Drone Fleet Overview</h4>
+                <p className="text-gray-600">Monitor and control all drone operations, sensor data, and fleet status</p>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {droneFleet.map((drone) => (
+                  <div key={drone.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-sm font-medium text-gray-900">{drone.id}</span>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        drone.status === 'Active' ? 'bg-green-100 text-green-800' :
+                        drone.status === 'Maintenance' ? 'bg-red-100 text-red-800' :
+                        'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {drone.status}
+                      </span>
+                    </div>
+                    <div className="space-y-2 mb-4">
+                      <p className="text-sm text-gray-600"><span className="font-medium">Model:</span> {drone.model}</p>
+                      <p className="text-sm text-gray-600"><span className="font-medium">Operator:</span> {drone.operator}</p>
+                      <p className="text-sm text-gray-600"><span className="font-medium">Location:</span> {drone.location}</p>
+                      <p className="text-sm text-gray-600"><span className="font-medium">Mission:</span> {drone.missionType}</p>
+                      <p className="text-sm text-gray-600"><span className="font-medium">Battery:</span> {drone.batteryLevel}%</p>
+                      <p className="text-sm text-gray-600"><span className="font-medium">Sensors:</span> {drone.sensors.join(', ')}</p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => handleDroneDeployment(drone.id, 'deployed')}
+                        className="btn-success text-xs px-3 py-1"
+                      >
+                        Deploy
+                      </button>
+                      <button
+                        onClick={() => handleDroneDeployment(drone.id, 'recalled')}
+                        className="btn-danger text-xs px-3 py-1"
+                      >
+                        Recall
+                      </button>
+                      <button
+                        onClick={() => setSelectedRequest(drone)}
+                        className="btn-secondary text-xs px-3 py-1"
+                      >
+                        Details
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Data Overview Modal */}
+      {showDataOverviewModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg w-full max-w-6xl mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="bg-pink-600 text-white p-4 flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Data Collection Overview</h3>
+              <button
+                onClick={() => setShowDataOverviewModal(false)}
+                className="text-white hover:text-gray-200"
+              >
+                <XCircle className="h-6 w-6" />
+              </button>
+            </div>
+            <div className="p-6">
+              <div className="mb-6">
+                <h4 className="text-xl font-bold text-gray-900 mb-2">All Data Collections</h4>
+                <p className="text-gray-600">Monitor all Excel data, changes, and data collection activities from Incharge Dashboard</p>
+              </div>
+              
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sheet Name</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Records</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Incharge</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Updated</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data Types</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {dataCollectionOverview.map((data, index) => (
+                      <tr key={index} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{data.sheet}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{data.records.toLocaleString()}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{data.incharge}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{data.lastUpdated}</td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            data.status === 'Complete' ? 'bg-green-100 text-green-800' :
+                            data.status === 'In Progress' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-blue-100 text-blue-800'
+                          }`}>
+                            {data.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900">{data.dataTypes.join(', ')}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div className="flex items-center space-x-2">
+                            <button
+                              onClick={() => handleDataApproval(data.sheet, 'approved')}
+                              className="btn-success text-xs px-3 py-1"
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => handleDataApproval(data.sheet, 'review')}
+                              className="btn-secondary text-xs px-3 py-1"
+                            >
+                              Review
+                            </button>
+                            <button
+                              onClick={() => setSelectedRequest(data)}
+                              className="btn-primary text-xs px-3 py-1"
+                            >
+                              Details
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Communication Hub Modal */}
+      {showCommunicationHub && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="bg-orange-600 text-white p-4 flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Communication Hub</h3>
+              <button
+                onClick={() => setShowCommunicationHub(false)}
+                className="text-white hover:text-gray-200"
+              >
+                <XCircle className="h-6 w-6" />
+              </button>
+            </div>
+            <div className="p-6">
+              <div className="mb-6">
+                <h4 className="text-xl font-bold text-gray-900 mb-2">Centralized Communication System</h4>
+                <p className="text-gray-600">Send messages, notifications, and alerts to all system users</p>
+              </div>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <h5 className="font-medium text-gray-900">All Messages</h5>
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {communicationMessages.map((message) => (
+                      <div key={message.id} className={`p-3 rounded-lg border ${
+                        message.status === 'unread' ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200'
+                      }`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium text-gray-900">{message.from}</span>
+                          <span className="text-xs text-gray-500">{message.time}</span>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-2">{message.message}</p>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-gray-500">To: {message.to}</span>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            message.priority === 'high' ? 'bg-red-100 text-red-800' :
+                            message.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-green-100 text-green-800'
+                          }`}>
+                            {message.priority}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <h5 className="font-medium text-gray-900">Send Message</h5>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">To</label>
+                      <select className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        <option>All Users</option>
+                        <option>All Incharges</option>
+                        <option>Specific User</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                      <select className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        <option>Normal</option>
+                        <option>Medium</option>
+                        <option>High</option>
+                        <option>Critical</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Message</label>
+                      <textarea 
+                        rows={4}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        placeholder="Type your message here..."
+                      />
+                    </div>
+                    <button 
+                      onClick={() => sendBroadcastMessage('Test message')}
+                      className="w-full btn-primary"
+                    >
+                      Send Message
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Audit Trail Modal */}
+      {showAuditTrail && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg w-full max-w-6xl mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="bg-yellow-600 text-white p-4 flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Audit Trail</h3>
+              <button
+                onClick={() => setShowAuditTrail(false)}
+                className="text-white hover:text-gray-200"
+              >
+                <XCircle className="h-6 w-6" />
+              </button>
+            </div>
+            <div className="p-6">
+              <div className="mb-6">
+                <h4 className="text-xl font-bold text-gray-900 mb-2">Complete System Audit Trail</h4>
+                <p className="text-gray-600">Track all system changes, user actions, and approvals for compliance and security</p>
+              </div>
+              
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Target</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP Address</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {auditTrail.map((entry) => (
+                      <tr key={entry.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{entry.timestamp}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{entry.user}</td>
+                        <td className="px-6 py-4 text-sm text-gray-900">{entry.action}</td>
+                        <td className="px-6 py-4 text-sm text-gray-900">{entry.target}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{entry.ipAddress}</td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            entry.status === 'Success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                          }`}>
+                            {entry.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <button
+                            onClick={() => setSelectedRequest(entry)}
+                            className="btn-secondary text-xs px-3 py-1"
+                          >
+                            View
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
