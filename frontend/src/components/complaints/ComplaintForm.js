@@ -160,16 +160,22 @@ const ComplaintForm = () => {
       });
       
       if (!response.ok) {
-        throw new Error('Failed to submit complaint');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Failed to submit complaint');
       }
       
       const result = await response.json();
+      console.log('Complaint submission result:', result);
       
-      toast.success(`Complaint submitted successfully! Your complaint ID is: ${result.complaint_id}`);
-      navigate('/track-complaint', { state: { complaintId: result.complaint_id, status: 'New' } });
+      if (result.success && result.complaint_id) {
+        toast.success(`Complaint submitted successfully! Your complaint ID is: ${result.complaint_id}`);
+        navigate('/track-complaint', { state: { complaintId: result.complaint_id, status: 'New' } });
+      } else {
+        throw new Error('Invalid response from server');
+      }
     } catch (error) {
       console.error('Error submitting complaint:', error);
-      toast.error('Failed to submit complaint. Please try again.');
+      toast.error(`Failed to submit complaint: ${error.message}`);
     }
   };
 

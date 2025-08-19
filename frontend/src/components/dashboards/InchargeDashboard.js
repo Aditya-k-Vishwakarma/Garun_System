@@ -25,7 +25,22 @@ import {
   Download,
   Search,
   Map,
-  X
+  X,
+  Eye,
+  Calendar,
+  Phone,
+  Mail,
+  Home,
+  Building,
+  FileCheck,
+  MessageCircle,
+  Share2,
+  Upload,
+  Plus,
+  Activity,
+  Target,
+  Shield,
+  Zap
 } from 'lucide-react';
 import AuthContext from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
@@ -42,6 +57,16 @@ const InchargeDashboard = () => {
   const [droneConnected, setDroneConnected] = useState(false);
   const [surveys, setSurveys] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [stats, setStats] = useState({
+    totalSurveys: 0,
+    completedSurveys: 0,
+    pendingSurveys: 0,
+    totalViolations: 0,
+    highSeverityViolations: 0,
+    mediumSeverityViolations: 0,
+    lowSeverityViolations: 0,
+    complianceRate: 0
+  });
   
   // Map state variables
   const [mapInstance, setMapInstance] = useState(null);
@@ -98,98 +123,204 @@ const InchargeDashboard = () => {
     { name: 'Shree Nagar', lat: 22.9250, lng: 75.8600 },
     { name: 'H.I.G', lat: 22.9300, lng: 75.8540 },
     { name: 'Dr. Bhimrao Ambedkar', lat: 22.9350, lng: 75.8570 },
-    { name: 'Somnath', lat: 22.9400, lng: 75.8590 },
-    { name: 'Sardar Wallabh bhai', lat: 22.9450, lng: 75.8530 },
-    { name: 'Geeta Bhawan', lat: 22.9500, lng: 75.8560 },
-    { name: 'Tilak Nagar', lat: 22.9550, lng: 75.8600 },
-    { name: 'Brajeshwari', lat: 22.9600, lng: 75.8540 },
-    { name: 'Bhagwati Nagar', lat: 22.9650, lng: 75.8570 },
-    { name: 'Musakhedi', lat: 22.9700, lng: 75.8590 },
-    { name: 'Dr. Molana Ajad Nagar', lat: 22.9750, lng: 75.8530 },
-    { name: 'Residence', lat: 22.9800, lng: 75.8560 },
-    { name: 'South Tukuganj', lat: 22.9850, lng: 75.8600 },
-    { name: 'Shanelatagunj', lat: 22.9900, lng: 75.8540 },
-    { name: 'Devi Ahilyabai', lat: 22.9950, lng: 75.8570 },
-    { name: 'Imli Bazar', lat: 23.0000, lng: 75.8590 },
-    { name: 'Harsaddi', lat: 23.0050, lng: 75.8530 },
-    { name: 'Ranipura', lat: 23.0100, lng: 75.8560 },
-    { name: 'Tatiya Sarwate', lat: 23.0150, lng: 75.8600 },
-    { name: 'Rauji Bazar', lat: 23.0200, lng: 75.8540 },
-    { name: 'Nolakhkha', lat: 23.0250, lng: 75.8570 },
-    { name: 'Chitawad', lat: 23.0300, lng: 75.8590 },
-    { name: 'Sant Kawar ram', lat: 23.0350, lng: 75.8530 },
-    { name: 'Sahid Hemu Kalani', lat: 23.0400, lng: 75.8560 },
-    { name: 'Maharaja Holkar', lat: 23.0450, lng: 75.8600 },
-    { name: 'Bambai Bazar', lat: 23.0500, lng: 75.8540 },
-    { name: 'Jawahar Marg', lat: 23.0550, lng: 75.8570 },
-    { name: 'Loknayak Nagar', lat: 23.0600, lng: 75.8590 },
-    { name: 'Dravind Nagar', lat: 23.0650, lng: 75.8530 },
-    { name: 'Lokmaniya Nagar', lat: 23.0700, lng: 75.8560 },
-    { name: 'Lakshman Singh Choun', lat: 23.0750, lng: 75.8600 },
-    { name: 'Vishnupuri', lat: 23.0800, lng: 75.8540 },
-    { name: 'Palda', lat: 23.0850, lng: 75.8570 },
-    { name: 'Mundla Nayta', lat: 23.0900, lng: 75.8590 },
-    { name: 'Bilawali', lat: 23.0950, lng: 75.8530 },
-    { name: 'Chohitram', lat: 23.1000, lng: 75.8560 },
-    { name: 'Sukh Niwas', lat: 23.1050, lng: 75.8600 },
-    { name: 'Dr. Rajendra Prasad', lat: 23.1100, lng: 75.8540 },
-    { name: 'Annpurna', lat: 23.1150, lng: 75.8570 },
-    { name: 'Sudama Nagar', lat: 23.1200, lng: 75.8590 },
-    { name: 'Gumasta Nagar', lat: 23.1250, lng: 75.8530 },
-    { name: 'Duwarkapuri', lat: 23.1300, lng: 75.8560 },
-    { name: 'Prajapat Nagar', lat: 23.1350, lng: 75.8600 }
+    { name: 'Sant Kabir', lat: 22.9400, lng: 75.8600 },
+    { name: 'Sant Ravidas', lat: 22.9450, lng: 75.8530 },
+    { name: 'Maharaja Chhatrasal', lat: 22.9500, lng: 75.8560 },
+    { name: 'Atal Bihari Vajpayee', lat: 22.9550, lng: 75.8590 },
+    { name: 'Sukhliya', lat: 22.9600, lng: 75.8540 },
+    { name: 'Shaheed Bhagat Singh', lat: 22.9650, lng: 75.8570 },
+    { name: 'Lasudiya Mori', lat: 22.9700, lng: 75.8600 },
+    { name: 'Nipaniya', lat: 22.9750, lng: 75.8530 },
+    { name: 'Sai Kirpa', lat: 22.9800, lng: 75.8560 },
+    { name: 'Haji Colony', lat: 22.9850, lng: 75.8590 },
+    { name: 'Naharshawali', lat: 22.9900, lng: 75.8540 },
+    { name: 'Khajrana Ganesh', lat: 22.9950, lng: 75.8570 },
+    { name: 'Kelash Puri', lat: 23.0000, lng: 75.8600 },
+    { name: 'Swami Vivekananda', lat: 23.0050, lng: 75.8530 },
+    { name: 'Shree Nagar', lat: 23.0100, lng: 75.8560 },
+    { name: 'H.I.G', lat: 23.0150, lng: 75.8590 },
+    { name: 'Dr. Bhimrao Ambedkar', lat: 23.0200, lng: 75.8540 },
+    { name: 'Sant Kabir', lat: 23.0250, lng: 75.8570 },
+    { name: 'Sant Ravidas', lat: 23.0300, lng: 75.8600 },
+    { name: 'Maharaja Chhatrasal', lat: 23.0350, lng: 75.8530 },
+    { name: 'Atal Bihari Vajpayee', lat: 23.0400, lng: 75.8560 },
+    { name: 'Sukhliya', lat: 23.0450, lng: 75.8590 },
+    { name: 'Shaheed Bhagat Singh', lat: 23.0500, lng: 75.8540 },
+    { name: 'Lasudiya Mori', lat: 23.0550, lng: 75.8570 },
+    { name: 'Nipaniya', lat: 23.0600, lng: 75.8600 },
+    { name: 'Sai Kirpa', lat: 23.0650, lng: 75.8530 },
+    { name: 'Haji Colony', lat: 23.0700, lng: 75.8560 },
+    { name: 'Naharshawali', lat: 23.0750, lng: 75.8590 },
+    { name: 'Khajrana Ganesh', lat: 23.0800, lng: 75.8540 },
+    { name: 'Kelash Puri', lat: 23.0850, lng: 75.8570 },
+    { name: 'Swami Vivekananda', lat: 23.0900, lng: 75.8600 },
+    { name: 'Shree Nagar', lat: 23.0950, lng: 75.8530 },
+    { name: 'H.I.G', lat: 23.1000, lng: 75.8560 },
+    { name: 'Dr. Bhimrao Ambedkar', lat: 23.1050, lng: 75.8590 },
+    { name: 'Sant Kabir', lat: 23.1100, lng: 75.8540 },
+    { name: 'Sant Ravidas', lat: 23.1150, lng: 75.8570 },
+    { name: 'Maharaja Chhatrasal', lat: 23.1200, lng: 75.8600 },
+    { name: 'Atal Bihari Vajpayee', lat: 23.1250, lng: 75.8530 },
+    { name: 'Sukhliya', lat: 23.1300, lng: 75.8560 },
+    { name: 'Shaheed Bhagat Singh', lat: 23.1350, lng: 75.8590 },
+    { name: 'Lasudiya Mori', lat: 23.1400, lng: 75.8540 },
+    { name: 'Nipaniya', lat: 23.1450, lng: 75.8570 },
+    { name: 'Sai Kirpa', lat: 23.1500, lng: 75.8600 },
+    { name: 'Haji Colony', lat: 23.1550, lng: 75.8530 },
+    { name: 'Naharshawali', lat: 23.1600, lng: 75.8560 },
+    { name: 'Khajrana Ganesh', lat: 23.1650, lng: 75.8590 },
+    { name: 'Kelash Puri', lat: 23.1700, lng: 75.8540 },
+    { name: 'Swami Vivekananda', lat: 23.1750, lng: 75.8570 },
+    { name: 'Shree Nagar', lat: 23.1800, lng: 75.8600 },
+    { name: 'H.I.G', lat: 23.1850, lng: 75.8530 },
+    { name: 'Dr. Bhimrao Ambedkar', lat: 23.1900, lng: 75.8560 },
+    { name: 'Sant Kabir', lat: 23.1950, lng: 75.8590 },
+    { name: 'Sant Ravidas', lat: 23.2000, lng: 75.8540 },
+    { name: 'Maharaja Chhatrasal', lat: 23.2050, lng: 75.8570 },
+    { name: 'Atal Bihari Vajpayee', lat: 23.2100, lng: 75.8600 },
+    { name: 'Sukhliya', lat: 23.2150, lng: 75.8530 },
+    { name: 'Shaheed Bhagat Singh', lat: 23.2200, lng: 75.8560 },
+    { name: 'Lasudiya Mori', lat: 23.2250, lng: 75.8590 },
+    { name: 'Nipaniya', lat: 23.2300, lng: 75.8540 },
+    { name: 'Sai Kirpa', lat: 23.2350, lng: 75.8570 },
+    { name: 'Haji Colony', lat: 23.2400, lng: 75.8600 },
+    { name: 'Naharshawali', lat: 23.2450, lng: 75.8530 },
+    { name: 'Khajrana Ganesh', lat: 23.2500, lng: 75.8560 },
+    { name: 'Kelash Puri', lat: 23.2550, lng: 75.8590 },
+    { name: 'Swami Vivekananda', lat: 23.2600, lng: 75.8540 },
+    { name: 'Shree Nagar', lat: 23.2650, lng: 75.8570 },
+    { name: 'H.I.G', lat: 23.2700, lng: 75.8600 },
+    { name: 'Dr. Bhimrao Ambedkar', lat: 23.2750, lng: 75.8530 },
+    { name: 'Sant Kabir', lat: 23.2800, lng: 75.8560 },
+    { name: 'Sant Ravidas', lat: 23.2850, lng: 75.8590 },
+    { name: 'Maharaja Chhatrasal', lat: 23.2900, lng: 75.8540 },
+    { name: 'Atal Bihari Vajpayee', lat: 23.2950, lng: 75.8570 },
+    { name: 'Sukhliya', lat: 23.3000, lng: 75.8600 },
+    { name: 'Shaheed Bhagat Singh', lat: 23.3050, lng: 75.8530 },
+    { name: 'Lasudiya Mori', lat: 23.3100, lng: 75.8560 },
+    { name: 'Nipaniya', lat: 23.3150, lng: 75.8590 },
+    { name: 'Sai Kirpa', lat: 23.3200, lng: 75.8540 },
+    { name: 'Haji Colony', lat: 23.3250, lng: 75.8570 },
+    { name: 'Khajrana Ganesh', lat: 23.3300, lng: 75.8600 },
+    { name: 'Kelash Puri', lat: 23.3350, lng: 75.8530 },
+    { name: 'Swami Vivekananda', lat: 23.3400, lng: 75.8560 },
+    { name: 'Shree Nagar', lat: 23.3450, lng: 75.8590 },
+    { name: 'H.I.G', lat: 23.3500, lng: 75.8540 },
+    { name: 'Dr. Bhimrao Ambedkar', lat: 23.3550, lng: 75.8570 },
+    { name: 'Sant Kabir', lat: 23.3600, lng: 75.8600 },
+    { name: 'Sant Ravidas', lat: 23.3650, lng: 75.8530 },
+    { name: 'Maharaja Chhatrasal', lat: 23.3700, lng: 75.8560 },
+    { name: 'Atal Bihari Vajpayee', lat: 23.3750, lng: 75.8590 },
+    { name: 'Sukhliya', lat: 23.3800, lng: 75.8540 },
+    { name: 'Shaheed Bhagat Singh', lat: 23.3850, lng: 75.8570 },
+    { name: 'Lasudiya Mori', lat: 23.3900, lng: 75.8600 },
+    { name: 'Nipaniya', lat: 23.3950, lng: 75.8530 },
+    { name: 'Sai Kirpa', lat: 23.4000, lng: 75.8560 },
+    { name: 'Haji Colony', lat: 23.4050, lng: 75.8590 },
+    { name: 'Naharshawali', lat: 23.4100, lng: 75.8540 },
+    { name: 'Khajrana Ganesh', lat: 23.4150, lng: 75.8570 },
+    { name: 'Kelash Puri', lat: 23.4200, lng: 75.8600 },
+    { name: 'Swami Vivekananda', lat: 23.4250, lng: 75.8530 },
+    { name: 'Shree Nagar', lat: 23.4300, lng: 75.8560 },
+    { name: 'H.I.G', lat: 23.4350, lng: 75.8590 },
+    { name: 'Dr. Bhimrao Ambedkar', lat: 23.4400, lng: 75.8540 },
+    { name: 'Sant Kabir', lat: 23.4450, lng: 75.8570 },
+    { name: 'Sant Ravidas', lat: 23.4500, lng: 75.8600 },
+    { name: 'Maharaja Chhatrasal', lat: 23.4550, lng: 75.8530 },
+    { name: 'Atal Bihari Vajpayee', lat: 23.4600, lng: 75.8560 },
+    { name: 'Sukhliya', lat: 23.4650, lng: 75.8590 },
+    { name: 'Shaheed Bhagat Singh', lat: 23.4700, lng: 75.8540 },
+    { name: 'Lasudiya Mori', lat: 23.4750, lng: 75.8570 },
+    { name: 'Nipaniya', lat: 23.4800, lng: 75.8600 },
+    { name: 'Sai Kirpa', lat: 23.4850, lng: 75.8530 },
+    { name: 'Haji Colony', lat: 23.4900, lng: 75.8560 },
+    { name: 'Khajrana Ganesh', lat: 23.4950, lng: 75.8590 },
+    { name: 'Kelash Puri', lat: 23.5000, lng: 75.8600 }
   ];
 
-  // Fixed constructions data
-  const fixedConstructions = wards.map((w, index) => {
-    return {
-      wardName: w.name,
-      wardNumber: index + 1,
-      constructions: [
-        { status: 'Illegal', severity: 'Medium', confidence: 90, lat: w.lat + 0.001, lng: w.lng + 0.001, address: `${w.name}, Indore, MP` },
-        { status: 'Legal', severity: null, confidence: 95, lat: w.lat - 0.001, lng: w.lng - 0.001, address: `${w.name}, Indore, MP` },
-        { status: 'Illegal', severity: 'High', confidence: 88, lat: w.lat, lng: w.lng + 0.002, address: `${w.name}, Indore, MP` }
-      ]
-    };
-  });
-  
   const [surveyData, setSurveyData] = useState({
     surveyDetails: '',
-    nearestLandmark: '',
-    geoCoordinates: '',
     wardNo: '',
     localityDetails: '',
-    inspectionParameters: {
-      illegalConstruction: false,
-      temperature: false,
-      lidarSensor: false,
-      imageSensor: false,
-      satelliteOverview: false
-    },
-    droneInfo: {
-      modelNo: '',
-      serialNo: '',
-      operatorName: '',
-      memoryType: '',
-      wifiStatus: false
-    },
+    nearestLandmark: '',
+    geoCoordinates: '',
     measuringParameters: {
-      roadWidth: '',
-      maxBuildingHeight: '',
-      buildingArea: '',
-      setbackDistance: '',
-      floorCount: '',
-      constructionType: ''
-    },
-    dataProcessing: {
-      method: '',
-      realTimeProcessing: false,
-      fileUploadProcessing: false,
-      externalDataProcessing: false
-    },
-    manualData: '',
-    uploadedFiles: []
+      constructionType: '',
+      buildingHeight: '',
+      floorArea: '',
+      setbacks: {
+        front: '',
+        rear: '',
+        left: '',
+        right: ''
+      },
+      parkingSpaces: '',
+      greenArea: ''
+    }
   });
+
+  const handleLogout = () => {
+    logout();
+    toast.success('Logged out successfully');
+  };
+
+  // Fetch surveys from backend and calculate dynamic stats
+  useEffect(() => {
+    const fetchSurveys = async () => {
+      try {
+        const response = await fetch('http://localhost:8000/api/surveys/all');
+        if (response.ok) {
+          const data = await response.json();
+          setSurveys(data.surveys || []);
+          
+          // Calculate dynamic statistics
+          const totalSurveys = data.surveys?.length || 0;
+          const completedSurveys = data.surveys?.filter(s => s.status === 'completed').length || 0;
+          const pendingSurveys = data.surveys?.filter(s => s.status === 'pending').length || 0;
+          
+          let totalViolations = 0;
+          let highSeverityViolations = 0;
+          let mediumSeverityViolations = 0;
+          let lowSeverityViolations = 0;
+          
+          data.surveys?.forEach(survey => {
+            if (survey.violations) {
+              totalViolations += survey.violations.length;
+              survey.violations.forEach(violation => {
+                if (violation.severity === 'high') highSeverityViolations++;
+                else if (violation.severity === 'medium') mediumSeverityViolations++;
+                else if (violation.severity === 'low') lowSeverityViolations++;
+              });
+            }
+          });
+          
+          const complianceRate = totalSurveys > 0 ? 
+            Math.round(((totalSurveys - totalViolations) / totalSurveys) * 100) : 100;
+          
+          setStats({
+            totalSurveys,
+            completedSurveys,
+            pendingSurveys,
+            totalViolations,
+            highSeverityViolations,
+            mediumSeverityViolations,
+            lowSeverityViolations,
+            complianceRate
+          });
+        } else {
+          console.error('Failed to fetch surveys');
+        }
+      } catch (error) {
+        console.error('Error fetching surveys:', error);
+      }
+    };
+
+    fetchSurveys();
+    
+    // Refresh data every 30 seconds for real-time updates
+    const interval = setInterval(fetchSurveys, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const [droneManagementData, setDroneManagementData] = useState({
     drones: [
@@ -275,33 +406,6 @@ const InchargeDashboard = () => {
     isLoading: false
   });
 
-  const handleLogout = () => {
-    logout();
-    toast.success('Logged out successfully');
-  };
-
-  // Fetch surveys from backend
-  useEffect(() => {
-    const fetchSurveys = async () => {
-      setLoading(true);
-      try {
-        const response = await fetch('http://localhost:8000/api/surveys/all');
-        if (response.ok) {
-          const data = await response.json();
-          setSurveys(data.surveys || []);
-        } else {
-          console.error('Failed to fetch surveys');
-        }
-      } catch (error) {
-        console.error('Error fetching surveys:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchSurveys();
-  }, []);
-
   const departmentStats = {
     totalComplaints: 89,
     pending: 12,
@@ -385,7 +489,6 @@ const InchargeDashboard = () => {
 
   const confirmStartSurvey = () => {
     toast.success('Survey started successfully!');
-    setShowVerificationPopup(false);
     setShowSurveyForm(false);
     // In real app, this would start the actual survey
   };
@@ -747,37 +850,35 @@ const InchargeDashboard = () => {
   }, [showMapView]); // Removed mapInstance dependency to prevent infinite loops
 
   // Initialize map
-  const initializeMap = () => {
-    if (window.L && !mapInstance) {
-      setMapLoading(true);
-      // Small delay to ensure DOM is ready
-      setTimeout(() => {
-        const mapContainer = document.getElementById('map');
-        if (mapContainer) {
-          const map = window.L.map('map').setView([22.7196, 75.8577], 12);
-          window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '© OpenStreetMap'
-          }).addTo(map);
-
-          setMapInstance(map);
-          
-          // Initialize marker cluster if available, otherwise use regular layer group
-          if (window.L.markerClusterGroup) {
-            setMarkerCluster(window.L.markerClusterGroup());
-          } else {
-            // Fallback to regular layer group if clustering is not available
-            setMarkerCluster(window.L.layerGroup());
-          }
-          
-          setMapLoading(false);
-          
-          // Add some sample data to show the map is working
-          setTimeout(() => {
-            showConstructions([fixedConstructions[0]]); // Show first ward as example
-          }, 500);
-        }
-      }, 100);
+  const initializeMap = async () => {
+    if (mapInstance) return;
+    
+    try {
+      // Load Leaflet if not already loaded
+      await loadLeaflet();
+      
+      if (!isLeafletLoaded()) {
+        toast.error('Failed to load map library. Please refresh the page.');
+        return;
+      }
+      
+      // eslint-disable-next-line no-undef
+      const map = window.L.map('map').setView([22.7196, 75.8577], 12);
+      
+      // eslint-disable-next-line no-undef
+      window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+      }).addTo(map);
+      
+      setMapInstance(map);
+      
+      // Show initial data from surveys
+      if (surveys.length > 0) {
+        showConstructions(surveys.filter(s => s.coordinates));
+      }
+    } catch (error) {
+      console.error('Error initializing map:', error);
+      toast.error('Failed to initialize map. Please try again.');
     }
   };
 
@@ -818,117 +919,41 @@ const InchargeDashboard = () => {
   };
 
   // Show constructions on map
-  const showConstructions = (data) => {
-    if (!mapInstance || !markerCluster) return;
-
-    resetMap();
+  const showConstructions = (constructions) => {
+    if (!mapInstance || !window.L) return;
     
+    // Clear existing markers
+    markers.forEach(marker => marker.remove());
+    setMarkers([]);
+    
+    // Create new markers from survey data
     const newMarkers = [];
-    const heatPoints = [];
-    const bounds = [];
-
-    data.forEach(ward => {
-      ward.constructions.forEach(cons => {
-        const color = cons.status === 'Illegal' ? 'red' : 'green';
-        const icon = window.L.divIcon({
-          html: `<div style="background:${color}; width:16px; height:16px; border-radius:50%; border:2px solid #fff;"></div>`,
-          className: 'custom-icon',
-          iconSize: [16, 16]
-        });
-        
-        const marker = window.L.marker([cons.lat, cons.lng], { icon });
-        marker.bindTooltip(`<b>Ward #${ward.wardNumber}: ${ward.wardName}</b><br>Status: ${cons.status}<br>${cons.status === 'Illegal' ? `Severity: ${cons.severity}<br>` : ''}Confidence: ${cons.confidence}%<br>Address: ${cons.address}<br>Lat: ${cons.lat.toFixed(5)}, Lng: ${cons.lng.toFixed(5)}`);
-        
-        // Add marker to cluster/layer group
-        if (markerCluster.addLayer) {
-          markerCluster.addLayer(marker);
-        } else {
-          markerCluster.addLayer(marker);
-        }
-        
+    surveys.forEach(survey => {
+      if (survey.coordinates && survey.violations && survey.violations.length > 0) {
+        // eslint-disable-next-line no-undef
+        const marker = window.L.marker([survey.coordinates.latitude, survey.coordinates.longitude])
+          .addTo(mapInstance)
+          .bindPopup(`
+            <div class="p-2">
+              <h3 class="font-bold">Survey ${survey.id}</h3>
+              <p><strong>Ward:</strong> ${survey.ward_no}</p>
+              <p><strong>Violations:</strong> ${survey.violations.length}</p>
+              <p><strong>Date:</strong> ${survey.survey_date}</p>
+              <p><strong>Compliance:</strong> ${survey.compliance_score || 100}%</p>
+            </div>
+          `);
         newMarkers.push(marker);
-        bounds.push([cons.lat, cons.lng]);
-
-        // Add to detected list
-        const detectedList = document.getElementById('detectedList');
-        if (detectedList) {
-          const row = document.createElement('tr');
-          row.className = 'hover:bg-gray-50 cursor-pointer';
-          row.innerHTML = `
-            <td class="px-6 py-4 whitespace-nowrap">
-              <div class="text-sm font-medium text-gray-900">${ward.wardName}</div>
-              <div class="text-sm text-gray-500">Ward #${ward.wardNumber}</div>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                cons.status === 'Illegal' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
-              }">
-                ${cons.status}
-              </span>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-              ${cons.status === 'Illegal' ? (cons.severity || 'N/A') : 'N/A'}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-              ${cons.confidence}%
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-              ${cons.address}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-              ${cons.lat.toFixed(5)}, ${cons.lng.toFixed(5)}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-              <button 
-                class="text-indigo-600 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 px-3 py-1 rounded-md transition-colors"
-                onclick="this.closest('tr').scrollIntoView({behavior: 'smooth'})"
-              >
-                Focus
-              </button>
-            </td>
-          `;
-          
-          // Add click event to focus on map
-          row.onclick = () => {
-            mapInstance.setView([cons.lat, cons.lng], 16);
-            marker.openTooltip();
-          };
-          
-          detectedList.appendChild(row);
-        }
-
-        heatPoints.push([cons.lat, cons.lng, cons.status === 'Illegal' ? 0.9 : 0.5]);
-        
-        setWardSummary(prev => ({
-          ...prev,
-          [ward.wardName]: (prev[ward.wardName] || 0) + 1
-        }));
-      });
+      }
     });
-
+    
     setMarkers(newMarkers);
     
-    // Add marker cluster/layer group to map
-    if (mapInstance.addLayer) {
-      mapInstance.addLayer(markerCluster);
+    // Fit map to show all markers
+    if (newMarkers.length > 0) {
+      // eslint-disable-next-line no-undef
+      const group = window.L.featureGroup(newMarkers);
+      mapInstance.fitBounds(group.getBounds());
     }
-    
-    if (bounds.length > 0) {
-      mapInstance.fitBounds(bounds, { padding: [50, 50] });
-    }
-
-    // Create heat layer if plugin is available
-    if (window.L.heatLayer) {
-      try {
-        const newHeatLayer = window.L.heatLayer(heatPoints, { radius: 25, blur: 15, maxZoom: 17 });
-        newHeatLayer.addTo(mapInstance);
-        setHeatLayer(newHeatLayer);
-      } catch (error) {
-        console.warn('Heat layer plugin not available:', error);
-      }
-    }
-
-    toast.success(`Detection complete for ${data.length} ward(s)!`);
   };
 
   // Detect specific ward
@@ -956,7 +981,7 @@ const InchargeDashboard = () => {
         return;
       }
       
-      showConstructions([fixedConstructions[wardIndex]]);
+      showConstructions(surveys.filter(s => s.ward_no == wardNumber));
     } catch (error) {
       console.error('Error detecting ward:', error);
       toast.error("An error occurred while detecting the ward. Please try again.");
@@ -972,7 +997,7 @@ const InchargeDashboard = () => {
     
     try {
       resetMap();
-      showConstructions(fixedConstructions);
+      showConstructions(surveys.filter(s => s.coordinates));
     } catch (error) {
       console.error('Error showing full Indore:', error);
       toast.error("An error occurred while loading the full map. Please try again.");
@@ -1001,10 +1026,76 @@ const InchargeDashboard = () => {
     }
   };
 
-  const saveSurveyData = () => {
-    toast.success('Survey data saved and uploaded to admin!');
-    setShowSurveyForm(false);
-    // In real app, this would save to backend
+  const saveSurveyData = async () => {
+    try {
+      // Prepare survey data for backend
+      const surveyPayload = {
+        ward_no: surveyData.wardNo,
+        survey_date: new Date().toISOString().split('T')[0],
+        drone_id: `DRONE_${Math.floor(Math.random() * 1000)}`,
+        coordinates: {
+          latitude: parseFloat(surveyData.geoCoordinates.split(',')[0]?.trim() || '22.7196'),
+          longitude: parseFloat(surveyData.geoCoordinates.split(',')[1]?.trim() || '75.8577')
+        },
+        locality_details: surveyData.localityDetails,
+        nearest_landmark: surveyData.nearestLandmark,
+        survey_details: surveyData.surveyDetails,
+        measuring_parameters: surveyData.measuringParameters,
+        incharge_id: user?.email || 'unknown',
+        survey_type: 'Manual Field Survey'
+      };
+
+      // Send survey data to backend
+      const response = await fetch('http://localhost:8000/api/surveys/start', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          survey_data: JSON.stringify(surveyPayload)
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        toast.success(`Survey data saved and uploaded to admin! Survey ID: ${result.survey_id}`);
+        
+        // Reset form
+        setSurveyData({
+          surveyDetails: '',
+          wardNo: '',
+          localityDetails: '',
+          nearestLandmark: '',
+          geoCoordinates: '',
+          measuringParameters: {
+            constructionType: '',
+            buildingHeight: '',
+            floorArea: '',
+            setbacks: {
+              front: '',
+              rear: '',
+              left: '',
+              right: ''
+            },
+            parkingSpaces: '',
+            greenArea: ''
+          }
+        });
+        
+        setShowSurveyForm(false);
+        
+        // Refresh surveys list
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Failed to save survey data');
+      }
+    } catch (error) {
+      console.error('Error saving survey data:', error);
+      toast.error(`Failed to save survey data: ${error.message}`);
+    }
   };
 
   const autoFetchCoordinates = () => {
@@ -1178,104 +1269,28 @@ const InchargeDashboard = () => {
             // Initialize map
             const map = L.map('map').setView([22.7196, 75.8577], 12);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-              maxZoom: 19,
-              attribution: '© OpenStreetMap'
+              attribution: '© OpenStreetMap contributors'
             }).addTo(map);
             
-            let markers = [];
-            let heatLayer = null;
-            let markerCluster = L.markerClusterGroup();
-            
-            // Wards data
-            const wards = ${JSON.stringify(wards)};
-            
-            // Fixed constructions data
-            const fixedConstructions = ${JSON.stringify(fixedConstructions)};
-            
-            // Reset map
-            function resetMap() {
-              if (markers.length > 0 && markerCluster) {
-                markers.forEach(m => markerCluster.removeLayer(m));
-                markers = [];
-              }
-              if (heatLayer) {
-                map.removeLayer(heatLayer);
-                heatLayer = null;
-              }
-            }
-            
-            // Show constructions
-            function showConstructions(data) {
-              resetMap();
-              
-              const newMarkers = [];
-              const heatPoints = [];
-              const bounds = [];
-              
-              data.forEach(ward => {
-                ward.constructions.forEach(cons => {
-                  const color = cons.status === 'Illegal' ? 'red' : 'green';
-                  const icon = L.divIcon({
-                    html: \`<div style="background:\${color}; width:16px; height:16px; border-radius:50%; border:2px solid #fff;"></div>\`,
-                    className: 'custom-icon',
-                    iconSize: [16, 16]
-                  });
-                  
-                  const marker = L.marker([cons.lat, cons.lng], { icon });
-                  marker.bindTooltip(\`
-                    <b>Ward #\${ward.wardNumber}: \${ward.wardName}</b><br>
-                    Status: \${cons.status}<br>
-                    \${cons.status === 'Illegal' ? \`Severity: \${cons.severity}<br>\` : ''}
-                    Confidence: \${cons.confidence}%<br>
-                    Address: \${cons.address}<br>
-                    Lat: \${cons.lat.toFixed(5)}, Lng: \${cons.lng.toFixed(5)}
-                  \`);
-                  
-                  markerCluster.addLayer(marker);
-                  newMarkers.push(marker);
-                  bounds.push([cons.lat, cons.lng]);
-                  heatPoints.push([cons.lat, cons.lng, cons.status === 'Illegal' ? 0.9 : 0.5]);
-                });
+            // Show survey data if available
+            const surveyData = ${JSON.stringify(surveys.filter(s => s.coordinates))};
+            if (surveyData.length > 0) {
+              surveyData.forEach(survey => {
+                if (survey.coordinates && survey.violations && survey.violations.length > 0) {
+                  const marker = L.marker([survey.coordinates.latitude, survey.coordinates.longitude])
+                    .addTo(map)
+                    .bindPopup(\`
+                      <div class="p-2">
+                        <h3 class="font-bold">Survey \${survey.id}</h3>
+                        <p><strong>Ward:</strong> \${survey.ward_no}</p>
+                        <p><strong>Violations:</strong> \${survey.violations.length}</p>
+                        <p><strong>Date:</strong> \${survey.survey_date}</p>
+                        <p><strong>Compliance:</strong> \${survey.compliance_score || 100}%</p>
+                      </div>
+                    \`);
+                }
               });
-              
-              markers = newMarkers;
-              map.addLayer(markerCluster);
-              
-              if (bounds.length > 0) {
-                map.fitBounds(bounds, { padding: [50, 50] });
-              }
-              
-              // Create heat layer
-              if (L.heatLayer) {
-                heatLayer = L.heatLayer(heatPoints, { radius: 25, blur: 15, maxZoom: 17 });
-                heatLayer.addTo(map);
-              }
             }
-            
-            // Detect specific ward
-            function detectWard() {
-              const wardNumber = prompt('Enter Ward Number (1-85):');
-              if (!wardNumber) return;
-              
-              const wardIndex = parseInt(wardNumber) - 1;
-              if (wardIndex < 0 || wardIndex >= wards.length) {
-                alert('Ward not found!');
-                return;
-              }
-              
-              showConstructions([fixedConstructions[wardIndex]]);
-            }
-            
-            // Show full Indore
-            function showFullIndore() {
-              resetMap();
-              showConstructions(fixedConstructions);
-            }
-            
-            // Load initial data
-            setTimeout(() => {
-              showConstructions([fixedConstructions[0]]);
-            }, 500);
           </script>
         </body>
         </html>
@@ -1293,6 +1308,50 @@ const InchargeDashboard = () => {
       console.error('Error opening full screen map:', error);
       toast.error('Failed to open full screen map. Please try again.');
     }
+  };
+
+  const handleWardSelect = (wardIndex) => {
+    if (wardIndex === -1) {
+      // Show all wards
+      showConstructions(surveys.filter(s => s.coordinates));
+    } else {
+      // Show specific ward
+      const wardSurveys = surveys.filter(s => s.ward_no == wardIndex + 1);
+      showConstructions(wardSurveys);
+    }
+  };
+
+  // Check if Leaflet is loaded
+  const isLeafletLoaded = () => {
+    // eslint-disable-next-line no-undef
+    return typeof window !== 'undefined' && window.L;
+  };
+
+  // Load Leaflet if not already loaded
+  const loadLeaflet = () => {
+    if (isLeafletLoaded()) return Promise.resolve();
+    
+    return new Promise((resolve, reject) => {
+      // Check if Leaflet CSS is loaded
+      if (!document.querySelector('link[href*="leaflet"]')) {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+        document.head.appendChild(link);
+      }
+      
+      // Check if Leaflet JS is loaded
+      // eslint-disable-next-line no-undef
+      if (!window.L) {
+        const script = document.createElement('script');
+        script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error('Failed to load Leaflet'));
+        document.head.appendChild(script);
+      } else {
+        resolve();
+      }
+    });
   };
 
   return (
@@ -1377,6 +1436,96 @@ const InchargeDashboard = () => {
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Load Map View</h3>
             <p className="text-gray-600 text-sm">View illegal construction detection map</p>
+          </div>
+        </div>
+
+        {/* Quick Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="card p-6">
+            <div className="flex items-center">
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <Database className="h-6 w-6 text-blue-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Total Surveys</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.totalSurveys}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="card p-6">
+            <div className="flex items-center">
+              <div className="p-3 bg-green-100 rounded-lg">
+                <CheckCircle className="h-6 w-6 text-green-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Completed</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.completedSurveys}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="card p-6">
+            <div className="flex items-center">
+              <div className="p-3 bg-red-100 rounded-lg">
+                <AlertTriangle className="h-6 w-6 text-red-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Violations</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.totalViolations}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="card p-6">
+            <div className="flex items-center">
+              <div className="p-3 bg-purple-100 rounded-lg">
+                <Target className="h-6 w-6 text-purple-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Compliance Rate</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.complianceRate}%</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Violation Severity Breakdown */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="card p-6">
+            <div className="flex items-center">
+              <div className="p-3 bg-red-100 rounded-lg">
+                <AlertTriangle className="h-6 w-6 text-red-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">High Severity</p>
+                <p className="text-2xl font-bold text-red-600">{stats.highSeverityViolations}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="card p-6">
+            <div className="flex items-center">
+              <div className="p-3 bg-yellow-100 rounded-lg">
+                <Clock className="h-6 w-6 text-yellow-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Medium Severity</p>
+                <p className="text-2xl font-bold text-yellow-600">{stats.mediumSeverityViolations}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="card p-6">
+            <div className="flex items-center">
+              <div className="p-3 bg-green-100 rounded-lg">
+                <CheckCircle className="h-6 w-6 text-green-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Low Severity</p>
+                <p className="text-2xl font-bold text-green-600">{stats.lowSeverityViolations}</p>
+              </div>
+            </div>
           </div>
         </div>
 

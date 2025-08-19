@@ -113,6 +113,7 @@ const ComplaintTracking = () => {
         }
       } else {
         const result = await response.json();
+        console.log('Complaint data received:', result.complaint);
         setTrackedComplaint(result.complaint);
         toast.success('Complaint found!');
       }
@@ -146,13 +147,18 @@ const ComplaintTracking = () => {
   };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-IN', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    if (!dateString) return 'Not available';
+    try {
+      return new Date(dateString).toLocaleDateString('en-IN', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (error) {
+      return 'Invalid date';
+    }
   };
 
   return (
@@ -203,22 +209,30 @@ const ComplaintTracking = () => {
           </div>
         </div>
 
+        {/* Loading State */}
+        {loading && (
+          <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Searching for your complaint...</p>
+          </div>
+        )}
+
         {/* Complaint Details */}
-        {trackedComplaint && (
+        {!loading && trackedComplaint && trackedComplaint.id && (
           <div className="space-y-6">
             {/* Complaint Summary Card */}
             <div className="bg-white rounded-lg shadow-lg p-6">
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">{trackedComplaint.title}</h2>
-                  <p className="text-gray-600 mb-4">{trackedComplaint.description}</p>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">{trackedComplaint.title || 'Untitled Complaint'}</h2>
+                  <p className="text-gray-600 mb-4">{trackedComplaint.description || 'No description available'}</p>
                 </div>
                 <div className="text-right">
-                  <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium mb-2 ${getStatusColor(trackedComplaint.status)}`}>
-                    {trackedComplaint.status}
+                  <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium mb-2 ${getStatusColor(trackedComplaint.status || 'New')}`}>
+                    {trackedComplaint.status || 'New'}
                   </div>
-                  <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getPriorityColor(trackedComplaint.priority)}`}>
-                    {trackedComplaint.priority} Priority
+                  <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getPriorityColor(trackedComplaint.priority || 'Medium')}`}>
+                    {trackedComplaint.priority || 'Medium'} Priority
                   </div>
                 </div>
               </div>
@@ -228,31 +242,31 @@ const ComplaintTracking = () => {
                   <FileText className="h-5 w-5 text-gray-400" />
                   <div>
                     <p className="text-sm text-gray-500">Category</p>
-                    <p className="font-medium text-gray-900">{trackedComplaint.category}</p>
+                    <p className="font-medium text-gray-900">{trackedComplaint.category || 'Not specified'}</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-3">
                   <Clock className="h-5 w-5 text-gray-400" />
                   <div>
                     <p className="text-sm text-gray-500">Submitted On</p>
-                    <p className="font-medium text-gray-900">{formatDate(trackedComplaint.submittedAt)}</p>
+                    <p className="font-medium text-gray-900">{formatDate(trackedComplaint.submitted_at)}</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-3">
                   <MapPin className="h-5 w-5 text-gray-400" />
                   <div>
                     <p className="text-sm text-gray-500">Location</p>
-                    <p className="font-medium text-gray-900">{trackedComplaint.location.address}</p>
+                    <p className="font-medium text-gray-900">{trackedComplaint.address}</p>
                   </div>
                 </div>
               </div>
 
-              {trackedComplaint.estimatedResolution && (
+              {trackedComplaint.estimated_resolution && (
                 <div className="mt-4 p-4 bg-blue-50 rounded-lg">
                   <div className="flex items-center space-x-2">
                     <Clock className="h-5 w-5 text-blue-600" />
                     <span className="text-sm font-medium text-blue-900">
-                      Estimated Resolution Date: {formatDate(trackedComplaint.estimatedResolution)}
+                      Estimated Resolution Date: {trackedComplaint.estimated_resolution}
                     </span>
                   </div>
                 </div>
@@ -263,7 +277,8 @@ const ComplaintTracking = () => {
             <div className="bg-white rounded-lg shadow-lg p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-6">Status Timeline</h3>
               <div className="space-y-6">
-                {trackedComplaint.updates.map((update, index) => (
+                {trackedComplaint.updates && trackedComplaint.updates.length > 0 ? (
+                  trackedComplaint.updates.map((update, index) => (
                   <div key={index} className="flex items-start space-x-4">
                     <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
                       update.status === 'Resolved' ? 'bg-green-500' :
@@ -290,7 +305,13 @@ const ComplaintTracking = () => {
                       <p className="text-sm text-gray-600">Updated by: {update.officer}</p>
                     </div>
                   </div>
-                ))}
+                ))
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <Clock className="mx-auto h-12 w-12 text-gray-300 mb-4" />
+                    <p>No status updates available yet.</p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -300,15 +321,15 @@ const ComplaintTracking = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <h4 className="font-medium text-gray-900 mb-2">Assigned Department</h4>
-                  <p className="text-gray-600">{trackedComplaint.assignedTo}</p>
+                  <p className="text-gray-600">{trackedComplaint.assigned_to || 'Not assigned yet'}</p>
                 </div>
                 <div>
                   <h4 className="font-medium text-gray-900 mb-2">Responsible Officer</h4>
-                  <p className="text-gray-600">{trackedComplaint.officer}</p>
+                  <p className="text-gray-600">{trackedComplaint.officer || 'Not assigned yet'}</p>
                 </div>
                 <div>
                   <h4 className="font-medium text-gray-900 mb-2">Contact Number</h4>
-                  <p className="text-gray-600">{trackedComplaint.contact}</p>
+                  <p className="text-gray-600">{trackedComplaint.contact || 'Not available'}</p>
                 </div>
                 <div>
                   <h4 className="font-medium text-gray-900 mb-2">Complaint ID</h4>
@@ -339,7 +360,7 @@ const ComplaintTracking = () => {
         )}
 
         {/* No Complaint Found Message */}
-        {complaintId && !trackedComplaint && !loading && (
+        {!loading && complaintId && !trackedComplaint && (
           <div className="bg-white rounded-lg shadow-lg p-8 text-center">
             <XCircle className="mx-auto h-16 w-16 text-gray-400 mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">Complaint Not Found</h3>

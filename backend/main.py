@@ -53,6 +53,78 @@ admin_data = {
     "illegal_constructions": []
 }
 
+# Persistent storage files
+DATA_DIR = Path("data")
+COMPLAINTS_FILE = DATA_DIR / "complaints.json"
+PROPERTY_FILE = DATA_DIR / "property_verifications.json"
+BUILDING_FILE = DATA_DIR / "building_approvals.json"
+SURVEYS_FILE = DATA_DIR / "surveys.json"
+ILLEGAL_FILE = DATA_DIR / "illegal_constructions.json"
+
+# Create data directory
+DATA_DIR.mkdir(exist_ok=True)
+
+# Load data from files if they exist
+def load_data():
+    """Load data from JSON files"""
+    global complaints_db, property_verifications_db, building_approvals_db, surveys_db, illegal_constructions_db
+    
+    try:
+        if COMPLAINTS_FILE.exists():
+            with open(COMPLAINTS_FILE, 'r', encoding='utf-8') as f:
+                complaints_db = json.load(f)
+        
+        if PROPERTY_FILE.exists():
+            with open(PROPERTY_FILE, 'r', encoding='utf-8') as f:
+                property_verifications_db = json.load(f)
+        
+        if BUILDING_FILE.exists():
+            with open(BUILDING_FILE, 'r', encoding='utf-8') as f:
+                building_approvals_db = json.load(f)
+        
+        if SURVEYS_FILE.exists():
+            with open(SURVEYS_FILE, 'r', encoding='utf-8') as f:
+                surveys_db = json.load(f)
+        
+        if ILLEGAL_FILE.exists():
+            with open(ILLEGAL_FILE, 'r', encoding='utf-8') as f:
+                illegal_constructions_db = json.load(f)
+                
+        print(f"Loaded {len(complaints_db)} complaints, {len(property_verifications_db)} property verifications, {len(building_approvals_db)} building approvals")
+    except Exception as e:
+        print(f"Error loading data: {e}")
+        # Initialize empty lists if loading fails
+        complaints_db = []
+        property_verifications_db = []
+        building_approvals_db = []
+        surveys_db = []
+        illegal_constructions_db = []
+
+def save_data():
+    """Save data to JSON files"""
+    try:
+        with open(COMPLAINTS_FILE, 'w', encoding='utf-8') as f:
+            json.dump(complaints_db, f, indent=2, ensure_ascii=False)
+        
+        with open(PROPERTY_FILE, 'w', encoding='utf-8') as f:
+            json.dump(property_verifications_db, f, indent=2, ensure_ascii=False)
+        
+        with open(BUILDING_FILE, 'w', encoding='utf-8') as f:
+            json.dump(building_approvals_db, f, indent=2, ensure_ascii=False)
+        
+        with open(SURVEYS_FILE, 'w', encoding='utf-8') as f:
+            json.dump(surveys_db, f, indent=2, ensure_ascii=False)
+        
+        with open(ILLEGAL_FILE, 'w', encoding='utf-8') as f:
+            json.dump(illegal_constructions_db, f, indent=2, ensure_ascii=False)
+            
+        print("Data saved successfully")
+    except Exception as e:
+        print(f"Error saving data: {e}")
+
+# Load data on startup
+load_data()
+
 # Helper functions
 def generate_id(prefix: str) -> str:
     """Generate unique ID with prefix"""
@@ -418,6 +490,10 @@ async def register_complaint(
         
         complaints_db.append(complaint)
         update_admin_data()
+        save_data()  # Save data after each complaint registration
+        
+        print(f"Complaint registered successfully: {complaint_id}")
+        print(f"Total complaints in database: {len(complaints_db)}")
         
         return {
             "success": True,
@@ -427,15 +503,27 @@ async def register_complaint(
         }
     
     except Exception as e:
+        print(f"Error registering complaint: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to register complaint: {str(e)}")
 
 @app.get("/api/complaints/track/{complaint_id}")
 async def track_complaint(complaint_id: str):
     """Track complaint status by ID"""
-    complaint = next((c for c in complaints_db if c["id"] == complaint_id.upper()), None)
+    print(f"Tracking complaint with ID: {complaint_id}")
+    print(f"Available complaints: {[c['id'] for c in complaints_db]}")
+    
+    # Try exact match first
+    complaint = next((c for c in complaints_db if c["id"] == complaint_id), None)
+    
+    # If not found, try case-insensitive match
+    if not complaint:
+        complaint = next((c for c in complaints_db if c["id"].lower() == complaint_id.lower()), None)
     
     if not complaint:
+        print(f"Complaint not found for ID: {complaint_id}")
         raise HTTPException(status_code=404, detail="Complaint not found")
+    
+    print(f"Found complaint: {complaint['id']} - {complaint['title']}")
     
     return {
         "success": True,
@@ -473,10 +561,20 @@ async def update_complaint_status(
     estimated_resolution: Optional[str] = Form(None)
 ):
     """Update complaint status (for admin use)"""
-    complaint = next((c for c in complaints_db if c["id"] == complaint_id.upper()), None)
+    print(f"Updating complaint status for ID: {complaint_id}")
+    
+    # Try exact match first
+    complaint = next((c for c in complaints_db if c["id"] == complaint_id), None)
+    
+    # If not found, try case-insensitive match
+    if not complaint:
+        complaint = next((c for c in complaints_db if c["id"].lower() == complaint_id.lower()), None)
     
     if not complaint:
+        print(f"Complaint not found for ID: {complaint_id}")
         raise HTTPException(status_code=404, detail="Complaint not found")
+    
+    print(f"Found complaint: {complaint['id']} - {complaint['title']}")
     
     # Update status
     complaint["status"] = status
@@ -501,6 +599,7 @@ async def update_complaint_status(
         complaint["resolved_at"] = datetime.now().isoformat()
     
     update_admin_data()
+    save_data() # Save data after each complaint status update
     
     return {
         "success": True,
@@ -577,6 +676,7 @@ async def submit_property_verification(
         
         property_verifications_db.append(verification)
         update_admin_data()
+        save_data() # Save data after each property verification submission
         
         return {
             "success": True,
@@ -617,6 +717,7 @@ async def verify_property_documents(
         verification["verification_notes"] = notes
     
     update_admin_data()
+    save_data() # Save data after each property verification update
     
     return {
         "success": True,
@@ -696,6 +797,7 @@ async def submit_building_approval(
         
         building_approvals_db.append(approval)
         update_admin_data()
+        save_data() # Save data after each building approval submission
         
         return {
             "success": True,
@@ -743,6 +845,7 @@ async def approve_building_application(
         raise HTTPException(status_code=400, detail="Invalid action. Use 'approve' or 'reject'")
     
     update_admin_data()
+    save_data() # Save data after each building approval update
     
     return {
         "success": True,
@@ -1068,6 +1171,7 @@ async def start_survey(
             illegal_constructions_db.append(illegal_construction)
         
         update_admin_data()
+        save_data() # Save data after each survey completion
         
         return {
             "success": True,
@@ -1137,12 +1241,65 @@ async def update_violation_status(
     violation["updated_at"] = datetime.now().isoformat()
     
     update_admin_data()
+    save_data() # Save data after each violation status update
     
     return {
         "success": True,
         "message": "Violation status updated successfully",
         "violation": violation
     }
+
+# Illegal construction status update endpoint
+@app.put("/api/illegal-constructions/{violation_id}/status")
+async def update_illegal_construction_status(
+    violation_id: str,
+    status: str = Form(...),
+    message: str = Form(...),
+    officer: str = Form(...),
+    action_taken: str = Form(...)
+):
+    """Update illegal construction violation status"""
+    try:
+        # Find the violation
+        violation = next((v for v in illegal_constructions_db if v["id"] == violation_id), None)
+        
+        if not violation:
+            raise HTTPException(status_code=404, detail="Violation not found")
+        
+        # Update status
+        violation["status"] = status
+        violation["last_updated"] = datetime.now().isoformat()
+        violation["updated_by"] = officer
+        violation["action_taken"] = action_taken
+        
+        # Add update to timeline
+        if "updates" not in violation:
+            violation["updates"] = []
+        
+        update_entry = {
+            "date": datetime.now().isoformat(),
+            "status": status,
+            "message": message,
+            "officer": officer,
+            "action": action_taken
+        }
+        violation["updates"].append(update_entry)
+        
+        # Update resolved_at if status is resolved
+        if status == "resolved":
+            violation["resolved_at"] = datetime.now().isoformat()
+        
+        update_admin_data()
+        save_data()
+        
+        return {
+            "success": True,
+            "message": "Violation status updated successfully",
+            "violation": violation
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update violation status: {str(e)}")
 
 # File download endpoint
 @app.get("/uploads/{file_path:path}")
@@ -1154,6 +1311,29 @@ async def download_file(file_path: str):
         raise HTTPException(status_code=404, detail="File not found")
     
     return FileResponse(file_location)
+
+# User endpoints for property verifications and building approvals
+@app.get("/api/property/user/{user_contact}")
+async def get_user_property_verifications(user_contact: str):
+    """Get all property verifications for a specific user (by contact number)"""
+    user_verifications = [v for v in property_verifications_db if v.get("contact_number") == user_contact]
+    
+    return {
+        "success": True,
+        "verifications": user_verifications,
+        "total": len(user_verifications)
+    }
+
+@app.get("/api/building/user/{user_contact}")
+async def get_user_building_approvals(user_contact: str):
+    """Get all building approvals for a specific user (by contact number)"""
+    user_approvals = [a for a in building_approvals_db if a.get("contact_number") == user_contact]
+    
+    return {
+        "success": True,
+        "approvals": user_approvals,
+        "total": len(user_approvals)
+    }
 
 # Health check endpoint
 @app.get("/health")
@@ -1168,6 +1348,81 @@ async def health_check():
         "total_surveys": len(surveys_db),
         "total_illegal_constructions": len(illegal_constructions_db)
     }
+
+# Test endpoint to add a sample complaint
+@app.post("/api/test/add-complaint")
+async def add_test_complaint():
+    """Add a test complaint for testing purposes"""
+    try:
+        complaint_id = generate_id("GRV")
+        
+        # Create test complaint
+        test_complaint = {
+            "id": complaint_id,
+            "title": "Test Complaint - Street Light Issue",
+            "description": "Street light not working in front of house",
+            "category": "Street Lighting",
+            "incident_date": datetime.now().strftime("%Y-%m-%d"),
+            "incident_time": "18:00",
+            "address": "123 Test Street, Indore",
+            "ward": "Ward 1",
+            "zone": "North Zone",
+            "latitude": "22.7196",
+            "longitude": "75.8577",
+            "landmark": "Near Test Market",
+            "complainant": {
+                "full_name": "Test User",
+                "father_name": "Test Father",
+                "mother_name": "Test Mother",
+                "date_of_birth": "1990-01-01",
+                "gender": "male",
+                "contact_number": "9876543210",
+                "residential_address": "123 Test Street, Indore",
+                "permanent_address": "123 Test Street, Indore",
+                "id_proof_type": "Aadhaar Card",
+                "id_proof_number": "123456789012"
+            },
+            "files": {
+                "photos": [],
+                "videos": [],
+                "documents": [],
+                "id_proof": "",
+                "selfie": ""
+            },
+            "status": "New",
+            "priority": "Medium",
+            "submitted_at": datetime.now().isoformat(),
+            "updates": [
+                {
+                    "date": datetime.now().isoformat(),
+                    "status": "New",
+                    "message": "Test complaint registered successfully",
+                    "officer": "System"
+                }
+            ],
+            "assigned_to": None,
+            "officer": None,
+            "contact": None,
+            "estimated_resolution": None,
+            "resolved_at": None
+        }
+        
+        complaints_db.append(test_complaint)
+        update_admin_data()
+        save_data()
+        
+        print(f"Test complaint added: {complaint_id}")
+        
+        return {
+            "success": True,
+            "message": "Test complaint added successfully",
+            "complaint_id": complaint_id,
+            "total_complaints": len(complaints_db)
+        }
+        
+    except Exception as e:
+        print(f"Error adding test complaint: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to add test complaint: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn

@@ -40,10 +40,12 @@ import {
   FileSpreadsheet,
   BarChart2,
   PieChart,
-  LineChart
+  LineChart,
+  Plus
 } from 'lucide-react';
 import AuthContext from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 
 const AdminDashboard = () => {
   const { user, logout } = useContext(AuthContext);
@@ -85,6 +87,8 @@ const AdminDashboard = () => {
     totalBuildingApprovals: 0,
     pendingApprovals: 0
   });
+
+  const navigate = useNavigate();
 
   const handleLogout = () => {
     logout();
@@ -135,59 +139,179 @@ const AdminDashboard = () => {
     pending: statistics.pendingComplaints || 0,
     inProgress: statistics.inProgressComplaints || 0,
     resolved: statistics.resolvedComplaints || 0,
-    totalUsers: 3456,
-    activeOfficials: 45,
-    departments: 12,
-    avgResolutionTime: '3.2 days'
+    totalUsers: complaints.length + propertyVerifications.length + buildingApprovals.length,
+    activeOfficers: complaints.filter(c => c.assigned_to).length,
+    departments: new Set(complaints.map(c => c.category)).size,
+    avgResolutionTime: calculateAverageResolutionTime()
   };
 
-  const recentComplaints = [
-    { id: 'GRV1247', title: 'Major road damage on Highway 101', priority: 'High', status: 'New', department: 'Public Works', date: '2024-01-15' },
-    { id: 'GRV1246', title: 'Water supply disruption in Ward 5', priority: 'High', status: 'In Progress', department: 'Water Supply', date: '2024-01-15' },
-    { id: 'GRV1245', title: 'Illegal construction in residential area', priority: 'Medium', status: 'Assigned', department: 'Building Inspector', date: '2024-01-14' },
-    { id: 'GRV1244', title: 'Street light malfunction', priority: 'Low', status: 'Resolved', department: 'Electricity', date: '2024-01-14' }
-  ];
+  // Calculate average resolution time
+  const calculateAverageResolutionTime = () => {
+    const resolvedComplaints = complaints.filter(c => c.status === 'Resolved' && c.resolved_at && c.submitted_at);
+    if (resolvedComplaints.length === 0) return 'N/A';
+    
+    const totalDays = resolvedComplaints.reduce((total, complaint) => {
+      const submitted = new Date(complaint.submitted_at);
+      const resolved = new Date(complaint.resolved_at);
+      const diffTime = Math.abs(resolved - submitted);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      return total + diffDays;
+    }, 0);
+    
+    const avgDays = Math.round(totalDays / resolvedComplaints.length);
+    return `${avgDays} days`;
+  };
 
-  const departmentPerformance = [
-    { name: 'Public Works', resolved: 89, pending: 12, avgTime: '2.1 days' },
-    { name: 'Water Supply', resolved: 67, pending: 8, avgTime: '1.8 days' },
-    { name: 'Building Inspector', resolved: 45, pending: 15, avgTime: '4.2 days' },
-    { name: 'Electricity', resolved: 78, pending: 5, avgTime: '1.5 days' },
-    { name: 'Sanitation', resolved: 92, pending: 3, avgTime: '1.2 days' }
-  ];
+  // Dynamic recent complaints from backend data
+  const recentComplaints = complaints
+    .sort((a, b) => new Date(b.submitted_at || b.created_at) - new Date(a.submitted_at || a.created_at))
+    .slice(0, 4)
+    .map(complaint => ({
+      id: complaint.id,
+      title: complaint.title,
+      priority: complaint.priority || 'Medium',
+      status: complaint.status,
+      department: complaint.category,
+      date: new Date(complaint.submitted_at || complaint.created_at).toLocaleDateString('en-IN')
+    }));
 
+  // Dynamic department performance from backend data
+  const departmentPerformance = Object.entries(
+    complaints.reduce((acc, complaint) => {
+      const dept = complaint.category;
+      if (!acc[dept]) {
+        acc[dept] = { resolved: 0, pending: 0, total: 0 };
+      }
+      acc[dept].total++;
+      if (complaint.status === 'Resolved') {
+        acc[dept].resolved++;
+      } else if (complaint.status === 'New' || complaint.status === 'Under Review') {
+        acc[dept].pending++;
+      }
+      return acc;
+    }, {})
+  ).map(([name, stats]) => ({
+    name,
+    resolved: stats.resolved,
+    pending: stats.pending,
+    avgTime: calculateDepartmentAvgTime(name)
+  }));
+
+  const calculateDepartmentAvgTime = (department) => {
+    const deptComplaints = complaints.filter(c => c.category === department && c.status === 'Resolved' && c.resolved_at && c.submitted_at);
+    if (deptComplaints.length === 0) return 'N/A';
+    
+    const totalDays = deptComplaints.reduce((total, complaint) => {
+      const submitted = new Date(complaint.submitted_at);
+      const resolved = new Date(complaint.resolved_at);
+      const diffTime = Math.abs(resolved - submitted);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      return total + diffDays;
+    }, 0);
+    
+    const avgDays = Math.round(totalDays / deptComplaints.length);
+    return `${avgDays} days`;
+  };
+
+  // Dynamic priority alerts from backend data
   const priorityAlerts = [
-    { id: 1, type: 'SLA Breach', message: '5 complaints exceeding SLA deadline', count: 5, severity: 'high' },
-    { id: 2, type: 'High Priority', message: '12 high priority complaints pending', count: 12, severity: 'medium' },
-    { id: 3, type: 'Department Overload', message: 'Building Inspector department overloaded', count: 15, severity: 'medium' }
+    {
+      id: 1,
+      type: 'SLA Breach',
+      message: `${complaints.filter(c => {
+        if (c.status === 'New' || c.status === 'Under Review') {
+          const submitted = new Date(c.submitted_at || c.created_at);
+          const now = new Date();
+          const diffDays = Math.ceil((now - submitted) / (1000 * 60 * 60 * 24));
+          return diffDays > 7; // SLA breach after 7 days
+        }
+        return false;
+      }).length} complaints exceeding SLA deadline`,
+      count: complaints.filter(c => {
+        if (c.status === 'New' || c.status === 'Under Review') {
+          const submitted = new Date(c.submitted_at || c.created_at);
+          const now = new Date();
+          const diffDays = Math.ceil((now - submitted) / (1000 * 60 * 60 * 24));
+          return diffDays > 7;
+        }
+        return false;
+      }).length,
+      severity: 'high'
+    },
+    {
+      id: 2,
+      type: 'High Priority',
+      message: `${complaints.filter(c => c.priority === 'High' && (c.status === 'New' || c.status === 'Under Review')).length} high priority complaints pending`,
+      count: complaints.filter(c => c.priority === 'High' && (c.status === 'New' || c.status === 'Under Review')).length,
+      severity: 'medium'
+    },
+    {
+      id: 3,
+      type: 'Department Overload',
+      message: `${Object.entries(complaints.reduce((acc, c) => {
+        acc[c.category] = (acc[c.category] || 0) + 1;
+        return acc;
+      }, {})).sort(([,a], [,b]) => b - a)[0]?.[0] || 'Unknown'} department overloaded`,
+      count: Math.max(...Object.values(complaints.reduce((acc, c) => {
+        acc[c.category] = (acc[c.category] || 0) + 1;
+        return acc;
+      }, {}))),
+      severity: 'medium'
+    }
   ];
 
-  // New data for enhanced functionality
-  const grievanceResponses = [
-    { id: 'GR001', citizen: 'Rajesh Kumar', complaint: 'Illegal construction in Ward 5', response: 'Survey completed, awaiting verification', status: 'Pending Review', date: '2024-01-15' },
-    { id: 'GR002', citizen: 'Priya Sharma', complaint: 'Water logging issue', response: 'Department assigned, work in progress', status: 'In Progress', date: '2024-01-14' },
-    { id: 'GR003', citizen: 'Amit Patel', complaint: 'Street light malfunction', response: 'Issue resolved, please verify', status: 'Completed', date: '2024-01-13' }
-  ];
+  // Dynamic grievance responses from backend data
+  const grievanceResponses = complaints
+    .filter(c => c.status !== 'New')
+    .slice(0, 3)
+    .map(complaint => ({
+      id: complaint.id,
+      citizen: complaint.complainant?.full_name || 'Anonymous',
+      complaint: complaint.title,
+      response: complaint.updates?.[complaint.updates.length - 1]?.message || 'Status updated',
+      status: complaint.status,
+      date: new Date(complaint.updates?.[complaint.updates.length - 1]?.date || complaint.submitted_at).toLocaleDateString('en-IN')
+    }));
 
-  const documentVerificationRequests = [
-    { id: 'DOC001', citizen: 'Sneha Reddy', documentType: 'Property Papers', ward: 'Ward 3', status: 'Pending', submittedDate: '2024-01-15', priority: 'High' },
-    { id: 'DOC002', citizen: 'Vikram Singh', documentType: 'Building Plans', ward: 'Ward 7', status: 'Under Review', submittedDate: '2024-01-14', priority: 'Medium' },
-    { id: 'DOC003', citizen: 'Anjali Gupta', documentType: 'Land Records', ward: 'Ward 2', status: 'Pending', submittedDate: '2024-01-13', priority: 'Low' }
-  ];
+  // Dynamic document verification requests from backend data
+  const documentVerificationRequests = propertyVerifications
+    .slice(0, 3)
+    .map(verification => ({
+      id: verification.id,
+      citizen: verification.full_name || 'Unknown',
+      documentType: verification.document_type || 'Property Documents',
+      ward: verification.ward || 'Unknown',
+      status: verification.status,
+      submittedDate: new Date(verification.submitted_at || verification.created_at).toLocaleDateString('en-IN'),
+      priority: verification.priority || 'Medium'
+    }));
 
-  const buildingPermissionRequests = [
-    { id: 'BPR001', applicant: 'Construction Corp Ltd', project: 'Residential Complex', ward: 'Ward 4', status: 'Pending Approval', submittedDate: '2024-01-15', estimatedCost: '₹2.5 Cr' },
-    { id: 'BPR002', applicant: 'Green Builders', project: 'Commercial Plaza', ward: 'Ward 6', status: 'Under Review', submittedDate: '2024-01-14', estimatedCost: '₹5.2 Cr' },
-    { id: 'BPR003', applicant: 'Metro Developers', project: 'Apartment Block', ward: 'Ward 1', status: 'Pending', submittedDate: '2024-01-13', estimatedCost: '₹3.8 Cr' }
-  ];
+  // Dynamic building permission requests from backend data
+  const buildingPermissionRequests = buildingApprovals
+    .slice(0, 3)
+    .map(approval => ({
+      id: approval.id,
+      applicant: approval.applicant_name || approval.full_name || 'Unknown',
+      project: approval.project_name || approval.title || 'Building Project',
+      ward: approval.ward || 'Unknown',
+      status: approval.status,
+      submittedDate: new Date(approval.submitted_at || approval.created_at).toLocaleDateString('en-IN'),
+      estimatedCost: approval.estimated_cost || '₹N/A'
+    }));
 
-  const illegalConstructionReports = [
-    { id: 'ICR001', location: 'Ward 5, Sector A', reporter: 'Anonymous', severity: 'High', status: 'New Report', date: '2024-01-15', coordinates: '28.7041°N, 77.1025°E' },
-    { id: 'ICR002', location: 'Ward 3, Sector B', reporter: 'Local Resident', severity: 'Medium', status: 'Under Investigation', date: '2024-01-14', coordinates: '28.7041°N, 77.1025°E' },
-    { id: 'ICR003', location: 'Ward 7, Sector C', reporter: 'Ward Officer', severity: 'Low', status: 'Resolved', date: '2024-01-13', coordinates: '28.7041°N, 77.1025°E' }
-  ];
+  // Dynamic illegal construction reports from backend data
+  const illegalConstructionReports = illegalConstructions
+    .slice(0, 3)
+    .map(construction => ({
+      id: construction.id,
+      location: `${construction.ward_no || 'Unknown'}, ${construction.location || 'Unknown'}`,
+      reporter: construction.reported_by || 'Anonymous',
+      severity: construction.severity || 'Medium',
+      status: construction.status || 'New Report',
+      date: new Date(construction.detected_at || construction.created_at).toLocaleDateString('en-IN'),
+      coordinates: construction.coordinates || 'N/A'
+    }));
 
-  // Enhanced data for Admin Dashboard
   const fieldSurveys = [
     { id: 'FS001', incharge: 'Rajesh Kumar', location: 'Ward 5, Sector A', type: 'Drone Survey', status: 'Completed', date: '2024-01-15', droneModel: 'DJI Mavic 3', dataCollected: 'Images, Lidar, GPS', coordinates: '28.7041°N, 77.1025°E' },
     { id: 'FS002', incharge: 'Priya Sharma', location: 'Ward 3, Sector B', type: 'Manual Survey', status: 'In Progress', date: '2024-01-15', droneModel: 'N/A', dataCollected: 'Photos, Measurements', coordinates: '28.7041°N, 77.1025°E' },
@@ -371,6 +495,62 @@ const AdminDashboard = () => {
     }
   };
 
+  // Survey Analysis Section
+  const surveyAnalysis = () => {
+    // Implement survey analysis logic
+    console.log('Survey analysis logic');
+  };
+
+  // Handle violation actions
+  const handleViolationAction = async (violationId, action) => {
+    try {
+      let newStatus = '';
+      let message = '';
+      
+      switch (action) {
+        case 'investigate':
+          newStatus = 'under_investigation';
+          message = 'Violation marked for investigation';
+          break;
+        case 'resolve':
+          newStatus = 'resolved';
+          message = 'Violation marked as resolved';
+          break;
+        case 'escalate':
+          newStatus = 'escalated';
+          message = 'Violation escalated to higher authorities';
+          break;
+        default:
+          return;
+      }
+      
+      // Update violation status in backend
+      const response = await fetch(`http://localhost:8000/api/illegal-constructions/${violationId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          status: newStatus,
+          message: message,
+          officer: user?.email || 'Admin',
+          action_taken: action
+        })
+      });
+      
+      if (response.ok) {
+        toast.success(message);
+        // Refresh data
+        window.location.reload();
+      } else {
+        throw new Error('Failed to update violation status');
+      }
+    } catch (error) {
+      console.error('Error updating violation:', error);
+      toast.error('Failed to update violation status');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -500,7 +680,7 @@ const AdminDashboard = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Active Officials</p>
-                <p className="text-2xl font-bold text-gray-900">{systemStats.activeOfficials}</p>
+                <p className="text-2xl font-bold text-gray-900">{systemStats.activeOfficers}</p>
               </div>
             </div>
           </div>
@@ -1586,6 +1766,497 @@ const AdminDashboard = () => {
             </div>
             <h3 className="text-sm font-medium text-gray-900 mb-2">Audit Log</h3>
             <p className="text-xs text-gray-600">View system audit trail</p>
+          </div>
+        </div>
+
+        {/* Survey Analysis Section */}
+        <div className="bg-white rounded-lg shadow p-6 mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-gray-900">📊 Survey Analysis & Violations</h3>
+            <div className="flex space-x-2">
+              <button 
+                onClick={() => navigate('/surveys')}
+                className="text-primary-600 hover:text-primary-700 text-sm font-medium"
+              >
+                View All Surveys
+              </button>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Survey Statistics */}
+            <div className="space-y-4">
+              <h4 className="font-medium text-gray-900 mb-3">Survey Overview</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-3 bg-blue-50 rounded-lg">
+                  <p className="text-sm text-gray-600">Total Surveys</p>
+                  <p className="text-xl font-bold text-blue-600">{surveys.length}</p>
+                </div>
+                <div className="p-3 bg-green-50 rounded-lg">
+                  <p className="text-sm text-gray-600">Completed</p>
+                  <p className="text-xl font-bold text-green-600">
+                    {surveys.filter(s => s.status === 'completed').length}
+                  </p>
+                </div>
+                <div className="p-3 bg-red-50 rounded-lg">
+                  <p className="text-sm text-gray-600">Total Violations</p>
+                  <p className="text-xl font-bold text-red-600">
+                    {surveys.reduce((total, s) => total + (s.violations?.length || 0), 0)}
+                  </p>
+                </div>
+                <div className="p-3 bg-purple-50 rounded-lg">
+                  <p className="text-sm text-gray-600">Compliance Rate</p>
+                  <p className="text-xl font-bold text-purple-600">
+                    {surveys.length > 0 ? 
+                      Math.round(((surveys.length - surveys.reduce((total, s) => total + (s.violations?.length || 0), 0)) / surveys.length) * 100) : 100
+                    }%
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Violation Severity Breakdown */}
+            <div className="space-y-4">
+              <h4 className="font-medium text-gray-900 mb-3">Violation Severity</h4>
+              <div className="space-y-3">
+                {(() => {
+                  const highSeverity = surveys.reduce((total, s) => 
+                    total + (s.violations?.filter(v => v.severity === 'high').length || 0), 0);
+                  const mediumSeverity = surveys.reduce((total, s) => 
+                    total + (s.violations?.filter(v => v.severity === 'medium').length || 0), 0);
+                  const lowSeverity = surveys.reduce((total, s) => 
+                    total + (s.violations?.filter(v => v.severity === 'low').length || 0), 0);
+                  
+                  return (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600">High Severity</span>
+                        <span className="text-lg font-bold text-red-600">{highSeverity}</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div className="bg-red-500 h-2 rounded-full" style={{width: `${(highSeverity / Math.max(highSeverity + mediumSeverity + lowSeverity, 1)) * 100}%`}}></div>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600">Medium Severity</span>
+                        <span className="text-lg font-bold text-yellow-600">{mediumSeverity}</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div className="bg-yellow-500 h-2 rounded-full" style={{width: `${(mediumSeverity / Math.max(highSeverity + mediumSeverity + lowSeverity, 1)) * 100}%`}}></div>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600">Low Severity</span>
+                        <span className="text-lg font-bold text-green-600">{lowSeverity}</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div className="bg-green-500 h-2 rounded-full" style={{width: `${(lowSeverity / Math.max(highSeverity + mediumSeverity + lowSeverity, 1)) * 100}%`}}></div>
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Recent Surveys with Violations */}
+        <div className="bg-white rounded-lg shadow p-6 mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-gray-900">🔍 Recent Surveys & Violations</h3>
+            <button 
+              onClick={() => navigate('/surveys')}
+              className="text-primary-600 hover:text-primary-700 text-sm font-medium"
+            >
+              View All
+            </button>
+          </div>
+          
+          <div className="space-y-4">
+            {surveys.slice(0, 5).map((survey) => (
+              <div key={survey.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-3 mb-2">
+                      <span className="text-lg font-semibold text-gray-900">Survey {survey.id}</span>
+                      <span className="text-sm text-gray-500">Ward {survey.ward_no}</span>
+                      <span className="text-sm text-gray-500">Drone: {survey.drone_id}</span>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                      <div>
+                        <span className="font-medium">Date:</span> {survey.survey_date}
+                      </div>
+                      <div>
+                        <span className="font-medium">Violations:</span> {survey.total_violations || 0}
+                      </div>
+                      <div>
+                        <span className="font-medium">Buildings:</span> {survey.total_buildings || 0}
+                      </div>
+                      <div>
+                        <span className="font-medium">Compliance:</span> {survey.compliance_score || 100}%
+                      </div>
+                    </div>
+                    
+                    {survey.coordinates && (
+                      <div className="text-sm text-gray-600 mt-2">
+                        <span className="font-medium">Coordinates:</span> {survey.coordinates?.latitude?.toFixed(4)}, {survey.coordinates?.longitude?.toFixed(4)}
+                      </div>
+                    )}
+                    
+                    <div className="flex items-center space-x-2 mt-3">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        survey.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {survey.status}
+                      </span>
+                      <span className="text-sm text-gray-500">• {survey.survey_type}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex space-x-2">
+                    <button 
+                      onClick={() => navigate(`/survey-results`, { state: { surveyId: survey.id, survey: survey } })}
+                      className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg"
+                      title="View Details"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </button>
+                    <button 
+                      onClick={() => navigate('/survey-form')}
+                      className="p-2 text-green-600 hover:text-green-700 hover:bg-green-50 rounded-lg"
+                      title="New Survey"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+                
+                {/* Violations Summary */}
+                {survey.violations && survey.violations.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <h5 className="font-medium text-gray-900 mb-2">Detected Violations:</h5>
+                    <div className="space-y-2">
+                      {survey.violations.slice(0, 3).map((violation, index) => (
+                        <div key={index} className="flex items-center space-x-3 p-2 bg-red-50 rounded-lg">
+                          <AlertTriangle className="h-4 w-4 text-red-600" />
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-gray-900">{violation.type}</p>
+                            <p className="text-xs text-gray-600">
+                              Current: {violation.current} | Allowed: {violation.allowed}
+                            </p>
+                          </div>
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            violation.severity === 'high' ? 'bg-red-100 text-red-800' :
+                            violation.severity === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-green-100 text-green-800'
+                          }`}>
+                            {violation.severity}
+                          </span>
+                        </div>
+                      ))}
+                      {survey.violations.length > 3 && (
+                        <div className="text-center">
+                          <span className="text-sm text-gray-500">
+                            +{survey.violations.length - 3} more violations
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+            
+            {surveys.length === 0 && (
+              <div className="text-center py-8">
+                <Database className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No Surveys Yet</h3>
+                <p className="text-gray-600 mb-4">Incharge officers will conduct field surveys and data will appear here</p>
+              </div>
+            )}
+            
+            {surveys.length > 5 && (
+              <div className="text-center pt-4">
+                <button 
+                  onClick={() => navigate('/surveys')}
+                  className="text-primary-600 hover:text-primary-700 text-sm font-medium"
+                >
+                  View All Surveys ({surveys.length})
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Illegal Construction Management */}
+        <div className="bg-white rounded-lg shadow p-6 mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-gray-900">🚨 Illegal Construction Management</h3>
+            <div className="flex space-x-2">
+              <button 
+                onClick={() => navigate('/surveys')}
+                className="text-primary-600 hover:text-primary-700 text-sm font-medium"
+              >
+                View All Violations
+              </button>
+            </div>
+          </div>
+          
+          <div className="space-y-4">
+            {illegalConstructions.slice(0, 5).map((construction) => (
+              <div key={construction.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-3 mb-2">
+                      <span className="text-lg font-semibold text-gray-900">Violation {construction.id}</span>
+                      <span className="text-sm text-gray-500">Survey: {construction.survey_id}</span>
+                      <span className="text-sm text-gray-500">Ward: {construction.ward_name}</span>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-3">
+                      <div>
+                        <span className="font-medium">Type:</span> {construction.violation_type}
+                      </div>
+                      <div>
+                        <span className="font-medium">Current:</span> {construction.current_value}
+                      </div>
+                      <div>
+                        <span className="font-medium">Allowed:</span> {construction.allowed_value}
+                      </div>
+                      <div>
+                        <span className="font-medium">Priority:</span> {construction.priority}
+                      </div>
+                    </div>
+                    
+                    {construction.coordinates && (
+                      <div className="text-sm text-gray-600 mb-3">
+                        <span className="font-medium">Location:</span> {construction.coordinates?.latitude?.toFixed(4)}, {construction.coordinates?.longitude?.toFixed(4)}
+                      </div>
+                    )}
+                    
+                    <div className="flex items-center space-x-3">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        construction.severity === 'high' ? 'bg-red-100 text-red-800' :
+                        construction.severity === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-green-100 text-green-800'
+                      }`}>
+                        {construction.severity} Severity
+                      </span>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        construction.status === 'detected' ? 'bg-blue-100 text-blue-800' :
+                        construction.status === 'under_investigation' ? 'bg-yellow-100 text-yellow-800' :
+                        construction.status === 'resolved' ? 'bg-green-100 text-green-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {construction.status}
+                      </span>
+                      <span className="text-sm text-gray-500">
+                        Detected: {new Date(construction.detected_at).toLocaleDateString('en-IN')}
+                      </span>
+                    </div>
+                    
+                    {construction.estimated_resolution_days && (
+                      <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+                        <div className="flex items-center space-x-2">
+                          <Clock className="h-4 w-4 text-blue-600" />
+                          <span className="text-sm font-medium text-blue-900">
+                            Estimated Resolution: {construction.estimated_resolution_days} days
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="flex space-x-2">
+                    <button 
+                      onClick={() => handleViolationAction(construction.id, 'investigate')}
+                      className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg"
+                      title="Investigate"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </button>
+                    <button 
+                      onClick={() => handleViolationAction(construction.id, 'resolve')}
+                      className="p-2 text-green-600 hover:text-green-700 hover:bg-green-50 rounded-lg"
+                      title="Mark Resolved"
+                    >
+                      <CheckCircle className="h-4 w-4" />
+                    </button>
+                    <button 
+                      onClick={() => handleViolationAction(construction.id, 'escalate')}
+                      className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg"
+                      title="Escalate"
+                    >
+                      <AlertTriangle className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+            
+            {illegalConstructions.length === 0 && (
+              <div className="text-center py-8">
+                <AlertTriangle className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No Violations Detected</h3>
+                <p className="text-gray-600 mb-4">All surveys show compliance with building regulations</p>
+              </div>
+            )}
+            
+            {illegalConstructions.length > 5 && (
+              <div className="text-center pt-4">
+                <button 
+                  onClick={() => navigate('/surveys')}
+                  className="text-primary-600 hover:text-primary-700 text-sm font-medium"
+                >
+                  View All Violations ({illegalConstructions.length})
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Ward-wise Analysis */}
+        <div className="bg-white rounded-lg shadow p-6 mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-gray-900">🗺️ Ward-wise Analysis</h3>
+            <div className="flex space-x-2">
+              <button 
+                onClick={() => navigate('/surveys')}
+                className="text-primary-600 hover:text-primary-700 text-sm font-medium"
+              >
+                View Detailed Reports
+              </button>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Ward Performance Overview */}
+            <div className="space-y-4">
+              <h4 className="font-medium text-gray-900 mb-3">Ward Performance Overview</h4>
+              <div className="space-y-3">
+                {(() => {
+                  // Group surveys by ward
+                  const wardData = surveys.reduce((acc, survey) => {
+                    const wardNo = survey.ward_no;
+                    if (!acc[wardNo]) {
+                      acc[wardNo] = {
+                        wardNo,
+                        surveys: 0,
+                        violations: 0,
+                        compliance: 100,
+                        lastSurvey: null
+                      };
+                    }
+                    acc[wardNo].surveys++;
+                    acc[wardNo].violations += survey.violations?.length || 0;
+                    if (survey.created_at) {
+                      acc[wardNo].lastSurvey = survey.created_at;
+                    }
+                    return acc;
+                  }, {});
+                  
+                  // Calculate compliance rate for each ward
+                  Object.values(wardData).forEach(ward => {
+                    ward.compliance = ward.surveys > 0 ? 
+                      Math.round(((ward.surveys - ward.violations) / ward.surveys) * 100) : 100;
+                  });
+                  
+                  // Sort by compliance rate (ascending - worst first)
+                  const sortedWards = Object.values(wardData).sort((a, b) => a.compliance - b.compliance);
+                  
+                  return sortedWards.slice(0, 5).map((ward) => (
+                    <div key={ward.wardNo} className="p-3 border border-gray-200 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-medium text-gray-900">Ward {ward.wardNo}</span>
+                        <span className={`text-sm font-medium ${
+                          ward.compliance >= 80 ? 'text-green-600' :
+                          ward.compliance >= 60 ? 'text-yellow-600' : 'text-red-600'
+                        }`}>
+                          {ward.compliance}% Compliance
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-sm text-gray-600">
+                        <div>Surveys: {ward.surveys}</div>
+                        <div>Violations: {ward.violations}</div>
+                        <div>Last: {ward.lastSurvey ? new Date(ward.lastSurvey).toLocaleDateString('en-IN') : 'N/A'}</div>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                        <div className={`h-2 rounded-full ${
+                          ward.compliance >= 80 ? 'bg-green-500' :
+                          ward.compliance >= 60 ? 'bg-yellow-500' : 'bg-red-500'
+                        }`} style={{width: `${ward.compliance}%`}}></div>
+                      </div>
+                    </div>
+                  ));
+                })()}
+              </div>
+            </div>
+
+            {/* Survey Type Distribution */}
+            <div className="space-y-4">
+              <h4 className="font-medium text-gray-900 mb-3">Survey Type Distribution</h4>
+              <div className="space-y-3">
+                {(() => {
+                  const surveyTypes = surveys.reduce((acc, survey) => {
+                    const type = survey.survey_type || 'Unknown';
+                    acc[type] = (acc[type] || 0) + 1;
+                    return acc;
+                  }, {});
+                  
+                  const totalSurveys = surveys.length;
+                  
+                  return Object.entries(surveyTypes).map(([type, count]) => {
+                    const percentage = totalSurveys > 0 ? Math.round((count / totalSurveys) * 100) : 0;
+                    return (
+                      <div key={type} className="p-3 border border-gray-200 rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-medium text-gray-900">{type}</span>
+                          <span className="text-sm text-gray-600">{count} surveys</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div className="bg-blue-500 h-2 rounded-full" style={{width: `${percentage}%`}}></div>
+                        </div>
+                        <div className="text-right mt-1">
+                          <span className="text-sm text-gray-500">{percentage}%</span>
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+            </div>
+          </div>
+          
+          {/* Compliance Trend */}
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <h4 className="font-medium text-gray-900 mb-3">Compliance Trend</h4>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="p-3 bg-green-50 rounded-lg text-center">
+                <div className="text-2xl font-bold text-green-600">
+                  {surveys.length > 0 ? 
+                    Math.round(((surveys.length - surveys.reduce((total, s) => total + (s.violations?.length || 0), 0)) / surveys.length) * 100) : 100
+                  }%
+                </div>
+                <div className="text-sm text-green-600">Overall Compliance</div>
+              </div>
+              <div className="p-3 bg-blue-50 rounded-lg text-center">
+                <div className="text-2xl font-bold text-blue-600">{surveys.length}</div>
+                <div className="text-sm text-blue-600">Total Surveys</div>
+              </div>
+              <div className="p-3 bg-red-50 rounded-lg text-center">
+                <div className="text-2xl font-bold text-red-600">
+                  {surveys.reduce((total, s) => total + (s.violations?.length || 0), 0)}
+                </div>
+                <div className="text-sm text-red-600">Total Violations</div>
+              </div>
+              <div className="p-3 bg-purple-50 rounded-lg text-center">
+                <div className="text-2xl font-bold text-purple-600">
+                  {surveys.length > 0 ? Math.round(surveys.reduce((total, s) => total + (s.compliance_score || 100), 0) / surveys.length) : 100}%
+                </div>
+                <div className="text-sm text-purple-600">Avg Compliance Score</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
