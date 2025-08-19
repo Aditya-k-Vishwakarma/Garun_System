@@ -101,16 +101,25 @@ const ComplaintTracking = () => {
 
     setLoading(true);
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const complaint = mockComplaints[complaintId.toUpperCase()];
-    if (complaint) {
-      setTrackedComplaint(complaint);
-      toast.success('Complaint found!');
-    } else {
+    try {
+      const response = await fetch(`http://localhost:8000/api/complaints/track/${complaintId.trim()}`);
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          setTrackedComplaint(null);
+          toast.error('Complaint not found. Please check the ID and try again.');
+        } else {
+          throw new Error('Failed to fetch complaint');
+        }
+      } else {
+        const result = await response.json();
+        setTrackedComplaint(result.complaint);
+        toast.success('Complaint found!');
+      }
+    } catch (error) {
+      console.error('Error tracking complaint:', error);
+      toast.error('Failed to track complaint. Please try again.');
       setTrackedComplaint(null);
-      toast.error('Complaint not found. Please check the ID and try again.');
     }
     
     setLoading(false);

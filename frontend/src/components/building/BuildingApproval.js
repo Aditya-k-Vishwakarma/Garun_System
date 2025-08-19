@@ -72,13 +72,65 @@ const BuildingApproval = () => {
     if (!validateForm()) return;
     
     try {
-      const ticketNumber = 'BAP' + Date.now().toString().slice(-8);
-      const approvalData = { ...formData, ticketNumber, status: 'Under Review', submittedAt: new Date().toISOString(), userId: user?.id };
+      // Create FormData for file upload
+      const formDataToSend = new FormData();
       
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success(`Building approval application submitted successfully! Your ticket number is: ${ticketNumber}`);
+      // Add text fields
+      formDataToSend.append('full_name', formData.fullName);
+      formDataToSend.append('aadhaar_number', formData.aadhaarNumber);
+      formDataToSend.append('contact_number', formData.contactNumber);
+      formDataToSend.append('email_id', formData.emailId);
+      formDataToSend.append('permanent_address', formData.permanentAddress || '');
+      formDataToSend.append('property_address', formData.propertyAddress);
+      formDataToSend.append('property_type', formData.propertyType);
+      formDataToSend.append('land_area', formData.landArea);
+      formDataToSend.append('building_purpose', formData.buildingPurpose);
+      
+      // Add files
+      if (formData.saleDeed) {
+        formDataToSend.append('sale_deed', formData.saleDeed);
+      }
+      if (formData.layoutPlan) {
+        formDataToSend.append('layout_plan', formData.layoutPlan);
+      }
+      if (formData.architecturalDrawings) {
+        formDataToSend.append('architectural_drawings', formData.architecturalDrawings);
+      }
+      if (formData.structuralCertificate) {
+        formDataToSend.append('structural_certificate', formData.structuralCertificate);
+      }
+      if (formData.soilTestReport) {
+        formDataToSend.append('soil_test_report', formData.soilTestReport);
+      }
+      if (formData.buildingEstimation) {
+        formDataToSend.append('building_estimation', formData.buildingEstimation);
+      }
+      if (formData.aadhaarCard) {
+        formDataToSend.append('aadhaar_card', formData.aadhaarCard);
+      }
+      if (formData.panCard) {
+        formDataToSend.append('pan_card', formData.panCard);
+      }
+      if (formData.electricityBill) {
+        formDataToSend.append('electricity_bill', formData.electricityBill);
+      }
+      
+      // Send to backend
+      const response = await fetch('http://localhost:8000/api/building/approval', {
+        method: 'POST',
+        body: formDataToSend,
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to submit building approval');
+      }
+      
+      const result = await response.json();
+      
+      toast.success(`Building approval application submitted successfully! Your ticket number is: ${result.ticket_number}`);
       navigate('/dashboard');
     } catch (error) {
+      console.error('Error submitting building approval:', error);
       toast.error('Failed to submit application. Please try again.');
     }
   };

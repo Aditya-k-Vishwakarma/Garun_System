@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   AlertTriangle, 
@@ -23,11 +23,58 @@ const CitizenDashboard = () => {
   const { user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
+  const [userComplaints, setUserComplaints] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalComplaints: 0,
+    resolved: 0,
+    inProgress: 0,
+    pending: 0
+  });
 
   const handleLogout = () => {
     logout();
     toast.success('Logged out successfully');
   };
+
+  // Fetch user complaints from backend
+  useEffect(() => {
+    const fetchUserComplaints = async () => {
+      if (!user?.contactNumber) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(`http://localhost:8000/api/complaints/user/${user.contactNumber}`);
+        if (response.ok) {
+          const data = await response.json();
+          setUserComplaints(data.complaints || []);
+          
+          // Calculate stats
+          const total = data.complaints?.length || 0;
+          const resolved = data.complaints?.filter(c => c.status === 'Resolved').length || 0;
+          const inProgress = data.complaints?.filter(c => c.status === 'In Progress').length || 0;
+          const pending = data.complaints?.filter(c => c.status === 'New' || c.status === 'Under Review').length || 0;
+          
+          setStats({
+            totalComplaints: total,
+            resolved,
+            inProgress,
+            pending
+          });
+        } else {
+          console.error('Failed to fetch user complaints');
+        }
+      } catch (error) {
+        console.error('Error fetching user complaints:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserComplaints();
+  }, [user?.contactNumber]);
 
   const complaintCategories = [
     { id: 1, name: 'Illegal Construction', icon: '🏗️', color: 'bg-red-100 text-red-800' },
@@ -38,18 +85,15 @@ const CitizenDashboard = () => {
     { id: 6, name: 'Street Lighting', icon: '💡', color: 'bg-purple-100 text-purple-800' }
   ];
 
-  const recentComplaints = [
-    { id: 'GRV001', title: 'Pothole on Main Street', status: 'In Progress', category: 'Road Issues', date: '2024-01-15' },
-    { id: 'GRV002', title: 'Garbage not collected', status: 'Resolved', category: 'Sanitation', date: '2024-01-10' },
-    { id: 'GRV003', title: 'Illegal parking', status: 'New', category: 'Encroachment', date: '2024-01-14' }
-  ];
+  const recentComplaints = userComplaints.slice(0, 3).map(complaint => ({
+    id: complaint.id,
+    title: complaint.title,
+    status: complaint.status,
+    category: complaint.category,
+    date: new Date(complaint.submitted_at).toLocaleDateString('en-IN')
+  }));
 
-  const stats = {
-    totalComplaints: 15,
-    resolved: 8,
-    inProgress: 4,
-    pending: 3
-  };
+
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -101,8 +145,15 @@ const CitizenDashboard = () => {
           </p>
         </div>
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading your dashboard...</p>
+          </div>
+        ) : (
+          <>
+            {/* Quick Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="card p-6">
             <div className="flex items-center">
               <div className="p-3 bg-blue-100 rounded-lg">
@@ -317,6 +368,8 @@ const CitizenDashboard = () => {
             ))}
           </div>
         </div>
+          </>
+        )}
       </div>
     </div>
   );

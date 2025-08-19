@@ -106,13 +106,69 @@ const ComplaintForm = () => {
     if (!validateStep(step)) return;
     
     try {
-      const complaintId = 'GRV' + Date.now().toString().slice(-6);
-      const complaintData = { ...formData, complaintId, status: 'New', submittedAt: new Date().toISOString(), userId: user?.id };
+      // Create FormData for file upload
+      const formDataToSend = new FormData();
       
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success(`Complaint submitted successfully! Your complaint ID is: ${complaintId}`);
-      navigate('/track-complaint', { state: { complaintId, status: 'New' } });
+      // Add text fields
+      formDataToSend.append('title', formData.title);
+      formDataToSend.append('description', formData.description);
+      formDataToSend.append('category', formData.category);
+      formDataToSend.append('incident_date', formData.incidentDate);
+      formDataToSend.append('incident_time', formData.incidentTime || '');
+      formDataToSend.append('address', formData.address);
+      formDataToSend.append('ward', formData.ward);
+      formDataToSend.append('zone', formData.zone);
+      formDataToSend.append('latitude', formData.latitude || '');
+      formDataToSend.append('longitude', formData.longitude || '');
+      formDataToSend.append('landmark', formData.landmark || '');
+      formDataToSend.append('full_name', formData.fullName);
+      formDataToSend.append('father_name', formData.fatherName || '');
+      formDataToSend.append('mother_name', formData.motherName || '');
+      formDataToSend.append('date_of_birth', formData.dateOfBirth || '');
+      formDataToSend.append('gender', formData.gender || '');
+      formDataToSend.append('contact_number', formData.contactNumber);
+      formDataToSend.append('residential_address', formData.residentialAddress || '');
+      formDataToSend.append('permanent_address', formData.permanentAddress || '');
+      formDataToSend.append('id_proof_type', formData.idProofType);
+      formDataToSend.append('id_proof_number', formData.idProofNumber);
+      
+      // Add files
+      formData.photos.forEach((photo, index) => {
+        formDataToSend.append('photos', photo);
+      });
+      
+      formData.videos.forEach((video, index) => {
+        formDataToSend.append('videos', video);
+      });
+      
+      formData.documents.forEach((doc, index) => {
+        formDataToSend.append('documents', doc);
+      });
+      
+      if (formData.idProofDocument) {
+        formDataToSend.append('id_proof_document', formData.idProofDocument);
+      }
+      
+      if (formData.selfie) {
+        formDataToSend.append('selfie', formData.selfie);
+      }
+      
+      // Send to backend
+      const response = await fetch('http://localhost:8000/api/complaints/register', {
+        method: 'POST',
+        body: formDataToSend,
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to submit complaint');
+      }
+      
+      const result = await response.json();
+      
+      toast.success(`Complaint submitted successfully! Your complaint ID is: ${result.complaint_id}`);
+      navigate('/track-complaint', { state: { complaintId: result.complaint_id, status: 'New' } });
     } catch (error) {
+      console.error('Error submitting complaint:', error);
       toast.error('Failed to submit complaint. Please try again.');
     }
   };

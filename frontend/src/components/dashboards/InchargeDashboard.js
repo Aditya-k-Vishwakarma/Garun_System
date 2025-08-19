@@ -1,4 +1,5 @@
 import React, { useState, useContext, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Building2, 
   Users, 
@@ -22,7 +23,9 @@ import {
   ChevronDown,
   ChevronUp,
   Download,
-  Search
+  Search,
+  Map,
+  X
 } from 'lucide-react';
 import AuthContext from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
@@ -30,11 +33,126 @@ import * as XLSX from 'xlsx';
 
 const InchargeDashboard = () => {
   const { user, logout } = useContext(AuthContext);
+  const navigate = useNavigate();
   const [showSurveyForm, setShowSurveyForm] = useState(false);
   const [showVerificationPopup, setShowVerificationPopup] = useState(false);
   const [showDroneManagement, setShowDroneManagement] = useState(false);
   const [showDataManagement, setShowDataManagement] = useState(false);
+  const [showMapView, setShowMapView] = useState(false);
   const [droneConnected, setDroneConnected] = useState(false);
+  const [surveys, setSurveys] = useState([]);
+  const [loading, setLoading] = useState(false);
+  
+  // Map state variables
+  const [mapInstance, setMapInstance] = useState(null);
+  const [markers, setMarkers] = useState([]);
+  const [heatLayer, setHeatLayer] = useState(null);
+  const [markerCluster, setMarkerCluster] = useState(null);
+  const [wardSummary, setWardSummary] = useState({});
+  const [mapLoading, setMapLoading] = useState(false);
+  
+  // Wards data
+  const wards = [
+    { name: 'Sirpur', lat: 22.7006, lng: 75.8133 },
+    { name: 'Chandan Nagar', lat: 22.7128, lng: 75.8208 },
+    { name: 'Kalani Nagar', lat: 22.7217, lng: 75.8235 },
+    { name: 'Sukhdev Nagar', lat: 22.726955, lng: 75.823616 },
+    { name: 'Raj Nagar', lat: 22.6696, lng: 75.8294 },
+    { name: 'Malharganj', lat: 22.7201, lng: 75.8443 },
+    { name: 'Janata Colony', lat: 22.7409, lng: 75.8746 },
+    { name: 'Juna Risala', lat: 22.7238, lng: 75.8501 },
+    { name: 'Vrindavan', lat: 22.7179, lng: 75.8573 },
+    { name: 'Banganga', lat: 22.7496, lng: 75.8429 },
+    { name: 'Bhagiratpura', lat: 22.7650, lng: 75.8550 },
+    { name: 'Govind Colony', lat: 22.7700, lng: 75.8580 },
+    { name: 'Sangam Nagar', lat: 22.7750, lng: 75.8520 },
+    { name: 'Ashok Nagar', lat: 22.7800, lng: 75.8570 },
+    { name: 'Bijasan', lat: 22.7850, lng: 75.8600 },
+    { name: 'Nandbag', lat: 22.7900, lng: 75.8530 },
+    { name: 'Kushwa Nagar', lat: 22.7950, lng: 75.8560 },
+    { name: 'Santkabir', lat: 22.8000, lng: 75.8520 },
+    { name: 'Vishvkarma', lat: 22.8050, lng: 75.8570 },
+    { name: 'Gori Nagar', lat: 22.8100, lng: 75.8590 },
+    { name: 'Shyam Nagar', lat: 22.8150, lng: 75.8530 },
+    { name: 'Pandit Deen Dayal Upadhyay', lat: 22.8200, lng: 75.8570 },
+    { name: 'Swargi Rajesh Joshi', lat: 22.8250, lng: 75.8600 },
+    { name: 'Sant Balaji Nath Maharaj', lat: 22.8300, lng: 75.8540 },
+    { name: 'Shree Ganesh', lat: 22.8350, lng: 75.8560 },
+    { name: 'Jeend Mata', lat: 22.8400, lng: 75.8520 },
+    { name: 'Pashupati Nath', lat: 22.8450, lng: 75.8570 },
+    { name: 'Ma Tulaja Bhawani', lat: 22.8500, lng: 75.8590 },
+    { name: 'Dr. Shyama Prasad Mukharji', lat: 22.8550, lng: 75.8530 },
+    { name: 'Sant Ravi Das', lat: 22.8600, lng: 75.8570 },
+    { name: 'Maharaja Chatrasal', lat: 22.8650, lng: 75.8600 },
+    { name: 'Atal Bihari Wajpai', lat: 22.8700, lng: 75.8540 },
+    { name: 'Sukhliya', lat: 22.8750, lng: 75.8570 },
+    { name: 'Sahid Bhagat Singh', lat: 22.8800, lng: 75.8590 },
+    { name: 'Lasudiya Mori', lat: 22.8850, lng: 75.8520 },
+    { name: 'Nipaniya', lat: 22.8900, lng: 75.8560 },
+    { name: 'Sai Kirpa', lat: 22.8950, lng: 75.8600 },
+    { name: 'Haji Colony', lat: 22.9000, lng: 75.8540 },
+    { name: 'Naharshawali', lat: 22.9050, lng: 75.8570 },
+    { name: 'Khajrana Ganesh', lat: 22.9100, lng: 75.8590 },
+    { name: 'Kelash Puri', lat: 22.9150, lng: 75.8530 },
+    { name: 'Suwami Vivekanand', lat: 22.9200, lng: 75.8560 },
+    { name: 'Shree Nagar', lat: 22.9250, lng: 75.8600 },
+    { name: 'H.I.G', lat: 22.9300, lng: 75.8540 },
+    { name: 'Dr. Bhimrao Ambedkar', lat: 22.9350, lng: 75.8570 },
+    { name: 'Somnath', lat: 22.9400, lng: 75.8590 },
+    { name: 'Sardar Wallabh bhai', lat: 22.9450, lng: 75.8530 },
+    { name: 'Geeta Bhawan', lat: 22.9500, lng: 75.8560 },
+    { name: 'Tilak Nagar', lat: 22.9550, lng: 75.8600 },
+    { name: 'Brajeshwari', lat: 22.9600, lng: 75.8540 },
+    { name: 'Bhagwati Nagar', lat: 22.9650, lng: 75.8570 },
+    { name: 'Musakhedi', lat: 22.9700, lng: 75.8590 },
+    { name: 'Dr. Molana Ajad Nagar', lat: 22.9750, lng: 75.8530 },
+    { name: 'Residence', lat: 22.9800, lng: 75.8560 },
+    { name: 'South Tukuganj', lat: 22.9850, lng: 75.8600 },
+    { name: 'Shanelatagunj', lat: 22.9900, lng: 75.8540 },
+    { name: 'Devi Ahilyabai', lat: 22.9950, lng: 75.8570 },
+    { name: 'Imli Bazar', lat: 23.0000, lng: 75.8590 },
+    { name: 'Harsaddi', lat: 23.0050, lng: 75.8530 },
+    { name: 'Ranipura', lat: 23.0100, lng: 75.8560 },
+    { name: 'Tatiya Sarwate', lat: 23.0150, lng: 75.8600 },
+    { name: 'Rauji Bazar', lat: 23.0200, lng: 75.8540 },
+    { name: 'Nolakhkha', lat: 23.0250, lng: 75.8570 },
+    { name: 'Chitawad', lat: 23.0300, lng: 75.8590 },
+    { name: 'Sant Kawar ram', lat: 23.0350, lng: 75.8530 },
+    { name: 'Sahid Hemu Kalani', lat: 23.0400, lng: 75.8560 },
+    { name: 'Maharaja Holkar', lat: 23.0450, lng: 75.8600 },
+    { name: 'Bambai Bazar', lat: 23.0500, lng: 75.8540 },
+    { name: 'Jawahar Marg', lat: 23.0550, lng: 75.8570 },
+    { name: 'Loknayak Nagar', lat: 23.0600, lng: 75.8590 },
+    { name: 'Dravind Nagar', lat: 23.0650, lng: 75.8530 },
+    { name: 'Lokmaniya Nagar', lat: 23.0700, lng: 75.8560 },
+    { name: 'Lakshman Singh Choun', lat: 23.0750, lng: 75.8600 },
+    { name: 'Vishnupuri', lat: 23.0800, lng: 75.8540 },
+    { name: 'Palda', lat: 23.0850, lng: 75.8570 },
+    { name: 'Mundla Nayta', lat: 23.0900, lng: 75.8590 },
+    { name: 'Bilawali', lat: 23.0950, lng: 75.8530 },
+    { name: 'Chohitram', lat: 23.1000, lng: 75.8560 },
+    { name: 'Sukh Niwas', lat: 23.1050, lng: 75.8600 },
+    { name: 'Dr. Rajendra Prasad', lat: 23.1100, lng: 75.8540 },
+    { name: 'Annpurna', lat: 23.1150, lng: 75.8570 },
+    { name: 'Sudama Nagar', lat: 23.1200, lng: 75.8590 },
+    { name: 'Gumasta Nagar', lat: 23.1250, lng: 75.8530 },
+    { name: 'Duwarkapuri', lat: 23.1300, lng: 75.8560 },
+    { name: 'Prajapat Nagar', lat: 23.1350, lng: 75.8600 }
+  ];
+
+  // Fixed constructions data
+  const fixedConstructions = wards.map((w, index) => {
+    return {
+      wardName: w.name,
+      wardNumber: index + 1,
+      constructions: [
+        { status: 'Illegal', severity: 'Medium', confidence: 90, lat: w.lat + 0.001, lng: w.lng + 0.001, address: `${w.name}, Indore, MP` },
+        { status: 'Legal', severity: null, confidence: 95, lat: w.lat - 0.001, lng: w.lng - 0.001, address: `${w.name}, Indore, MP` },
+        { status: 'Illegal', severity: 'High', confidence: 88, lat: w.lat, lng: w.lng + 0.002, address: `${w.name}, Indore, MP` }
+      ]
+    };
+  });
+  
   const [surveyData, setSurveyData] = useState({
     surveyDetails: '',
     nearestLandmark: '',
@@ -162,6 +280,28 @@ const InchargeDashboard = () => {
     toast.success('Logged out successfully');
   };
 
+  // Fetch surveys from backend
+  useEffect(() => {
+    const fetchSurveys = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch('http://localhost:8000/api/surveys/all');
+        if (response.ok) {
+          const data = await response.json();
+          setSurveys(data.surveys || []);
+        } else {
+          console.error('Failed to fetch surveys');
+        }
+      } catch (error) {
+        console.error('Error fetching surveys:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSurveys();
+  }, []);
+
   const departmentStats = {
     totalComplaints: 89,
     pending: 12,
@@ -239,11 +379,8 @@ const InchargeDashboard = () => {
   };
 
   const startSurvey = () => {
-    if (!droneConnected && !surveyData.manualData) {
-      toast.error('Please connect drone or enter manual data first');
-      return;
-    }
-    setShowVerificationPopup(true);
+    // Navigate to the survey form
+    navigate('/survey-form');
   };
 
   const confirmStartSurvey = () => {
@@ -525,6 +662,345 @@ const InchargeDashboard = () => {
     }
   }, [showDataManagement]);
 
+  // Map functionality
+  useEffect(() => {
+    if (showMapView) {
+      // Load Leaflet CSS and JS dynamically
+      const loadLeaflet = async () => {
+        // Load Leaflet CSS
+        if (!document.querySelector('link[href*="leaflet"]')) {
+          const link = document.createElement('link');
+          link.rel = 'stylesheet';
+          link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+          document.head.appendChild(link);
+        }
+
+        // Load Leaflet JS
+        if (!window.L) {
+          const script = document.createElement('script');
+          script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+          script.onload = () => {
+            // After Leaflet loads, load the marker cluster plugin
+            loadMarkerCluster();
+          };
+          document.head.appendChild(script);
+        } else {
+          loadMarkerCluster();
+        }
+      };
+
+      const loadMarkerCluster = () => {
+        // Load marker cluster CSS
+        if (!document.querySelector('link[href*="markercluster"]')) {
+          const clusterCSS = document.createElement('link');
+          clusterCSS.rel = 'stylesheet';
+          clusterCSS.href = 'https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css';
+          document.head.appendChild(clusterCSS);
+          
+          const clusterDefaultCSS = document.createElement('link');
+          clusterDefaultCSS.rel = 'stylesheet';
+          clusterDefaultCSS.href = 'https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css';
+          document.head.appendChild(clusterDefaultCSS);
+        }
+
+        // Load marker cluster JS
+        if (!window.L.markerClusterGroup) {
+          const clusterScript = document.createElement('script');
+          clusterScript.src = 'https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js';
+          clusterScript.onload = loadHeatLayer;
+          document.head.appendChild(clusterScript);
+        } else {
+          loadHeatLayer();
+        }
+      };
+
+      const loadHeatLayer = () => {
+        // Load heat layer plugin if not available
+        if (!window.L.heatLayer) {
+          const heatScript = document.createElement('script');
+          heatScript.src = 'https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js';
+          heatScript.onload = initializeMap;
+          document.head.appendChild(heatScript);
+        } else {
+          initializeMap();
+        }
+      };
+
+      loadLeaflet();
+    }
+
+    // Cleanup when map view is closed
+    return () => {
+      if (!showMapView) {
+        // Cleanup map resources
+        if (mapInstance && mapInstance._container) {
+          mapInstance.remove();
+          setMapInstance(null);
+        }
+        setMarkers([]);
+        setHeatLayer(null);
+        setMarkerCluster(null);
+        setWardSummary({});
+        setMapLoading(false);
+      }
+    };
+  }, [showMapView]); // Removed mapInstance dependency to prevent infinite loops
+
+  // Initialize map
+  const initializeMap = () => {
+    if (window.L && !mapInstance) {
+      setMapLoading(true);
+      // Small delay to ensure DOM is ready
+      setTimeout(() => {
+        const mapContainer = document.getElementById('map');
+        if (mapContainer) {
+          const map = window.L.map('map').setView([22.7196, 75.8577], 12);
+          window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
+          }).addTo(map);
+
+          setMapInstance(map);
+          
+          // Initialize marker cluster if available, otherwise use regular layer group
+          if (window.L.markerClusterGroup) {
+            setMarkerCluster(window.L.markerClusterGroup());
+          } else {
+            // Fallback to regular layer group if clustering is not available
+            setMarkerCluster(window.L.layerGroup());
+          }
+          
+          setMapLoading(false);
+          
+          // Add some sample data to show the map is working
+          setTimeout(() => {
+            showConstructions([fixedConstructions[0]]); // Show first ward as example
+          }, 500);
+        }
+      }, 100);
+    }
+  };
+
+  // Reset map and charts
+  const resetMap = () => {
+    if (markers.length > 0 && markerCluster) {
+      // Remove markers from cluster/layer group
+      markers.forEach(m => {
+        if (markerCluster.removeLayer) {
+          markerCluster.removeLayer(m);
+        }
+      });
+      setMarkers([]);
+    }
+    
+    if (heatLayer && mapInstance) {
+      try {
+        mapInstance.removeLayer(heatLayer);
+      } catch (error) {
+        console.warn('Error removing heat layer:', error);
+      }
+      setHeatLayer(null);
+    }
+    
+    setWardSummary({});
+    
+    // Clear detected list table
+    const detectedList = document.getElementById('detectedList');
+    if (detectedList) {
+      detectedList.innerHTML = `
+        <tr>
+          <td colspan="7" class="px-6 py-4 text-center text-gray-500">
+            Select a ward or show full Indore to view constructions
+          </td>
+        </tr>
+      `;
+    }
+  };
+
+  // Show constructions on map
+  const showConstructions = (data) => {
+    if (!mapInstance || !markerCluster) return;
+
+    resetMap();
+    
+    const newMarkers = [];
+    const heatPoints = [];
+    const bounds = [];
+
+    data.forEach(ward => {
+      ward.constructions.forEach(cons => {
+        const color = cons.status === 'Illegal' ? 'red' : 'green';
+        const icon = window.L.divIcon({
+          html: `<div style="background:${color}; width:16px; height:16px; border-radius:50%; border:2px solid #fff;"></div>`,
+          className: 'custom-icon',
+          iconSize: [16, 16]
+        });
+        
+        const marker = window.L.marker([cons.lat, cons.lng], { icon });
+        marker.bindTooltip(`<b>Ward #${ward.wardNumber}: ${ward.wardName}</b><br>Status: ${cons.status}<br>${cons.status === 'Illegal' ? `Severity: ${cons.severity}<br>` : ''}Confidence: ${cons.confidence}%<br>Address: ${cons.address}<br>Lat: ${cons.lat.toFixed(5)}, Lng: ${cons.lng.toFixed(5)}`);
+        
+        // Add marker to cluster/layer group
+        if (markerCluster.addLayer) {
+          markerCluster.addLayer(marker);
+        } else {
+          markerCluster.addLayer(marker);
+        }
+        
+        newMarkers.push(marker);
+        bounds.push([cons.lat, cons.lng]);
+
+        // Add to detected list
+        const detectedList = document.getElementById('detectedList');
+        if (detectedList) {
+          const row = document.createElement('tr');
+          row.className = 'hover:bg-gray-50 cursor-pointer';
+          row.innerHTML = `
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm font-medium text-gray-900">${ward.wardName}</div>
+              <div class="text-sm text-gray-500">Ward #${ward.wardNumber}</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                cons.status === 'Illegal' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+              }">
+                ${cons.status}
+              </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+              ${cons.status === 'Illegal' ? (cons.severity || 'N/A') : 'N/A'}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+              ${cons.confidence}%
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+              ${cons.address}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              ${cons.lat.toFixed(5)}, ${cons.lng.toFixed(5)}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+              <button 
+                class="text-indigo-600 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 px-3 py-1 rounded-md transition-colors"
+                onclick="this.closest('tr').scrollIntoView({behavior: 'smooth'})"
+              >
+                Focus
+              </button>
+            </td>
+          `;
+          
+          // Add click event to focus on map
+          row.onclick = () => {
+            mapInstance.setView([cons.lat, cons.lng], 16);
+            marker.openTooltip();
+          };
+          
+          detectedList.appendChild(row);
+        }
+
+        heatPoints.push([cons.lat, cons.lng, cons.status === 'Illegal' ? 0.9 : 0.5]);
+        
+        setWardSummary(prev => ({
+          ...prev,
+          [ward.wardName]: (prev[ward.wardName] || 0) + 1
+        }));
+      });
+    });
+
+    setMarkers(newMarkers);
+    
+    // Add marker cluster/layer group to map
+    if (mapInstance.addLayer) {
+      mapInstance.addLayer(markerCluster);
+    }
+    
+    if (bounds.length > 0) {
+      mapInstance.fitBounds(bounds, { padding: [50, 50] });
+    }
+
+    // Create heat layer if plugin is available
+    if (window.L.heatLayer) {
+      try {
+        const newHeatLayer = window.L.heatLayer(heatPoints, { radius: 25, blur: 15, maxZoom: 17 });
+        newHeatLayer.addTo(mapInstance);
+        setHeatLayer(newHeatLayer);
+      } catch (error) {
+        console.warn('Heat layer plugin not available:', error);
+      }
+    }
+
+    toast.success(`Detection complete for ${data.length} ward(s)!`);
+  };
+
+  // Detect specific ward
+  const detectWard = () => {
+    if (!mapInstance) {
+      toast.error("Map is still loading. Please wait a moment.");
+      return;
+    }
+    
+    try {
+      const wardNumberInput = document.querySelector('input[type="number"]');
+      const wardNameInput = document.querySelector('input[placeholder="Ward Name"]');
+      
+      const wardNumber = parseInt(wardNumberInput?.value);
+      const wardName = wardNameInput?.value?.trim();
+      
+      if (!wardNumber && !wardName) {
+        toast.error("Please enter Ward Number or Name!");
+        return;
+      }
+      
+      const wardIndex = wardNumber ? wardNumber - 1 : wards.findIndex(n => n.name.toLowerCase() === wardName.toLowerCase());
+      if (wardIndex < 0 || wardIndex >= wards.length) {
+        toast.error("Ward not found!");
+        return;
+      }
+      
+      showConstructions([fixedConstructions[wardIndex]]);
+    } catch (error) {
+      console.error('Error detecting ward:', error);
+      toast.error("An error occurred while detecting the ward. Please try again.");
+    }
+  };
+
+  // Show full Indore
+  const showFullIndore = () => {
+    if (!mapInstance) {
+      toast.error("Map is still loading. Please wait a moment.");
+      return;
+    }
+    
+    try {
+      resetMap();
+      showConstructions(fixedConstructions);
+    } catch (error) {
+      console.error('Error showing full Indore:', error);
+      toast.error("An error occurred while loading the full map. Please try again.");
+    }
+  };
+
+  // Auto-fill ward name when ward number changes
+  const handleWardNumberChange = (e) => {
+    try {
+      const num = parseInt(e.target.value);
+      const wardNameInput = document.querySelector('input[placeholder="Ward Name"]');
+      if (wardNameInput) {
+        if (num >= 1 && num <= 85) {
+          const ward = wards[num - 1];
+          if (ward) {
+            wardNameInput.value = ward.name;
+          } else {
+            wardNameInput.value = '';
+          }
+        } else {
+          wardNameInput.value = '';
+        }
+      }
+    } catch (error) {
+      console.warn('Error handling ward number change:', error);
+    }
+  };
+
   const saveSurveyData = () => {
     toast.success('Survey data saved and uploaded to admin!');
     setShowSurveyForm(false);
@@ -539,6 +1015,284 @@ const InchargeDashboard = () => {
       geoCoordinates: coordinates
     }));
     toast.success('Coordinates fetched automatically!');
+  };
+
+  const openFullScreenMap = () => {
+    if (!mapInstance) {
+      toast.error("Map is still loading. Please wait a moment.");
+      return;
+    }
+
+    try {
+      // Create a new window with just the map
+      const mapWindow = window.open('', '_blank', 'width=1920,height=1080,scrollbars=yes,resizable=yes');
+      
+      if (!mapWindow) {
+        toast.error("Please allow popups to open the full screen map.");
+        return;
+      }
+
+      // Create the HTML content for the new window
+      const mapHTML = `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>UrbanGuard - Full Screen Map</title>
+          <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+          <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+          <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+          <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css"/>
+          <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css"/>
+          <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+          <style>
+            body { 
+              margin: 0; 
+              padding: 0; 
+              font-family: Arial, sans-serif; 
+              background: #f3f4f6; 
+            }
+            .header {
+              background: linear-gradient(to right, #dc2626, #ea580c);
+              color: white;
+              padding: 1rem;
+              text-align: center;
+              box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            .header h1 {
+              margin: 0;
+              font-size: 1.5rem;
+              font-weight: bold;
+            }
+            .header p {
+              margin: 0.5rem 0 0 0;
+              opacity: 0.9;
+              font-size: 0.875rem;
+            }
+            .controls {
+              background: white;
+              padding: 1rem;
+              border-bottom: 1px solid #e5e7eb;
+              display: flex;
+              gap: 1rem;
+              align-items: center;
+              flex-wrap: wrap;
+            }
+            .btn {
+              padding: 0.5rem 1rem;
+              border: none;
+              border-radius: 0.5rem;
+              font-weight: 500;
+              cursor: pointer;
+              transition: all 0.2s;
+            }
+            .btn-primary {
+              background: #2563eb;
+              color: white;
+            }
+            .btn-primary:hover {
+              background: #1d4ed8;
+            }
+            .btn-secondary {
+              background: #6b7280;
+              color: white;
+            }
+            .btn-secondary:hover {
+              background: #4b5563;
+            }
+            .btn-danger {
+              background: #dc2626;
+              color: white;
+            }
+            .btn-danger:hover {
+              background: #b91c1c;
+            }
+            .map-container {
+              height: calc(100vh - 120px);
+              width: 100%;
+            }
+            .info-panel {
+              position: absolute;
+              top: 140px;
+              right: 20px;
+              background: white;
+              padding: 1rem;
+              border-radius: 0.5rem;
+              box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+              max-width: 300px;
+              z-index: 1000;
+            }
+            .info-item {
+              margin-bottom: 0.5rem;
+              padding: 0.5rem;
+              background: #f9fafb;
+              border-radius: 0.25rem;
+            }
+            .info-label {
+              font-weight: 600;
+              color: #374151;
+              font-size: 0.875rem;
+            }
+            .info-value {
+              color: #6b7280;
+              font-size: 0.875rem;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>UrbanGuard - Indore Detection</h1>
+            <p>Full Screen Illegal Construction Detection Map</p>
+          </div>
+          
+          <div class="controls">
+            <button class="btn btn-primary" onclick="detectWard()">Detect Ward</button>
+            <button class="btn btn-secondary" onclick="showFullIndore()">Show Full Indore</button>
+            <button class="btn btn-danger" onclick="window.close()">Close Window</button>
+          </div>
+          
+          <div id="map" class="map-container"></div>
+          
+          <div class="info-panel">
+            <h3 style="margin: 0 0 1rem 0; color: #374151;">Map Controls</h3>
+            <div class="info-item">
+              <div class="info-label">Zoom:</div>
+              <div class="info-value">Mouse wheel or +/- buttons</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Pan:</div>
+              <div class="info-value">Click and drag</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Markers:</div>
+              <div class="info-value">Click for details</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Heat Map:</div>
+              <div class="info-value">Red = Illegal, Green = Legal</div>
+            </div>
+          </div>
+          
+          <script>
+            // Initialize map
+            const map = L.map('map').setView([22.7196, 75.8577], 12);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+              maxZoom: 19,
+              attribution: '© OpenStreetMap'
+            }).addTo(map);
+            
+            let markers = [];
+            let heatLayer = null;
+            let markerCluster = L.markerClusterGroup();
+            
+            // Wards data
+            const wards = ${JSON.stringify(wards)};
+            
+            // Fixed constructions data
+            const fixedConstructions = ${JSON.stringify(fixedConstructions)};
+            
+            // Reset map
+            function resetMap() {
+              if (markers.length > 0 && markerCluster) {
+                markers.forEach(m => markerCluster.removeLayer(m));
+                markers = [];
+              }
+              if (heatLayer) {
+                map.removeLayer(heatLayer);
+                heatLayer = null;
+              }
+            }
+            
+            // Show constructions
+            function showConstructions(data) {
+              resetMap();
+              
+              const newMarkers = [];
+              const heatPoints = [];
+              const bounds = [];
+              
+              data.forEach(ward => {
+                ward.constructions.forEach(cons => {
+                  const color = cons.status === 'Illegal' ? 'red' : 'green';
+                  const icon = L.divIcon({
+                    html: \`<div style="background:\${color}; width:16px; height:16px; border-radius:50%; border:2px solid #fff;"></div>\`,
+                    className: 'custom-icon',
+                    iconSize: [16, 16]
+                  });
+                  
+                  const marker = L.marker([cons.lat, cons.lng], { icon });
+                  marker.bindTooltip(\`
+                    <b>Ward #\${ward.wardNumber}: \${ward.wardName}</b><br>
+                    Status: \${cons.status}<br>
+                    \${cons.status === 'Illegal' ? \`Severity: \${cons.severity}<br>\` : ''}
+                    Confidence: \${cons.confidence}%<br>
+                    Address: \${cons.address}<br>
+                    Lat: \${cons.lat.toFixed(5)}, Lng: \${cons.lng.toFixed(5)}
+                  \`);
+                  
+                  markerCluster.addLayer(marker);
+                  newMarkers.push(marker);
+                  bounds.push([cons.lat, cons.lng]);
+                  heatPoints.push([cons.lat, cons.lng, cons.status === 'Illegal' ? 0.9 : 0.5]);
+                });
+              });
+              
+              markers = newMarkers;
+              map.addLayer(markerCluster);
+              
+              if (bounds.length > 0) {
+                map.fitBounds(bounds, { padding: [50, 50] });
+              }
+              
+              // Create heat layer
+              if (L.heatLayer) {
+                heatLayer = L.heatLayer(heatPoints, { radius: 25, blur: 15, maxZoom: 17 });
+                heatLayer.addTo(map);
+              }
+            }
+            
+            // Detect specific ward
+            function detectWard() {
+              const wardNumber = prompt('Enter Ward Number (1-85):');
+              if (!wardNumber) return;
+              
+              const wardIndex = parseInt(wardNumber) - 1;
+              if (wardIndex < 0 || wardIndex >= wards.length) {
+                alert('Ward not found!');
+                return;
+              }
+              
+              showConstructions([fixedConstructions[wardIndex]]);
+            }
+            
+            // Show full Indore
+            function showFullIndore() {
+              resetMap();
+              showConstructions(fixedConstructions);
+            }
+            
+            // Load initial data
+            setTimeout(() => {
+              showConstructions([fixedConstructions[0]]);
+            }, 500);
+          </script>
+        </body>
+        </html>
+      `;
+
+      // Write the HTML to the new window
+      mapWindow.document.write(mapHTML);
+      mapWindow.document.close();
+      
+      // Focus the new window
+      mapWindow.focus();
+      
+      toast.success('Full screen map opened in new window!');
+    } catch (error) {
+      console.error('Error opening full screen map:', error);
+      toast.error('Failed to open full screen map. Please try again.');
+    }
   };
 
   return (
@@ -592,7 +1346,7 @@ const InchargeDashboard = () => {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="card p-6 text-center hover:shadow-medium transition-shadow cursor-pointer" onClick={() => setShowSurveyForm(true)}>
             <div className="mx-auto h-16 w-16 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center mb-4">
               <Camera className="h-8 w-8 text-white" />
@@ -615,6 +1369,14 @@ const InchargeDashboard = () => {
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Data Management</h3>
             <p className="text-gray-600 text-sm">View and manage survey data</p>
+          </div>
+
+          <div className="card p-6 text-center hover:shadow-medium transition-shadow cursor-pointer" onClick={() => setShowMapView(true)}>
+            <div className="mx-auto h-16 w-16 bg-gradient-to-r from-red-500 to-orange-500 rounded-full flex items-center justify-center mb-4">
+              <Map className="h-8 w-8 text-white" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Load Map View</h3>
+            <p className="text-gray-600 text-sm">View illegal construction detection map</p>
           </div>
         </div>
 
@@ -947,7 +1709,7 @@ const InchargeDashboard = () => {
       {/* Survey Form Modal */}
       {showSurveyForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-lg w-full max-w-2xl mx-4">
             <div className="bg-primary-600 text-white p-4 flex items-center justify-between">
               <h3 className="text-lg font-semibold">Field Survey Form</h3>
               <button
@@ -959,100 +1721,46 @@ const InchargeDashboard = () => {
             </div>
             
             <div className="p-6">
-              {/* Drone Connection Section */}
-              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                <h4 className="text-lg font-semibold text-gray-900 mb-4">Drone Connection & WiFi Status</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
-                  <div className="flex items-center space-x-4">
-                    <div className={`h-12 w-12 rounded-full flex items-center justify-center ${
-                      droneConnected ? 'bg-green-100' : 'bg-red-100'
-                    }`}>
-                      <Plane className={`h-6 w-6 ${droneConnected ? 'text-green-600' : 'text-red-600'}`} />
-                    </div>
+              {/* Essential Survey Fields */}
+              <div className="space-y-6">
                     <div>
-                      <p className="font-medium text-gray-900">
-                        {droneConnected ? 'Drone Connected' : 'Drone Not Connected'}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        {droneConnected ? 'Ready for survey' : 'Connect drone to start automated survey'}
-                      </p>
-                    </div>
-                    <div className="flex space-x-2">
-                      {!droneConnected ? (
-                        <button onClick={connectDrone} className="btn-success">
-                          Connect Drone
-                        </button>
-                      ) : (
-                        <button onClick={disconnectDrone} className="btn-danger">
-                          Disconnect
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center space-x-4">
-                    <div className={`h-12 w-12 rounded-full flex items-center justify-center ${
-                      surveyData.droneInfo.wifiStatus ? 'bg-green-100' : 'bg-red-100'
-                    }`}>
-                      <div className={`h-6 w-6 ${surveyData.droneInfo.wifiStatus ? 'text-green-600' : 'text-red-600'}`}>
-                        📶
-                      </div>
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">
-                        {surveyData.droneInfo.wifiStatus ? 'WiFi Connected' : 'WiFi Not Connected'}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        {surveyData.droneInfo.wifiStatus ? 'Data transmission ready' : 'Connect WiFi for data sync'}
-                      </p>
-                    </div>
-                    <div className="flex space-x-2">
-                      <button 
-                        onClick={() => setSurveyData(prev => ({
-                          ...prev,
-                          droneInfo: { ...prev.droneInfo, wifiStatus: !prev.droneInfo.wifiStatus }
-                        }))}
-                        className={`px-3 py-2 rounded-md text-sm font-medium ${
-                          surveyData.droneInfo.wifiStatus 
-                            ? 'bg-red-100 text-red-700 hover:bg-red-200' 
-                            : 'bg-green-100 text-green-700 hover:bg-green-200'
-                        }`}
-                      >
-                        {surveyData.droneInfo.wifiStatus ? 'Disconnect' : 'Connect'}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Survey Details */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div>
-                  <label className="form-label">Survey Details</label>
-                  <textarea
-                    name="surveyDetails"
-                    value={surveyData.surveyDetails}
+                  <label className="form-label">Ward Number *</label>
+                  <input
+                    type="text"
+                    name="wardNo"
+                    value={surveyData.wardNo}
                     onChange={handleInputChange}
                     className="input-field"
-                    rows="3"
-                    placeholder="Enter survey purpose and details"
+                    placeholder="e.g., Ward 5"
+                  />
+                  </div>
+                  
+                    <div>
+                  <label className="form-label">Locality Name *</label>
+                  <input
+                    type="text"
+                    name="localityDetails"
+                    value={surveyData.localityDetails}
+                    onChange={handleInputChange}
+                    className="input-field"
+                    placeholder="e.g., Vijay Nagar, Rajendra Nagar"
                   />
                 </div>
 
                 <div>
-                  <label className="form-label">Nearest Landmark</label>
+                  <label className="form-label">Area Name *</label>
                   <input
                     type="text"
                     name="nearestLandmark"
                     value={surveyData.nearestLandmark}
                     onChange={handleInputChange}
                     className="input-field"
-                    placeholder="e.g., Metro Station, Shopping Mall"
+                    placeholder="e.g., Indore, Madhya Pradesh"
                   />
                 </div>
 
                 <div>
-                  <label className="form-label">Geo Coordinates</label>
+                  <label className="form-label">Coordinates *</label>
                   <div className="flex space-x-2">
                     <input
                       type="text"
@@ -1062,167 +1770,28 @@ const InchargeDashboard = () => {
                       className="input-field flex-1"
                       placeholder="28.7041°N, 77.1025°E"
                     />
-                    <button onClick={autoFetchCoordinates} className="btn-secondary px-4">
+                    <button 
+                      onClick={autoFetchCoordinates} 
+                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center space-x-2"
+                    >
                       <MapPin className="h-4 w-4" />
+                      <span>Auto</span>
                     </button>
                   </div>
                 </div>
 
                 <div>
-                  <label className="form-label">Ward Number</label>
-                  <input
-                    type="text"
-                    name="wardNo"
-                    value={surveyData.wardNo}
-                    onChange={handleInputChange}
-                    className="input-field"
-                    placeholder="e.g., Ward 5"
-                  />
-                </div>
-
-                <div className="md:col-span-2">
-                  <label className="form-label">Locality Details</label>
+                  <label className="form-label">Survey Purpose *</label>
                   <textarea
-                    name="localityDetails"
-                    value={surveyData.localityDetails}
+                    name="surveyDetails"
+                    value={surveyData.surveyDetails}
                     onChange={handleInputChange}
                     className="input-field"
-                    rows="2"
-                    placeholder="Enter locality description, street names, etc."
+                    rows="3"
+                    placeholder="Brief description of survey purpose and objectives"
                   />
-                </div>
               </div>
 
-              {/* Inspection Parameters */}
-              <div className="mb-6">
-                <h4 className="text-lg font-semibold text-gray-900 mb-4">Inspection Parameters</h4>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  <label className="flex items-center space-x-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      name="inspectionParameters.illegalConstruction"
-                      checked={surveyData.inspectionParameters.illegalConstruction}
-                      onChange={handleInputChange}
-                      className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                    />
-                    <span className="text-sm text-gray-700">Illegal Construction Detection</span>
-                  </label>
-
-                  <label className="flex items-center space-x-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      name="inspectionParameters.temperature"
-                      checked={surveyData.inspectionParameters.temperature}
-                      onChange={handleInputChange}
-                      className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                    />
-                    <span className="text-sm text-gray-700">Temperature Sensing</span>
-                  </label>
-
-                  <label className="flex items-center space-x-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      name="inspectionParameters.lidarSensor"
-                      checked={surveyData.inspectionParameters.lidarSensor}
-                      onChange={handleInputChange}
-                      className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                    />
-                    <span className="text-sm text-gray-700">LiDAR Sensor</span>
-                  </label>
-
-                  <label className="flex items-center space-x-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      name="inspectionParameters.imageSensor"
-                      checked={surveyData.inspectionParameters.imageSensor}
-                      onChange={handleInputChange}
-                      className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                    />
-                    <span className="text-sm text-gray-700">Image Sensing</span>
-                  </label>
-
-                  <label className="flex items-center space-x-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      name="inspectionParameters.satelliteOverview"
-                      checked={surveyData.inspectionParameters.satelliteOverview}
-                      onChange={handleInputChange}
-                      className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                    />
-                    <span className="text-sm text-gray-700">Satellite Overview</span>
-                  </label>
-                </div>
-              </div>
-
-              {/* Measuring Parameters */}
-              <div className="mb-6 p-4 bg-green-50 rounded-lg">
-                <h4 className="text-lg font-semibold text-gray-900 mb-4">Measuring Parameters</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div>
-                    <label className="form-label">Road Width (in feet)</label>
-                    <input
-                      type="number"
-                      name="measuringParameters.roadWidth"
-                      value={surveyData.measuringParameters.roadWidth}
-                      onChange={handleInputChange}
-                      className="input-field"
-                      placeholder="e.g., 30"
-                      min="0"
-                      step="0.1"
-                    />
-                  </div>
-                  <div>
-                    <label className="form-label">Max Building Height (in feet)</label>
-                    <input
-                      type="number"
-                      name="measuringParameters.maxBuildingHeight"
-                      value={surveyData.measuringParameters.maxBuildingHeight}
-                      onChange={handleInputChange}
-                      className="input-field"
-                      placeholder="e.g., 45"
-                      min="0"
-                      step="0.1"
-                    />
-                  </div>
-                  <div>
-                    <label className="form-label">Building Area (sq ft)</label>
-                    <input
-                      type="number"
-                      name="measuringParameters.buildingArea"
-                      value={surveyData.measuringParameters.buildingArea}
-                      onChange={handleInputChange}
-                      className="input-field"
-                      placeholder="e.g., 2500"
-                      min="0"
-                      step="0.1"
-                    />
-                  </div>
-                  <div>
-                    <label className="form-label">Setback Distance (in feet)</label>
-                    <input
-                      type="number"
-                      name="measuringParameters.setbackDistance"
-                      value={surveyData.measuringParameters.setbackDistance}
-                      onChange={handleInputChange}
-                      className="input-field"
-                      placeholder="e.g., 15"
-                      min="0"
-                      step="0.1"
-                    />
-                  </div>
-                  <div>
-                    <label className="form-label">Floor Count</label>
-                    <input
-                      type="number"
-                      name="measuringParameters.floorCount"
-                      value={surveyData.measuringParameters.floorCount}
-                      onChange={handleInputChange}
-                      className="input-field"
-                      placeholder="e.g., 3"
-                      min="1"
-                      step="1"
-                    />
-                  </div>
                   <div>
                     <label className="form-label">Construction Type</label>
                     <select
@@ -1238,237 +1807,23 @@ const InchargeDashboard = () => {
                       <option value="mixed">Mixed Use</option>
                       <option value="government">Government</option>
                     </select>
-                  </div>
                 </div>
-              </div>
-
-              {/* Drone Information */}
-              {droneConnected && (
-                <div className="mb-6 p-4 bg-blue-50 rounded-lg">
-                  <h4 className="text-lg font-semibold text-gray-900 mb-4">Drone Information</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="form-label">Drone Model No.</label>
-                      <input
-                        type="text"
-                        name="droneInfo.modelNo"
-                        value={surveyData.droneInfo.modelNo}
-                        onChange={handleInputChange}
-                        className="input-field"
-                        placeholder="e.g., DJI Mavic 3"
-                      />
-                    </div>
-                    <div>
-                      <label className="form-label">Serial Number</label>
-                      <input
-                        type="text"
-                        name="droneInfo.serialNo"
-                        value={surveyData.droneInfo.serialNo}
-                        onChange={handleInputChange}
-                        className="input-field"
-                        placeholder="e.g., SN123456789"
-                      />
-                    </div>
-                    <div>
-                      <label className="form-label">Operator Name</label>
-                      <input
-                        type="text"
-                        name="droneInfo.operatorName"
-                        value={surveyData.droneInfo.operatorName}
-                        onChange={handleInputChange}
-                        className="input-field"
-                        placeholder="e.g., John Doe"
-                      />
-                    </div>
-                    <div>
-                      <label className="form-label">Memory Type</label>
-                      <select
-                        name="droneInfo.memoryType"
-                        value={surveyData.droneInfo.memoryType}
-                        onChange={handleInputChange}
-                        className="input-field"
-                      >
-                        <option value="">Select Memory Type</option>
-                        <option value="internal">Internal Memory</option>
-                        <option value="external">External SD Card</option>
-                        <option value="cloud">Cloud Storage</option>
-                        <option value="hybrid">Hybrid (Internal + External)</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Data Processing Methods */}
-              <div className="mb-6 p-4 bg-purple-50 rounded-lg">
-                <h4 className="text-lg font-semibold text-gray-900 mb-4">Data Processing Methods</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="form-label">Processing Method</label>
-                    <select
-                      name="dataProcessing.method"
-                      value={surveyData.dataProcessing.method}
-                      onChange={handleInputChange}
-                      className="input-field"
-                    >
-                      <option value="">Select Processing Method</option>
-                      <option value="realtime">Real-time Processing</option>
-                      <option value="batch">Batch Processing</option>
-                      <option value="streaming">Streaming Processing</option>
-                      <option value="hybrid">Hybrid Processing</option>
-                    </select>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <label className="form-label">Processing Options</label>
-                    <div className="space-y-2">
-                      <label className="flex items-center space-x-3 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          name="dataProcessing.realTimeProcessing"
-                          checked={surveyData.dataProcessing.realTimeProcessing}
-                          onChange={handleInputChange}
-                          className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                        />
-                        <span className="text-sm text-gray-700">Real-time Processing</span>
-                      </label>
-                      <label className="flex items-center space-x-3 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          name="dataProcessing.fileUploadProcessing"
-                          checked={surveyData.dataProcessing.fileUploadProcessing}
-                          onChange={handleInputChange}
-                          className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                        />
-                        <span className="text-sm text-gray-700">File Upload Processing</span>
-                      </label>
-                      <label className="flex items-center space-x-3 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          name="dataProcessing.externalDataProcessing"
-                          checked={surveyData.dataProcessing.externalDataProcessing}
-                          onChange={handleInputChange}
-                          className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                        />
-                        <span className="text-sm text-gray-700">External Data Processing</span>
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* File Upload Section */}
-              <div className="mb-6 p-4 bg-yellow-50 rounded-lg">
-                <h4 className="text-lg font-semibold text-gray-900 mb-4">File Upload</h4>
-                <div className="space-y-4">
-                  <div>
-                    <label className="form-label">Upload Survey Files</label>
-                    <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-gray-400 transition-colors">
-                      <div className="space-y-1 text-center">
-                        <svg
-                          className="mx-auto h-12 w-12 text-gray-400"
-                          stroke="currentColor"
-                          fill="none"
-                          viewBox="0 0 48 48"
-                          aria-hidden="true"
-                        >
-                          <path
-                            d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                            strokeWidth={2}
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                        <div className="flex text-sm text-gray-600">
-                          <label
-                            htmlFor="file-upload"
-                            className="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500"
-                          >
-                            <span>Upload files</span>
-                            <input
-                              id="file-upload"
-                              name="file-upload"
-                              type="file"
-                              multiple
-                              className="sr-only"
-                              onChange={handleFileUpload}
-                              accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx"
-                            />
-                          </label>
-                          <p className="pl-1">or drag and drop</p>
-                        </div>
-                        <p className="text-xs text-gray-500">PNG, JPG, PDF, DOC, XLS up to 10MB each</p>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Display uploaded files */}
-                  {surveyData.uploadedFiles.length > 0 && (
-                    <div>
-                      <label className="form-label">Uploaded Files</label>
-                      <div className="space-y-2">
-                        {surveyData.uploadedFiles.map((file, index) => (
-                          <div key={index} className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-md">
-                            <div className="flex items-center space-x-3">
-                              <div className="h-8 w-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                                <FileText className="h-4 w-4 text-blue-600" />
-                              </div>
-                              <div>
-                                <p className="text-sm font-medium text-gray-900">{file.name}</p>
-                                <p className="text-xs text-gray-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
-                              </div>
-                            </div>
-                            <button
-                              onClick={() => removeFile(index)}
-                              className="text-red-600 hover:text-red-800 p-1"
-                            >
-                              <XCircle className="h-4 w-4" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Manual Data Entry */}
-              <div className="mb-6">
-                <h4 className="text-lg font-semibold text-gray-900 mb-4">Manual Data Entry (JSON Format)</h4>
-                <p className="text-sm text-gray-600 mb-2">
-                  If you prefer not to use drone, you can enter survey data manually in JSON format
-                </p>
-                <textarea
-                  name="manualData"
-                  value={surveyData.manualData}
-                  onChange={handleInputChange}
-                  className="input-field"
-                  rows="6"
-                  placeholder='{"location": "Ward 5, Sector A", "findings": "Illegal construction detected", "coordinates": "28.7041°N, 77.1025°E", "images": ["img1.jpg", "img2.jpg"]}'
-                />
               </div>
 
               {/* Action Buttons */}
-              <div className="flex justify-end space-x-4">
+              <div className="flex justify-end space-x-4 mt-8">
                 <button
                   onClick={() => setShowSurveyForm(false)}
-                  className="btn-secondary"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
                 >
                   Cancel
                 </button>
                 <button
-                  onClick={saveSurveyData}
-                  className="btn-success"
-                >
-                  <Save className="h-4 w-4 mr-2" />
-                  Save & Upload
-                </button>
-                <button
                   onClick={startSurvey}
-                  className="btn-primary"
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 border border-transparent rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 flex items-center space-x-2"
                 >
-                  <Camera className="h-4 w-4 mr-2" />
-                  Start Survey
+                  <Camera className="h-4 w-4" />
+                  <span>Start Survey</span>
                 </button>
               </div>
             </div>
@@ -2230,6 +2585,262 @@ const InchargeDashboard = () => {
           </div>
         </div>
       )}
+
+      {/* Map View Modal */}
+      {showMapView && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white w-full h-full overflow-hidden">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-red-600 to-orange-600 text-white p-4 flex justify-between items-center">
+              <div>
+                <h3 className="text-xl font-bold">UrbanGuard - Indore Detection</h3>
+                <p className="text-sm opacity-90">Illegal Construction Detection & Mapping System</p>
+              </div>
+              <button
+                onClick={() => setShowMapView(false)}
+                className="text-white hover:text-gray-200 transition-colors p-2 hover:bg-white hover:bg-opacity-20 rounded"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            {/* Map Container */}
+            <div className="p-4 h-full flex flex-col">
+              {/* Control Panel */}
+              <div className="bg-gray-50 p-4 rounded-lg mb-4 flex flex-wrap items-center gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Ward Number</label>
+                  <input
+                    type="number"
+                    placeholder="Ward Number (1-85)"
+                    min="1"
+                    max="85"
+                    className="input-field w-32"
+                    onChange={handleWardNumberChange}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Ward Name</label>
+                  <input
+                    type="text"
+                    placeholder="Ward Name"
+                    className="input-field w-48"
+                    readOnly
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={detectWard}
+                    className="btn-primary"
+                  >
+                    Detect Ward
+                  </button>
+                  <button
+                    onClick={showFullIndore}
+                    className="btn-secondary"
+                  >
+                    Show Full Indore
+                  </button>
+                  <button
+                    onClick={openFullScreenMap}
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors font-medium"
+                  >
+                    View Full Screen Map
+                  </button>
+                </div>
+              </div>
+
+              {/* Map */}
+              <div id="map" className="flex-1 rounded-lg border border-gray-300 mb-4 relative">
+                {mapLoading && (
+                  <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
+                    <div className="text-center">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
+                      <p className="text-gray-600">Loading map...</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Results Panel */}
+              <div className="bg-white rounded-lg border border-gray-300 p-4">
+                <div className="w-full">
+                  {/* Detected Constructions Table */}
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900 mb-3">Detected Constructions</h4>
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Ward
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Status
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Severity
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Confidence
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Address
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Coordinates
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Actions
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody id="detectedList" className="bg-white divide-y divide-gray-200">
+                          <tr>
+                            <td colSpan="7" className="px-6 py-4 text-center text-gray-500">
+                              Select a ward or show full Indore to view constructions
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Surveys Section */}
+      <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">📊 Recent Surveys</h2>
+            <p className="text-gray-600">View and manage field surveys and illegal construction reports</p>
+          </div>
+          <button
+            onClick={startSurvey}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+          >
+            <Camera className="h-4 w-4" />
+            <span>Start New Survey</span>
+          </button>
+        </div>
+
+        {loading ? (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading surveys...</p>
+          </div>
+        ) : surveys.length > 0 ? (
+          <div className="space-y-4">
+            {surveys.slice(0, 5).map((survey) => (
+              <div key={survey.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-4 mb-2">
+                      <span className="text-lg font-semibold text-gray-900">Survey {survey.id}</span>
+                      <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
+                        Ward {survey.ward_no}
+                      </span>
+                      <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                        {survey.drone_id}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm text-gray-600">
+                      <div>
+                        <span className="font-medium">Date:</span> {survey.survey_date}
+                      </div>
+                      <div>
+                        <span className="font-medium">Violations:</span> {survey.total_violations}
+                      </div>
+                      <div>
+                        <span className="font-medium">Coordinates:</span> {survey.coordinates?.latitude?.toFixed(4)}, {survey.coordinates?.longitude?.toFixed(4)}
+                      </div>
+                      <div>
+                        <span className="font-medium">Status:</span> 
+                        <span className={`ml-1 px-2 py-1 rounded-full text-xs ${
+                          survey.status === 'completed' 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {survey.status}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => navigate(`/survey-results`, { state: { surveyId: survey.id, survey: survey } })}
+                      className="px-3 py-1 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 text-sm"
+                    >
+                      View Results
+                    </button>
+                    <button
+                      onClick={() => navigate('/survey-form')}
+                      className="px-3 py-1 bg-green-100 text-green-700 rounded-md hover:bg-green-200 text-sm"
+                    >
+                      New Survey
+                    </button>
+                  </div>
+                </div>
+                
+                {/* Violations Summary */}
+                {survey.violations && survey.violations.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <h4 className="text-sm font-medium text-gray-900 mb-2">🚨 Violations Detected:</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {survey.violations.slice(0, 3).map((violation, index) => (
+                        <span
+                          key={index}
+                          className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            violation.severity === 'high' 
+                              ? 'bg-red-100 text-red-800' 
+                              : violation.severity === 'medium'
+                              ? 'bg-orange-100 text-orange-800'
+                              : 'bg-yellow-100 text-yellow-800'
+                          }`}
+                        >
+                          {violation.type.replace('_', ' ').toUpperCase()}
+                        </span>
+                      ))}
+                      {survey.violations.length > 3 && (
+                        <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs">
+                          +{survey.violations.length - 3} more
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+            
+            {surveys.length > 5 && (
+              <div className="text-center pt-4">
+                <button
+                  onClick={() => navigate('/surveys')}
+                  className="px-4 py-1 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  View All Surveys ({surveys.length})
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <Camera className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Surveys Yet</h3>
+            <p className="text-gray-600 mb-4">Start your first field survey to detect illegal constructions</p>
+            <button
+              onClick={startSurvey}
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Start First Survey
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

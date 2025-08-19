@@ -55,17 +55,86 @@ const AdminDashboard = () => {
   const [showDataOverviewModal, setShowDataOverviewModal] = useState(false);
   const [showCommunicationHub, setShowCommunicationHub] = useState(false);
   const [showAuditTrail, setShowAuditTrail] = useState(false);
+  const [complaints, setComplaints] = useState([]);
+  const [propertyVerifications, setPropertyVerifications] = useState([]);
+  const [buildingApprovals, setBuildingApprovals] = useState([]);
+  const [surveys, setSurveys] = useState([]);
+  const [illegalConstructions, setIllegalConstructions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedComplaint, setSelectedComplaint] = useState(null);
+  const [selectedVerification, setSelectedVerification] = useState(null);
+  const [selectedApproval, setSelectedApproval] = useState(null);
+  const [showComplaintModal, setShowComplaintModal] = useState(false);
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
+  const [updateForm, setUpdateForm] = useState({
+    status: '',
+    message: '',
+    officer: '',
+    priority: '',
+    assignedTo: '',
+    estimatedResolution: ''
+  });
+  const [statistics, setStatistics] = useState({
+    totalComplaints: 0,
+    pendingComplaints: 0,
+    inProgressComplaints: 0,
+    resolvedComplaints: 0,
+    totalPropertyVerifications: 0,
+    pendingVerifications: 0,
+    totalBuildingApprovals: 0,
+    pendingApprovals: 0
+  });
 
   const handleLogout = () => {
     logout();
     toast.success('Logged out successfully');
   };
 
+  // Fetch data from backend
+  useEffect(() => {
+    const fetchAdminData = async () => {
+      try {
+        const response = await fetch('http://localhost:8000/api/admin/dashboard');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            setComplaints(data.data.complaints || []);
+            setPropertyVerifications(data.data.property_verifications || []);
+            setBuildingApprovals(data.data.building_approvals || []);
+            setSurveys(data.data.surveys || []);
+            setIllegalConstructions(data.data.illegal_constructions || []);
+            
+            // Update statistics
+            setStatistics({
+              totalComplaints: data.data.overview.total_complaints,
+              pendingComplaints: data.data.complaints.filter(c => c.status === 'New').length,
+              inProgressComplaints: data.data.complaints.filter(c => c.status === 'In Progress').length,
+              resolvedComplaints: data.data.complaints.filter(c => c.status === 'Resolved').length,
+              totalPropertyVerifications: data.data.overview.total_property_verifications,
+              pendingVerifications: data.data.property_verifications.filter(v => v.status === 'Pending').length,
+              totalBuildingApprovals: data.data.overview.total_building_approvals,
+              pendingApprovals: data.data.building_approvals.filter(a => a.status === 'Pending').length
+            });
+          }
+        } else {
+          console.error('Failed to fetch admin data');
+        }
+      } catch (error) {
+        console.error('Error fetching admin data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAdminData();
+  }, []);
+
   const systemStats = {
-    totalComplaints: 1247,
-    pending: 89,
-    inProgress: 156,
-    resolved: 1002,
+    totalComplaints: statistics.totalComplaints || 0,
+    pending: statistics.pendingComplaints || 0,
+    inProgress: statistics.inProgressComplaints || 0,
+    resolved: statistics.resolvedComplaints || 0,
     totalUsers: 3456,
     activeOfficials: 45,
     departments: 12,
@@ -184,6 +253,98 @@ const AdminDashboard = () => {
     // In real app, this would update the backend
   };
 
+  // Handle complaint status update
+  const handleComplaintUpdate = async (complaintId) => {
+    try {
+      const response = await fetch(`http://localhost:8000/api/complaints/${complaintId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          status: updateForm.status,
+          message: updateForm.message,
+          officer: updateForm.officer,
+          priority: updateForm.priority || '',
+          assigned_to: updateForm.assignedTo || '',
+          estimated_resolution: updateForm.estimatedResolution || ''
+        })
+      });
+
+      if (response.ok) {
+        toast.success('Complaint status updated successfully');
+        setShowComplaintModal(false);
+        // Refresh data
+        window.location.reload();
+      } else {
+        toast.error('Failed to update complaint status');
+      }
+    } catch (error) {
+      console.error('Error updating complaint:', error);
+      toast.error('Failed to update complaint status');
+    }
+  };
+
+  // Handle property verification update
+  const handleVerificationUpdate = async (ticketId) => {
+    try {
+      const response = await fetch(`http://localhost:8000/api/property/verifications/${ticketId}/verify`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          status: updateForm.status,
+          notes: updateForm.message || '',
+          verified_by: updateForm.officer
+        })
+      });
+
+      if (response.ok) {
+        toast.success('Property verification updated successfully');
+        setShowVerificationModal(false);
+        // Refresh data
+        window.location.reload();
+      } else {
+        toast.error('Failed to update verification status');
+      }
+    } catch (error) {
+      console.error('Error updating verification:', error);
+      toast.error('Failed to update verification status');
+    }
+  };
+
+  // Handle building approval update
+  const handleApprovalUpdate = async (ticketId) => {
+    try {
+      const action = updateForm.status === 'Approved' ? 'approve' : 'reject';
+      const response = await fetch(`http://localhost:8000/api/building/approvals/${ticketId}/approve`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          action: action,
+          notes: updateForm.message || '',
+          approved_by: updateForm.officer,
+          rejection_reason: action === 'reject' ? updateForm.message : ''
+        })
+      });
+
+      if (response.ok) {
+        toast.success(`Building application ${action}d successfully`);
+        setShowApprovalModal(false);
+        // Refresh data
+        window.location.reload();
+      } else {
+        toast.error(`Failed to ${action} building application`);
+      }
+    } catch (error) {
+      console.error('Error updating building approval:', error);
+      toast.error('Failed to update building approval status');
+    }
+  };
+
   const sendBroadcastMessage = (message) => {
     toast.success('Broadcast message sent to all users');
     // In real app, this would send to all users
@@ -269,7 +430,7 @@ const AdminDashboard = () => {
 
         {/* System Overview Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="card p-6">
+          <div className="bg-white rounded-lg shadow-lg p-6">
             <div className="flex items-center">
               <div className="p-3 bg-blue-100 rounded-lg">
                 <FileText className="h-6 w-6 text-blue-600" />
@@ -281,7 +442,7 @@ const AdminDashboard = () => {
             </div>
           </div>
 
-          <div className="card p-6">
+          <div className="bg-white rounded-lg shadow-lg p-6">
             <div className="flex items-center">
               <div className="p-3 bg-green-100 rounded-lg">
                 <CheckCircle className="h-6 w-6 text-green-600" />
@@ -293,7 +454,7 @@ const AdminDashboard = () => {
             </div>
           </div>
 
-          <div className="card p-6">
+          <div className="bg-white rounded-lg shadow-lg p-6">
             <div className="flex items-center">
               <div className="p-3 bg-yellow-100 rounded-lg">
                 <Clock className="h-6 w-6 text-yellow-600" />
@@ -305,7 +466,7 @@ const AdminDashboard = () => {
             </div>
           </div>
 
-          <div className="card p-6">
+          <div className="bg-white rounded-lg shadow-lg p-6">
             <div className="flex items-center">
               <div className="p-3 bg-red-100 rounded-lg">
                 <XCircle className="h-6 w-6 text-red-600" />
@@ -320,7 +481,7 @@ const AdminDashboard = () => {
 
         {/* Additional Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="card p-6">
+          <div className="bg-white rounded-lg shadow-lg p-6">
             <div className="flex items-center">
               <div className="p-3 bg-purple-100 rounded-lg">
                 <Users className="h-6 w-6 text-purple-600" />
@@ -332,7 +493,7 @@ const AdminDashboard = () => {
             </div>
           </div>
 
-          <div className="card p-6">
+          <div className="bg-white rounded-lg shadow-lg p-6">
             <div className="flex items-center">
               <div className="p-3 bg-indigo-100 rounded-lg">
                 <Shield className="h-6 w-6 text-indigo-600" />
@@ -344,7 +505,7 @@ const AdminDashboard = () => {
             </div>
           </div>
 
-          <div className="card p-6">
+          <div className="bg-white rounded-lg shadow-lg p-6">
             <div className="flex items-center">
               <div className="p-3 bg-teal-100 rounded-lg">
                 <TrendingUp className="h-6 w-6 text-teal-600" />
@@ -358,7 +519,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* Real-time Activity Feed */}
-        <div className="card p-6 mb-8">
+        <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-gray-900">Real-time Activity Feed</h3>
             <div className="flex items-center space-x-3">
@@ -399,7 +560,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* Priority Alerts */}
-        <div className="card p-6 mb-8">
+        <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-gray-900">Priority Alerts</h3>
             <span className="text-sm text-gray-500">Real-time monitoring</span>
@@ -438,7 +599,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* Field Survey Monitoring */}
-        <div className="card p-6 mb-8">
+        <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-gray-900">Field Survey Monitoring</h3>
             <div className="flex items-center space-x-3">
@@ -499,8 +660,272 @@ const AdminDashboard = () => {
           </div>
         </div>
 
+        {/* Surveys and Illegal Constructions */}
+        <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-gray-900">📊 Surveys & Illegal Constructions</h3>
+            <div className="flex items-center space-x-3">
+              <span className="text-sm text-gray-500">Monitor field surveys and violations</span>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Surveys Summary */}
+            <div className="border border-gray-200 rounded-lg p-4">
+              <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <Camera className="h-5 w-5 mr-2 text-blue-600" />
+                Recent Surveys
+              </h4>
+              {surveys && surveys.length > 0 ? (
+                <div className="space-y-3">
+                  {surveys.slice(0, 3).map((survey) => (
+                    <div key={survey.id} className="bg-gray-50 rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-medium text-gray-900">{survey.id}</span>
+                        <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
+                          Ward {survey.ward_no}
+                        </span>
+                      </div>
+                      <div className="text-sm text-gray-600 space-y-1">
+                        <p><span className="font-medium">Date:</span> {survey.survey_date}</p>
+                        <p><span className="font-medium">Drone:</span> {survey.drone_id}</p>
+                        <p><span className="font-medium">Violations:</span> {survey.total_violations}</p>
+                        <p><span className="font-medium">Compliance:</span> {survey.compliance_score || 'N/A'}%</p>
+                        <p><span className="font-medium">Area:</span> {survey.total_area_sq_meters || 'N/A'} sq m</p>
+                      </div>
+                      {survey.severity_summary && (
+                        <div className="mt-2 flex space-x-2">
+                          <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">
+                            H: {survey.severity_summary.high || 0}
+                          </span>
+                          <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full">
+                            M: {survey.severity_summary.medium || 0}
+                          </span>
+                          <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">
+                            L: {survey.severity_summary.low || 0}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {surveys.length > 3 && (
+                    <div className="text-center pt-2">
+                      <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                        View All Surveys ({surveys.length})
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-6 text-gray-500">
+                  <Camera className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                  <p>No surveys available</p>
+                </div>
+              )}
+            </div>
+
+            {/* Illegal Constructions Summary */}
+            <div className="border border-gray-200 rounded-lg p-4">
+              <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <AlertTriangle className="h-5 w-5 mr-2 text-red-600" />
+                Illegal Constructions
+              </h4>
+              {illegalConstructions && illegalConstructions.length > 0 ? (
+                <div className="space-y-3">
+                  {illegalConstructions.slice(0, 3).map((violation) => (
+                    <div key={violation.id} className="bg-gray-50 rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-medium text-gray-900">{violation.violation_type}</span>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          violation.severity === 'high' 
+                            ? 'bg-red-100 text-red-800' 
+                            : violation.severity === 'medium'
+                            ? 'bg-orange-100 text-orange-800'
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {violation.severity}
+                        </span>
+                      </div>
+                      <div className="text-sm text-gray-600 space-y-1">
+                        <p><span className="font-medium">Ward:</span> {violation.ward_name || `Ward ${violation.ward_no}`}</p>
+                        <p><span className="font-medium">Status:</span> {violation.status}</p>
+                        <p><span className="font-medium">Detected:</span> {new Date(violation.detected_at).toLocaleDateString()}</p>
+                        {violation.description && (
+                          <p><span className="font-medium">Issue:</span> {violation.description}</p>
+                        )}
+                        {violation.priority && (
+                          <p><span className="font-medium">Priority:</span> 
+                            <span className={`ml-1 px-2 py-1 rounded-full text-xs ${
+                              violation.priority === 'high' ? 'bg-red-100 text-red-800' :
+                              violation.priority === 'medium' ? 'bg-orange-100 text-orange-800' :
+                              'bg-yellow-100 text-yellow-800'
+                            }`}>
+                              {violation.priority}
+                            </span>
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  {illegalConstructions.length > 3 && (
+                    <div className="text-center pt-2">
+                      <button className="text-red-600 hover:text-red-800 text-sm font-medium">
+                        View All Violations ({illegalConstructions.length})
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-6 text-gray-500">
+                  <CheckCircle className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                  <p>No violations detected</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Survey Analytics Dashboard */}
+        {surveys && surveys.length > 0 && (
+          <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-gray-900">📈 Survey Analytics & Compliance Metrics</h3>
+              <div className="flex items-center space-x-3">
+                <span className="text-sm text-gray-500">Real-time compliance monitoring</span>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              {/* Total Surveys */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-center">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <Camera className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm font-medium text-blue-600">Total Surveys</p>
+                    <p className="text-2xl font-bold text-blue-900">{surveys.length}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Total Violations */}
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="flex items-center">
+                  <div className="p-2 bg-red-100 rounded-lg">
+                    <AlertTriangle className="h-6 w-6 text-red-600" />
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm font-medium text-red-600">Total Violations</p>
+                    <p className="text-2xl font-bold text-red-900">
+                      {surveys.reduce((total, survey) => total + (survey.total_violations || 0), 0)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Average Compliance Score */}
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="flex items-center">
+                  <div className="p-2 bg-green-100 rounded-lg">
+                    <CheckCircle className="h-6 w-6 text-green-600" />
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm font-medium text-green-600">Avg Compliance</p>
+                    <p className="text-2xl font-bold text-green-900">
+                      {Math.round(surveys.reduce((total, survey) => total + (survey.compliance_score || 100), 0) / surveys.length)}%
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Total Area Covered */}
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                <div className="flex items-center">
+                  <div className="p-2 bg-purple-100 rounded-lg">
+                    <MapPin className="h-6 w-6 text-purple-600" />
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm font-medium text-purple-600">Area Covered</p>
+                    <p className="text-2xl font-bold text-purple-900">
+                      {Math.round(surveys.reduce((total, survey) => total + (survey.total_area_sq_meters || 0), 0) / 1000)}K sq m
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Ward-wise Analysis */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="border border-gray-200 rounded-lg p-4">
+                <h4 className="text-lg font-semibold text-gray-900 mb-4">🏘️ Ward-wise Violation Distribution</h4>
+                <div className="space-y-3">
+                  {Object.entries(
+                    surveys.reduce((acc, survey) => {
+                      const ward = survey.ward_no;
+                      acc[ward] = (acc[ward] || 0) + (survey.total_violations || 0);
+                      return acc;
+                    }, {})
+                  )
+                  .sort(([,a], [,b]) => b - a)
+                  .slice(0, 5)
+                  .map(([ward, violations]) => (
+                    <div key={ward} className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-gray-700">Ward {ward}</span>
+                      <div className="flex items-center space-x-2">
+                        <div className="w-20 bg-gray-200 rounded-full h-2">
+                          <div 
+                            className="bg-red-500 h-2 rounded-full" 
+                            style={{ width: `${(violations / Math.max(...Object.values(surveys.reduce((acc, s) => { acc[s.ward_no] = (acc[s.ward_no] || 0) + (s.total_violations || 0); return acc; }, {})))) * 100}%` }}
+                          ></div>
+                        </div>
+                        <span className="text-sm text-gray-600 w-8 text-right">{violations}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="border border-gray-200 rounded-lg p-4">
+                <h4 className="text-lg font-semibold text-gray-900 mb-4">📊 Severity Breakdown</h4>
+                <div className="space-y-3">
+                  {(() => {
+                    const severityCounts = surveys.reduce((acc, survey) => {
+                      if (survey.severity_summary) {
+                        acc.high += survey.severity_summary.high || 0;
+                        acc.medium += survey.severity_summary.medium || 0;
+                        acc.low += survey.severity_summary.low || 0;
+                      }
+                      return acc;
+                    }, { high: 0, medium: 0, low: 0 });
+
+                    return [
+                      { label: 'High Priority', count: severityCounts.high, color: 'bg-red-500', textColor: 'text-red-800' },
+                      { label: 'Medium Priority', count: severityCounts.medium, color: 'bg-orange-500', textColor: 'text-orange-800' },
+                      { label: 'Low Priority', count: severityCounts.low, color: 'bg-yellow-500', textColor: 'text-yellow-800' }
+                    ].map((item, index) => (
+                      <div key={index} className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-700">{item.label}</span>
+                        <div className="flex items-center space-x-2">
+                          <div className="w-20 bg-gray-200 rounded-full h-2">
+                            <div 
+                              className={`${item.color} h-2 rounded-full`}
+                              style={{ width: `${(item.count / Math.max(severityCounts.high, severityCounts.medium, severityCounts.low)) * 100}%` }}
+                            ></div>
+                          </div>
+                          <span className={`text-sm font-medium w-8 text-right ${item.textColor}`}>{item.count}</span>
+                        </div>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Grievance Platform Responses */}
-        <div className="card p-6 mb-8">
+        <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-gray-900">Grievance Platform Responses</h3>
             <div className="flex items-center space-x-3">
@@ -577,7 +1002,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* Drone Fleet Management */}
-        <div className="card p-6 mb-8">
+        <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-gray-900">Drone Fleet Management</h3>
             <div className="flex items-center space-x-3">
@@ -639,7 +1064,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* Document Verification Requests */}
-        <div className="card p-6 mb-8">
+        <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-gray-900">Document Verification Requests</h3>
             <span className="text-sm text-gray-500">Ward-wise verification</span>
@@ -691,7 +1116,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* Data Collection Overview */}
-        <div className="card p-6 mb-8">
+        <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-gray-900">Data Collection Overview</h3>
             <div className="flex items-center space-x-3">
@@ -751,7 +1176,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* Building Permission Requests */}
-        <div className="card p-6 mb-8">
+        <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-gray-900">Building Construction Permission Requests</h3>
             <span className="text-sm text-gray-500">Large scale projects</span>
@@ -817,7 +1242,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* Communication Hub */}
-        <div className="card p-6 mb-8">
+        <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-gray-900">Communication Hub</h3>
             <div className="flex items-center space-x-3">
@@ -885,7 +1310,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* Illegal Construction Reports */}
-        <div className="card p-6 mb-8">
+        <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-gray-900">Illegal Construction Reports</h3>
             <span className="text-sm text-gray-500">Ward-wise monitoring</span>
@@ -937,7 +1362,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* Audit Trail */}
-        <div className="card p-6 mb-8">
+        <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-gray-900">Audit Trail</h3>
             <div className="flex items-center space-x-3">
@@ -987,7 +1412,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* Department Performance */}
-        <div className="card p-6 mb-8">
+        <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-gray-900">Department Performance</h3>
             <button className="text-primary-600 hover:text-primary-700 text-sm font-medium">
@@ -1049,7 +1474,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* Recent Complaints */}
-        <div className="card p-6 mb-8">
+        <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-gray-900">Recent Complaints</h3>
             <button className="text-primary-600 hover:text-primary-700 text-sm font-medium">
@@ -1096,7 +1521,7 @@ const AdminDashboard = () => {
 
         {/* Enhanced Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="card p-6 text-center hover:shadow-medium transition-shadow cursor-pointer">
+          <div className="bg-white rounded-lg shadow-lg p-6 text-center hover:shadow-xl transition-shadow cursor-pointer">
             <div className="mx-auto h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
               <Users className="h-6 w-6 text-blue-600" />
             </div>
@@ -1104,7 +1529,7 @@ const AdminDashboard = () => {
             <p className="text-xs text-gray-600">Add, edit, or remove system users</p>
           </div>
 
-          <div className="card p-6 text-center hover:shadow-medium transition-shadow cursor-pointer">
+          <div className="bg-white rounded-lg shadow-lg p-6 text-center hover:shadow-xl transition-shadow cursor-pointer">
             <div className="mx-auto h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
               <BarChart3 className="h-6 w-6 text-green-600" />
             </div>
@@ -1112,7 +1537,7 @@ const AdminDashboard = () => {
             <p className="text-xs text-gray-600">View detailed system analytics</p>
           </div>
 
-          <div className="card p-6 text-center hover:shadow-medium transition-shadow cursor-pointer">
+          <div className="bg-white rounded-lg shadow-lg p-6 text-center hover:shadow-xl transition-shadow cursor-pointer">
             <div className="mx-auto h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
               <Settings className="h-6 w-6 text-purple-600" />
             </div>
@@ -1120,7 +1545,7 @@ const AdminDashboard = () => {
             <p className="text-xs text-gray-600">Configure system parameters</p>
           </div>
 
-          <div className="card p-6 text-center hover:shadow-medium transition-shadow cursor-pointer">
+          <div className="bg-white rounded-lg shadow-lg p-6 text-center hover:shadow-xl transition-shadow cursor-pointer">
             <div className="mx-auto h-12 w-12 bg-orange-100 rounded-lg flex items-center justify-center mb-4">
               <MessageSquare className="h-6 w-6 text-orange-600" />
             </div>
@@ -1131,7 +1556,7 @@ const AdminDashboard = () => {
 
         {/* Additional Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
-          <div className="card p-6 text-center hover:shadow-medium transition-shadow cursor-pointer">
+          <div className="bg-white rounded-lg shadow-lg p-6 text-center hover:shadow-xl transition-shadow cursor-pointer">
             <div className="mx-auto h-12 w-12 bg-teal-100 rounded-lg flex items-center justify-center mb-4">
               <Camera className="h-6 w-6 text-teal-600" />
             </div>
@@ -1139,7 +1564,7 @@ const AdminDashboard = () => {
             <p className="text-xs text-gray-600">Monitor all field surveys</p>
           </div>
 
-          <div className="card p-6 text-center hover:shadow-medium transition-shadow cursor-pointer">
+          <div className="bg-white rounded-lg shadow-lg p-6 text-center hover:shadow-xl transition-shadow cursor-pointer">
             <div className="mx-auto h-12 w-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">
               <Plane className="h-6 w-6 text-indigo-600" />
             </div>
@@ -1147,7 +1572,7 @@ const AdminDashboard = () => {
             <p className="text-xs text-gray-600">Manage drone fleet operations</p>
           </div>
 
-          <div className="card p-6 text-center hover:shadow-medium transition-shadow cursor-pointer">
+          <div className="bg-white rounded-lg shadow-lg p-6 text-center hover:shadow-xl transition-shadow cursor-pointer">
             <div className="mx-auto h-12 w-12 bg-pink-100 rounded-lg flex items-center justify-center mb-4">
               <Database className="h-6 w-6 text-pink-600" />
             </div>
@@ -1155,7 +1580,7 @@ const AdminDashboard = () => {
             <p className="text-xs text-gray-600">Track all data collection</p>
           </div>
 
-          <div className="card p-6 text-center hover:shadow-medium transition-shadow cursor-pointer">
+          <div className="bg-white rounded-lg shadow-lg p-6 text-center hover:shadow-xl transition-shadow cursor-pointer">
             <div className="mx-auto h-12 w-12 bg-yellow-100 rounded-lg flex items-center justify-center mb-4">
               <ClipboardList className="h-6 w-6 text-yellow-600" />
             </div>

@@ -64,13 +64,70 @@ const PropertyVerification = () => {
     if (!validateForm()) return;
     
     try {
-      const ticketNumber = 'PVT' + Date.now().toString().slice(-8);
-      const verificationData = { ...formData, ticketNumber, status: 'Under Review', submittedAt: new Date().toISOString(), userId: user?.id };
+      // Create FormData for file upload
+      const formDataToSend = new FormData();
       
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success(`Property verification submitted successfully! Your ticket number is: ${ticketNumber}`);
+      // Add text fields
+      formDataToSend.append('full_name', formData.fullName);
+      formDataToSend.append('aadhaar_number', formData.aadhaarNumber);
+      formDataToSend.append('contact_number', formData.contactNumber);
+      formDataToSend.append('email_id', formData.emailId);
+      formDataToSend.append('permanent_address', formData.permanentAddress);
+      
+      // Add files
+      if (formData.saleDeed) {
+        formDataToSend.append('sale_deed', formData.saleDeed);
+      }
+      if (formData.propertyTaxReceipt) {
+        formDataToSend.append('property_tax_receipt', formData.propertyTaxReceipt);
+      }
+      if (formData.khataCertificate) {
+        formDataToSend.append('khata_certificate', formData.khataCertificate);
+      }
+      if (formData.encumbranceCertificate) {
+        formDataToSend.append('encumbrance_certificate', formData.encumbranceCertificate);
+      }
+      if (formData.mutationCertificate) {
+        formDataToSend.append('mutation_certificate', formData.mutationCertificate);
+      }
+      if (formData.rtcDocument) {
+        formDataToSend.append('rtc_document', formData.rtcDocument);
+      }
+      if (formData.layoutPlan) {
+        formDataToSend.append('layout_plan', formData.layoutPlan);
+      }
+      if (formData.architecturalDrawings) {
+        formDataToSend.append('architectural_drawings', formData.architecturalDrawings);
+      }
+      if (formData.structuralCertificate) {
+        formDataToSend.append('structural_certificate', formData.structuralCertificate);
+      }
+      if (formData.aadhaarCard) {
+        formDataToSend.append('aadhaar_card', formData.aadhaarCard);
+      }
+      if (formData.panCard) {
+        formDataToSend.append('pan_card', formData.panCard);
+      }
+      if (formData.electricityBill) {
+        formDataToSend.append('electricity_bill', formData.electricityBill);
+      }
+      
+      // Send to backend
+      const response = await fetch('http://localhost:8000/api/property/verify', {
+        method: 'POST',
+        body: formDataToSend,
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to submit verification');
+      }
+      
+      const result = await response.json();
+      
+      toast.success(`Property verification submitted successfully! Your ticket number is: ${result.ticket_number}`);
       navigate('/dashboard');
     } catch (error) {
+      console.error('Error submitting verification:', error);
       toast.error('Failed to submit verification. Please try again.');
     }
   };

@@ -18,6 +18,10 @@ import BuildingApproval from './components/building/BuildingApproval';
 import DirectCommunication from './components/communication/DirectCommunication';
 import AnonymousComplaint from './components/complaints/AnonymousComplaint';
 
+// Survey Components
+import SurveyForm from './components/survey/SurveyForm';
+import SurveyResults from './components/survey/SurveyResults';
+
 function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -110,6 +114,25 @@ function App() {
             {/* Anonymous Complaint Route */}
             <Route path="/anonymous-complaint" element={
               <AnonymousComplaint />
+            } />
+            
+            {/* Survey Routes */}
+            <Route path="/survey-form" element={
+              <ProtectedRoute>
+                <SurveyForm />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/survey-results" element={
+              <ProtectedRoute>
+                <SurveyResults />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/surveys" element={
+              <ProtectedRoute>
+                <SurveyResults />
+              </ProtectedRoute>
             } />
             
             <Route path="*" element={<Navigate to="/" />} />
