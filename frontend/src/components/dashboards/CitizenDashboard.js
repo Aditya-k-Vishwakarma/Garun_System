@@ -24,7 +24,8 @@ import {
   FileCheck,
   MessageCircle,
   Download,
-  Share2
+  Share2,
+  RefreshCw
 } from 'lucide-react';
 import AuthContext from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
@@ -39,6 +40,7 @@ const CitizenDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [selectedComplaint, setSelectedComplaint] = useState(null);
   const [showComplaintModal, setShowComplaintModal] = useState(false);
+  const [showChat, setShowChat] = useState(false);
   const [stats, setStats] = useState({
     totalComplaints: 0,
     resolved: 0,
@@ -56,67 +58,83 @@ const CitizenDashboard = () => {
   };
 
   // Fetch all user data from backend
-  useEffect(() => {
-    const fetchUserData = async () => {
-      if (!user?.contactNumber) {
-        console.log('No user contact number available');
-        setLoading(false);
-        return;
-      }
+  const fetchUserData = async () => {
+    if (!user?.contactNumber) {
+      console.log('No user contact number available');
+      setLoading(false);
+      return;
+    }
 
-      try {
-        // Fetch user complaints
-        const complaintsResponse = await fetch(`http://localhost:8000/api/complaints/user/${user.contactNumber}`);
-        if (complaintsResponse.ok) {
-          const complaintsData = await complaintsResponse.json();
-          setUserComplaints(complaintsData.complaints || []);
-        }
-
-        // Fetch user property verifications
-        const propertyResponse = await fetch(`http://localhost:8000/api/property/user/${user.contactNumber}`);
-        if (propertyResponse.ok) {
-          const propertyData = await propertyResponse.json();
-          setUserPropertyVerifications(propertyData.verifications || []);
-        }
-
-        // Fetch user building approvals
-        const buildingResponse = await fetch(`http://localhost:8000/api/building/user/${user.contactNumber}`);
-        if (buildingResponse.ok) {
-          const buildingData = await buildingResponse.json();
-          setUserBuildingApprovals(buildingData.approvals || []);
-        }
-
-        // Calculate comprehensive stats
-        const totalComplaints = userComplaints.length;
-        const resolvedComplaints = userComplaints.filter(c => c.status === 'Resolved').length;
-        const inProgressComplaints = userComplaints.filter(c => c.status === 'In Progress').length;
-        const pendingComplaints = userComplaints.filter(c => c.status === 'New' || c.status === 'Under Review').length;
-
-        const totalPropertyVerifications = userPropertyVerifications.length;
-        const pendingVerifications = userPropertyVerifications.filter(v => v.status === 'Pending').length;
-
-        const totalBuildingApprovals = userBuildingApprovals.length;
-        const pendingApprovals = userBuildingApprovals.filter(a => a.status === 'Pending').length;
-
-        setStats({
+    try {
+      setLoading(true);
+      
+      // Fetch user complaints
+      const complaintsResponse = await fetch(`http://localhost:8000/api/complaints/user/${user.contactNumber}`);
+      if (complaintsResponse.ok) {
+        const complaintsData = await complaintsResponse.json();
+        const userComplaintsData = complaintsData.complaints || [];
+        setUserComplaints(userComplaintsData);
+        
+        // Calculate complaint stats
+        const totalComplaints = userComplaintsData.length;
+        const resolvedComplaints = userComplaintsData.filter(c => c.status === 'Resolved').length;
+        const inProgressComplaints = userComplaintsData.filter(c => c.status === 'In Progress').length;
+        const pendingComplaints = userComplaintsData.filter(c => c.status === 'New' || c.status === 'Under Review').length;
+        
+        setStats(prevStats => ({
+          ...prevStats,
           totalComplaints,
           resolved: resolvedComplaints,
           inProgress: inProgressComplaints,
-          pending: pendingComplaints,
+          pending: pendingComplaints
+        }));
+      }
+
+      // Fetch user property verifications
+      const propertyResponse = await fetch(`http://localhost:8000/api/property/user/${user.contactNumber}`);
+      if (propertyResponse.ok) {
+        const propertyData = await propertyResponse.json();
+        const userPropertyData = propertyData.verifications || [];
+        setUserPropertyVerifications(userPropertyData);
+        
+        // Calculate property verification stats
+        const totalPropertyVerifications = userPropertyData.length;
+        const pendingVerifications = userPropertyData.filter(v => v.status === 'Pending').length;
+        
+        setStats(prevStats => ({
+          ...prevStats,
           totalPropertyVerifications,
-          pendingVerifications,
+          pendingVerifications
+        }));
+      }
+
+      // Fetch user building approvals
+      const buildingResponse = await fetch(`http://localhost:8000/api/building/user/${user.contactNumber}`);
+      if (buildingResponse.ok) {
+        const buildingData = await buildingResponse.json();
+        const userBuildingData = buildingData.approvals || [];
+        setUserBuildingApprovals(userBuildingData);
+        
+        // Calculate building approval stats
+        const totalBuildingApprovals = userBuildingData.length;
+        const pendingApprovals = userBuildingData.filter(a => a.status === 'Pending').length;
+        
+        setStats(prevStats => ({
+          ...prevStats,
           totalBuildingApprovals,
           pendingApprovals
-        });
-
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-        toast.error('Failed to load dashboard data');
-      } finally {
-        setLoading(false);
+        }));
       }
-    };
 
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      toast.error('Failed to fetch user data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchUserData();
   }, [user?.contactNumber]);
 
@@ -198,11 +216,25 @@ const CitizenDashboard = () => {
                 <Bell className="h-6 w-6" />
                 <span className="absolute top-0 right-0 h-3 w-3 bg-red-500 rounded-full"></span>
               </button>
+              <button 
+                onClick={() => setShowChat(!showChat)}
+                className="p-2 text-gray-400 hover:text-gray-600 relative"
+              >
+                <MessageCircle className="h-6 w-6" />
+                <span className="absolute top-0 right-0 h-3 w-3 bg-blue-500 rounded-full"></span>
+              </button>
+              <button 
+                onClick={fetchUserData}
+                className="p-2 text-gray-400 hover:text-gray-600"
+                title="Refresh Data"
+              >
+                <RefreshCw className="h-6 w-6" />
+              </button>
               <div className="flex items-center space-x-3">
-                <div className="h-8 w-8 bg-primary-100 rounded-full flex items-center justify-center">
-                  <User className="h-4 w-4 text-primary-600" />
+                <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
+                  <User className="h-4 w-4 text-blue-600" />
                 </div>
-                <span className="text-sm font-medium text-gray-700">{user?.name || 'Citizen User'}</span>
+                <span className="text-sm font-medium text-gray-700">{user?.name || 'Citizen'}</span>
               </div>
               <button
                 onClick={handleLogout}

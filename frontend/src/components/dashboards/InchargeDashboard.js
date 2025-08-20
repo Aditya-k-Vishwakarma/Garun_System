@@ -40,7 +40,8 @@ import {
   Activity,
   Target,
   Shield,
-  Zap
+  Zap,
+  RefreshCw
 } from 'lucide-react';
 import AuthContext from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
@@ -54,6 +55,7 @@ const InchargeDashboard = () => {
   const [showDroneManagement, setShowDroneManagement] = useState(false);
   const [showDataManagement, setShowDataManagement] = useState(false);
   const [showMapView, setShowMapView] = useState(false);
+  const [showChat, setShowChat] = useState(false);
   const [droneConnected, setDroneConnected] = useState(false);
   const [surveys, setSurveys] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -264,36 +266,40 @@ const InchargeDashboard = () => {
     toast.success('Logged out successfully');
   };
 
-  // Fetch surveys from backend and calculate dynamic stats
-  useEffect(() => {
-    const fetchSurveys = async () => {
-      try {
-        const response = await fetch('http://localhost:8000/api/surveys/all');
-        if (response.ok) {
-          const data = await response.json();
-          setSurveys(data.surveys || []);
+  // Fetch surveys data and calculate stats
+  const fetchSurveysData = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('http://localhost:8000/api/surveys/all');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          const surveysData = data.surveys || [];
+          setSurveys(surveysData);
           
-          // Calculate dynamic statistics
-          const totalSurveys = data.surveys?.length || 0;
-          const completedSurveys = data.surveys?.filter(s => s.status === 'completed').length || 0;
-          const pendingSurveys = data.surveys?.filter(s => s.status === 'pending').length || 0;
+          // Calculate dynamic stats
+          const totalSurveys = surveysData.length;
+          const completedSurveys = surveysData.filter(s => s.status === 'completed').length;
+          const pendingSurveys = surveysData.filter(s => s.status === 'pending' || s.status === 'in_progress').length;
           
-          let totalViolations = 0;
-          let highSeverityViolations = 0;
-          let mediumSeverityViolations = 0;
-          let lowSeverityViolations = 0;
+          // Calculate violations from surveys
+          const totalViolations = surveysData.reduce((total, survey) => {
+            return total + (survey.violations?.length || 0);
+          }, 0);
           
-          data.surveys?.forEach(survey => {
-            if (survey.violations) {
-              totalViolations += survey.violations.length;
-              survey.violations.forEach(violation => {
-                if (violation.severity === 'high') highSeverityViolations++;
-                else if (violation.severity === 'medium') mediumSeverityViolations++;
-                else if (violation.severity === 'low') lowSeverityViolations++;
-              });
-            }
-          });
+          const highSeverityViolations = surveysData.reduce((total, survey) => {
+            return total + (survey.violations?.filter(v => v.severity === 'high').length || 0);
+          }, 0);
           
+          const mediumSeverityViolations = surveysData.reduce((total, survey) => {
+            return total + (survey.violations?.filter(v => v.severity === 'medium').length || 0);
+          }, 0);
+          
+          const lowSeverityViolations = surveysData.reduce((total, survey) => {
+            return total + (survey.violations?.filter(v => v.severity === 'low').length || 0);
+          }, 0);
+          
+          // Calculate compliance rate
           const complianceRate = totalSurveys > 0 ? 
             Math.round(((totalSurveys - totalViolations) / totalSurveys) * 100) : 100;
           
@@ -307,19 +313,21 @@ const InchargeDashboard = () => {
             lowSeverityViolations,
             complianceRate
           });
-        } else {
-          console.error('Failed to fetch surveys');
         }
-      } catch (error) {
-        console.error('Error fetching surveys:', error);
+      } else {
+        console.error('Failed to fetch surveys data');
+        toast.error('Failed to fetch surveys data');
       }
-    };
+    } catch (error) {
+      console.error('Error fetching surveys data:', error);
+      toast.error('Error fetching surveys data');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchSurveys();
-    
-    // Refresh data every 30 seconds for real-time updates
-    const interval = setInterval(fetchSurveys, 30000);
-    return () => clearInterval(interval);
+  useEffect(() => {
+    fetchSurveysData();
   }, []);
 
   const [droneManagementData, setDroneManagementData] = useState({
@@ -1375,11 +1383,25 @@ const InchargeDashboard = () => {
                 <Bell className="h-6 w-6" />
                 <span className="absolute top-0 right-0 h-3 w-3 bg-red-500 rounded-full"></span>
               </button>
+              <button 
+                onClick={() => setShowChat(!showChat)}
+                className="p-2 text-gray-400 hover:text-gray-600 relative"
+              >
+                <MessageCircle className="h-6 w-6" />
+                <span className="absolute top-0 right-0 h-3 w-3 bg-blue-500 rounded-full"></span>
+              </button>
+              <button 
+                onClick={fetchSurveysData}
+                className="p-2 text-gray-400 hover:text-gray-600"
+                title="Refresh Data"
+              >
+                <RefreshCw className="h-6 w-6" />
+              </button>
               <div className="flex items-center space-x-3">
-                <div className="h-8 w-8 bg-orange-100 rounded-full flex items-center justify-center">
-                  <User className="h-4 w-4 text-orange-600" />
+                <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
+                  <User className="h-4 w-4 text-green-600" />
                 </div>
-                <span className="text-sm font-medium text-gray-700">{user?.name || 'Department Incharge'}</span>
+                <span className="text-sm font-medium text-gray-700">{user?.name || 'Incharge Officer'}</span>
               </div>
               <button
                 onClick={handleLogout}
