@@ -14,15 +14,7 @@ import {
 
 const LandingPage = () => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
-  const [scrollY, setScrollY] = React.useState(0);
   const heroRef = useRef(null);
-
-  // Handle scroll for parallax and navbar effects
-  useEffect(() => {
-    const handleScroll = () => setScrollY(window.scrollY);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   // Intersection Observer for animations
   useEffect(() => {
@@ -210,14 +202,21 @@ const LandingPage = () => {
           50% { transform: translateY(-5px) rotate(-1deg); }
           75% { transform: translateY(-15px) rotate(0.5deg); }
         }
+
+        /* Fixed background image styles */
+        .hero-background {
+          position: fixed !important;
+          top: 0 !important;
+          left: 0 !important;
+          width: 100% !important;
+          height: 100% !important;
+          z-index: -1 !important;
+          object-fit: cover !important;
+        }
       `}</style>
 
       {/* Navigation */}
-      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-        scrollY > 50 
-          ? 'bg-black/90 backdrop-blur-md border-b border-white/10 shadow-lg' 
-          : 'bg-transparent'
-      }`}>
+      <nav className="fixed top-0 left-0 right-0 z-50 transition-all duration-500 bg-black/90 backdrop-blur-md border-b border-white/10 shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
             <div className="flex items-center">
@@ -289,26 +288,21 @@ const LandingPage = () => {
 
       {/* Hero Section */}
       <section ref={heroRef} className="relative min-h-screen flex items-center justify-center overflow-hidden">
-        {/* Background Image with Parallax */}
-        <div 
-          className="absolute inset-0 z-0"
-          style={{
-            transform: `translateY(${scrollY * 0.5}px)`,
-          }}
-        >
+        {/* Background Image - Fixed and Stable */}
+        <div className="absolute inset-0 z-0">
           <img 
             src="/images/Home.webp" 
             alt="Garun Systems Hero Background" 
-            className="w-full h-[120%] object-cover"
+            className="hero-background"
           />
           {/* Enhanced Overlay */}
-          <div className="absolute inset-0 bg-black/40"></div>
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-900/70 via-purple-900/50 to-blue-900/70"></div>
-          <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent"></div>
+          <div className="absolute inset-0 bg-black/40 z-0"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-900/70 via-purple-900/50 to-blue-900/70 z-0"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent z-0"></div>
         </div>
         
         {/* Content */}
-        <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
+        <div className="relative z-20 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
           <div className="space-y-8 animate-on-scroll">
             {/* Badge */}
             <div className="inline-flex items-center px-6 py-3 glass-effect rounded-full border border-white/30 transform hover:scale-105 transition-all duration-300 floating-animation">
@@ -348,10 +342,10 @@ const LandingPage = () => {
         </div>
         
         {/* Enhanced Floating Elements */}
-        <div className="absolute top-20 left-10 w-20 h-20 bg-blue-500/30 rounded-full blur-xl animate-pulse floating-animation z-10"></div>
-        <div className="absolute bottom-20 right-10 w-32 h-32 bg-purple-500/30 rounded-full blur-xl animate-pulse floating-animation delay-1000 z-10" style={{ animationDelay: '2s' }}></div>
-        <div className="absolute top-1/2 left-20 w-16 h-16 bg-blue-400/40 rounded-full blur-lg floating-animation z-10" style={{ animationDelay: '1s' }}></div>
-        <div className="absolute top-1/3 right-32 w-12 h-12 bg-purple-300/40 rounded-full blur-lg floating-animation z-10" style={{ animationDelay: '3s' }}></div>
+        <div className="absolute top-20 left-10 w-20 h-20 bg-blue-500/30 rounded-full blur-xl animate-pulse floating-animation z-20"></div>
+        <div className="absolute bottom-20 right-10 w-32 h-32 bg-purple-500/30 rounded-full blur-xl animate-pulse floating-animation delay-1000 z-20" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute top-1/2 left-20 w-16 h-16 bg-blue-400/40 rounded-full blur-lg floating-animation z-20" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute top-1/3 right-32 w-12 h-12 bg-purple-300/40 rounded-full blur-lg floating-animation z-20" style={{ animationDelay: '3s' }}></div>
         
         {/* Scroll Indicator */}
         
@@ -359,6 +353,15 @@ const LandingPage = () => {
 
       {/* Stats Section */}
       <section id="stats" className="py-20 bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 relative overflow-hidden">
+        {/* Background Image - Fixed and Stable */}
+        <div className="absolute inset-0 z-0">
+          <img 
+            src="/images/Home.webp" 
+            alt="Stats Background" 
+            className="hero-background opacity-20"
+          />
+        </div>
+        
         {/* Enhanced Background Elements */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-10 left-10 w-32 h-32 bg-gradient-to-br from-blue-400 to-purple-400 rounded-full blur-2xl floating-animation"></div>
@@ -376,38 +379,31 @@ const LandingPage = () => {
             </p>
           </div>
           
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((stat, index) => (
-              <div key={index} className={`animate-on-scroll stagger-delay-${index + 1} group relative text-center p-8 rounded-2xl glass-effect bg-white/70 hover:bg-white/90 transition-all duration-500 transform hover:scale-110 hover:shadow-2xl hover:-translate-y-2`}>
-                <div className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent mb-3 group-hover:scale-110 transition-transform duration-300">
-                  {stat.number}
-                </div>
-                <div className="text-sm md:text-base text-gray-700 font-medium">{stat.label}</div>
-                
-                {/* Enhanced Hover Effect */}
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl opacity-0 group-hover:opacity-30 blur transition-all duration-500"></div>
-              </div>
-            ))}
-          </div>
+          
         </div>
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-20 bg-gradient-to-br from-white to-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section id="features" className="py-20 bg-white relative overflow-hidden border-t border-gray-100">
+        {/* Background Elements */}
+        <div className="absolute inset-0 opacity-5">
+          <div className="absolute top-20 left-20 w-64 h-64 bg-gradient-to-br from-blue-400 to-purple-400 rounded-full blur-3xl floating-animation"></div>
+          <div className="absolute bottom-20 right-20 w-48 h-48 bg-gradient-to-br from-purple-400 to-blue-400 rounded-full blur-3xl floating-animation" style={{ animationDelay: '2s' }}></div>
+        </div>
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center mb-16 animate-on-scroll">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4 relative z-10 drop-shadow-sm">
               Powerful Features for Smart City Management
             </h2>
-            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+            <p className="text-lg text-gray-700 max-w-3xl mx-auto relative z-10 drop-shadow-sm">
               Discover how Garun Systems revolutionizes urban development with cutting-edge technology
             </p>
           </div>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {features.map((feature, index) => (
-              <div key={index} className={`animate-on-scroll stagger-delay-${index + 1} group bg-white p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:scale-105 hover:-translate-y-2 border border-gray-100 hover:border-blue-200`}>
+              <div key={index} className={`animate-on-scroll stagger-delay-${index + 1} group relative bg-white p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:scale-105 hover:-translate-y-2 border border-gray-100 hover:border-blue-200 z-10`}>
                 <div className="mb-6 group-hover:scale-110 transition-transform duration-300">{feature.icon}</div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors duration-300">{feature.title}</h3>
                 <p className="text-gray-600 leading-relaxed">{feature.description}</p>
