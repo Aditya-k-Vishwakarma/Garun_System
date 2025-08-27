@@ -14,7 +14,26 @@ import {
 
 const LandingPage = () => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+  const [isScrolled, setIsScrolled] = React.useState(false);
   const heroRef = useRef(null);
+
+  // Scroll detection for header color change
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollPosition = window.scrollY;
+      const heroHeight = heroRef.current?.offsetHeight || 0;
+      
+      // Change header color when scrolled past hero section
+      if (scrollPosition > heroHeight * 0.8) {
+        setIsScrolled(true);
+      } else {
+        setIsScrolled(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Intersection Observer for animations
   useEffect(() => {
@@ -216,12 +235,18 @@ const LandingPage = () => {
       `}</style>
 
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 transition-all duration-500 bg-black/90 backdrop-blur-md border-b border-white/10 shadow-lg">
+      <nav className="fixed top-0 left-0 right-0 z-50 transition-all duration-500 bg-transparent backdrop-blur-sm border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
             <div className="flex items-center">
-              <div className="flex-shrink-0 transform hover:scale-105 transition-transform duration-300">
-                <h1 className="text-2xl font-bold text-white">Garun System</h1>
+              <div className={`flex-shrink-0 transform hover:scale-110 transition-transform duration-300 ${
+                isScrolled ? 'bg-transparent' : 'bg-transparent'
+              }`}>
+                <h1 className={`text-2xl font-bold drop-shadow-lg ${
+                  isScrolled 
+                    ? 'text-black' 
+                    : 'text-transparent bg-clip-text bg-gradient-to-r from-white via-blue-100 to-purple-100'
+                }`}>Garun System</h1>
               </div>
             </div>
             
@@ -230,20 +255,36 @@ const LandingPage = () => {
               <div className="ml-10 flex items-baseline space-x-2">
                 <button 
                   onClick={() => smoothScrollTo('features')} 
-                  className="text-white/90 hover:text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 hover:bg-white/10 glass-effect"
+                  className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 transform hover:scale-105 ${
+                    isScrolled 
+                      ? 'text-gray-800 hover:text-black bg-white/90 hover:bg-white shadow-lg' 
+                      : 'text-white/95 hover:text-white hover:bg-white/20 glass-effect'
+                  }`}
                 >
                   Features
                 </button>
                 <button 
                   onClick={() => smoothScrollTo('about')} 
-                  className="text-white/90 hover:text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 hover:bg-white/10 glass-effect"
+                  className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 transform hover:scale-105 ${
+                    isScrolled 
+                      ? 'text-gray-800 hover:text-black bg-white/90 hover:bg-white shadow-lg' 
+                      : 'text-white/95 hover:text-white hover:bg-white/20 glass-effect'
+                  }`}
                 >
                   About
                 </button>
-                <Link to="/login" className="text-white/90 hover:text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 hover:bg-white/10 glass-effect">
+                <Link to="/login" className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 transform hover:scale-105 ${
+                  isScrolled 
+                    ? 'text-gray-800 hover:text-black bg-white/90 hover:bg-white shadow-lg' 
+                    : 'text-white/95 hover:text-white hover:bg-white/20 glass-effect'
+                }`}>
                   Login
                 </Link>
-                <Link to="/signup" className="ripple-effect glass-effect hover:bg-white/30 text-white px-6 py-2 rounded-lg text-sm font-medium transition-all duration-300 border border-white/30 transform hover:scale-105">
+                <Link to="/signup" className={`px-6 py-2 rounded-xl text-sm font-semibold transition-all duration-300 transform hover:scale-110 ${
+                  isScrolled 
+                    ? 'text-white bg-blue-600 hover:bg-blue-700 shadow-lg border-2 border-blue-600' 
+                    : 'text-white border-2 border-white/40 glass-effect hover:bg-white/40 bg-gradient-to-r from-white/10 to-white/5'
+                }`}>
                   Sign Up
                 </Link>
               </div>
@@ -253,7 +294,11 @@ const LandingPage = () => {
             <div className="md:hidden">
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="text-white hover:text-white/80 p-2 rounded-lg glass-effect transition-all duration-300 transform hover:scale-110"
+                className={`p-2 rounded-lg transition-all duration-300 transform hover:scale-110 ${
+                  isScrolled 
+                    ? 'text-gray-800 hover:text-black bg-white/90 hover:bg-white shadow-lg' 
+                    : 'text-white hover:text-white/80 glass-effect'
+                }`}
               >
                 {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
               </button>
@@ -267,18 +312,38 @@ const LandingPage = () => {
             ? 'max-h-64 opacity-100' 
             : 'max-h-0 opacity-0 overflow-hidden'
         }`}>
-          <div className="bg-black/90 backdrop-blur-md border-t border-white/20">
+          <div className={`backdrop-blur-md border-t ${
+            isScrolled 
+              ? 'bg-white/95 border-gray-200/20' 
+              : 'bg-black/90 border-white/20'
+          }`}>
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-              <button onClick={() => smoothScrollTo('features')} className="text-white/90 hover:text-white block w-full text-left px-3 py-2 rounded-md text-base font-medium hover:bg-white/10 transition-all duration-300">
+              <button onClick={() => smoothScrollTo('features')} className={`block w-full text-left px-3 py-2 rounded-md text-base font-medium transition-all duration-300 ${
+                isScrolled 
+                  ? 'text-gray-800 hover:text-black hover:bg-gray-100' 
+                  : 'text-white/90 hover:text-white hover:bg-white/10'
+              }`}>
                 Features
               </button>
-              <button onClick={() => smoothScrollTo('about')} className="text-white/90 hover:text-white block w-full text-left px-3 py-2 rounded-md text-base font-medium hover:bg-white/10 transition-all duration-300">
+              <button onClick={() => smoothScrollTo('about')} className={`block w-full text-left px-3 py-2 rounded-md text-base font-medium transition-all duration-300 ${
+                isScrolled 
+                  ? 'text-gray-800 hover:text-black hover:bg-gray-100' 
+                  : 'text-white/90 hover:text-white hover:bg-white/10'
+              }`}>
                 About
               </button>
-              <Link to="/login" className="text-white/90 hover:text-white block px-3 py-2 rounded-md text-base font-medium hover:bg-white/10 transition-all duration-300">
+              <Link to="/login" className={`block px-3 py-2 rounded-md text-base font-medium transition-all duration-300 ${
+                isScrolled 
+                  ? 'text-gray-800 hover:text-black hover:bg-gray-100' 
+                  : 'text-white/90 hover:text-white hover:bg-white/10'
+              }`}>
                 Login
               </Link>
-              <Link to="/signup" className="glass-effect hover:bg-white/30 text-white block px-3 py-2 rounded-md text-base font-medium transition-all duration-300">
+              <Link to="/signup" className={`block px-3 py-2 rounded-md text-base font-medium transition-all duration-300 ${
+                isScrolled 
+                  ? 'text-white bg-blue-600 hover:bg-blue-700' 
+                  : 'text-white glass-effect hover:bg-white/30'
+              }`}>
                 Sign Up
               </Link>
             </div>
