@@ -221,7 +221,7 @@ const LandingPage = () => {
           <div className="flex justify-between items-center h-20">
             <div className="flex items-center">
               <div className="flex-shrink-0 transform hover:scale-105 transition-transform duration-300">
-                <h1 className="text-2xl font-bold text-white">Garun Systems</h1>
+                <h1 className="text-2xl font-bold text-white">Garun System</h1>
               </div>
             </div>
             
@@ -323,7 +323,7 @@ const LandingPage = () => {
               </h1>
               
               <h2 className="text-4xl lg:text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-200 via-purple-300 to-blue-300 animate-on-scroll stagger-delay-3">
-                Garun Systems
+                Garun System
               </h2>
             </div>
             
@@ -519,8 +519,8 @@ const LandingPage = () => {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gradient-to-br from-gray-800 via-blue-900 to-gray-900 text-white py-16 relative overflow-hidden">
-        {/* Background Pattern */}
+      <footer className="bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 py-16 relative overflow-hidden border-t border-gray-200">
+        {/* Background Elements */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-10 left-10 w-32 h-32 bg-blue-400 rounded-full blur-2xl floating-animation"></div>
           <div className="absolute bottom-10 right-10 w-40 h-40 bg-purple-400 rounded-full blur-2xl floating-animation" style={{ animationDelay: '2s' }}></div>
@@ -530,8 +530,8 @@ const LandingPage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid md:grid-cols-4 gap-8 mb-12">
             <div className="animate-on-scroll from-left">
-              <h3 className="text-xl font-bold text-blue-300 mb-4">Garun Systems</h3>
-              <p className="text-gray-300 leading-relaxed">
+              <h3 className="text-xl font-bold text-blue-600 mb-4">Garun System</h3>
+              <p className="text-gray-700 leading-relaxed">
                 Transforming urban development through advanced geo-spatial analysis and smart city solutions.
               </p>
             </div>
@@ -553,7 +553,7 @@ const LandingPage = () => {
               {
                 title: "Contact",
                 content: (
-                  <div className="text-gray-300 space-y-2">
+                  <div className="text-gray-700 space-y-2">
                     <p>Indore Municipal Corporation</p>
                     <p>Smart City Development Association</p>
                     <p>Madhya Pradesh, India</p>
@@ -562,21 +562,21 @@ const LandingPage = () => {
               }
             ].map((section, index) => (
               <div key={index} className={`animate-on-scroll stagger-delay-${index + 1}`}>
-                <h4 className="text-lg font-semibold mb-4 text-blue-200">{section.title}</h4>
+                <h4 className="text-lg font-semibold mb-4 text-blue-600">{section.title}</h4>
                 {section.items ? (
                   <ul className="space-y-2">
                     {section.items.map((item, itemIndex) => (
                       <li key={itemIndex}>
                         {typeof item === 'string' ? (
-                          <span className="text-gray-300 hover:text-white transition-colors duration-300 cursor-default">
+                          <span className="text-gray-600 hover:text-blue-600 transition-colors duration-300 cursor-default">
                             {item}
                           </span>
                         ) : item.link ? (
-                          <Link to={item.link} className="text-gray-300 hover:text-white transition-colors duration-300">
+                          <Link to={item.link} className="text-gray-600 hover:text-blue-600 transition-colors duration-300">
                             {item.text}
                           </Link>
                         ) : (
-                          <button onClick={item.action} className="text-gray-300 hover:text-white transition-colors duration-300">
+                          <button onClick={item.action} className="text-gray-600 hover:text-blue-600 transition-colors duration-300">
                             {item.text}
                           </button>
                         )}
@@ -590,8 +590,8 @@ const LandingPage = () => {
             ))}
           </div>
           
-          <div className="border-t border-blue-800 pt-8 text-center animate-on-scroll">
-            <p className="text-gray-300">&copy; 2025 Garun Systems. All rights reserved.</p>
+          <div className="border-t border-blue-200 pt-8 text-center animate-on-scroll">
+            <p className="text-gray-600">&copy; 2025 Garun System. All rights reserved.</p>
           </div>
         </div>
       </footer>
