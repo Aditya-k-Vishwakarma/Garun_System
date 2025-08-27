@@ -306,24 +306,22 @@ const CitizenDashboard = () => {
       />
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
         {/* Welcome Section with Performance Score */}
-        <div className="mb-8">
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-8 text-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-3xl font-bold mb-2">
+        <div className="mb-6 sm:mb-8">
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 text-white">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+              <div className="flex-1">
+                <h2 className="text-2xl sm:text-3xl font-bold mb-2">
                   Welcome back, {user?.fullName || 'Citizen'}! 👋
                 </h2>
-                <p className="text-blue-100 text-lg mb-4">
-                  Track your complaints, property verifications, and building approvals in real-time for Indore Smart City Development Association
+                <p className="text-blue-100 text-base sm:text-lg mb-4">
+                  Track your complaints, property verifications, and building approvals in real-time for Municipal Corporation of Indore
                 </p>
-                
-
               </div>
-              <div className="hidden md:block">
-                <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center">
-                  <Shield className="w-12 h-12 text-white" />
+              <div className="hidden sm:block">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 bg-white/20 rounded-full flex items-center justify-center">
+                  <Shield className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-white" />
                 </div>
               </div>
             </div>
@@ -331,43 +329,47 @@ const CitizenDashboard = () => {
         </div>
 
         {/* Dashboard Controls */}
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-          <h3 className="text-xl font-semibold text-gray-900">Dashboard Controls</h3>
-          <div className="flex items-center space-x-4">
-            {/* Auto-refresh toggle */}
-            <button
-              onClick={toggleAutoRefresh}
-              className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                autoRefresh 
-                  ? 'bg-green-100 text-green-700 border border-green-300' 
-                  : 'bg-gray-100 text-gray-700 border border-gray-300'
-              }`}
-            >
-              <RefreshCw className={`w-4 h-4 ${autoRefresh ? 'animate-spin' : ''}`} />
-              <span>Auto-refresh {autoRefresh ? 'ON' : 'OFF'}</span>
-            </button>
+        <div className="mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <h3 className="text-lg sm:text-xl font-semibold text-gray-900">Dashboard Controls</h3>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
+              {/* Auto-refresh toggle */}
+              <button
+                onClick={toggleAutoRefresh}
+                className={`flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors w-full sm:w-auto ${
+                  autoRefresh 
+                    ? 'bg-green-100 text-green-700 border border-green-300' 
+                    : 'bg-gray-100 text-gray-700 border border-gray-300'
+                }`}
+              >
+                <RefreshCw className={`w-4 h-4 ${autoRefresh ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">Auto-refresh {autoRefresh ? 'ON' : 'OFF'}</span>
+                <span className="sm:hidden">{autoRefresh ? 'ON' : 'OFF'}</span>
+              </button>
 
-            {/* Refresh interval selector */}
-            <select
-              value={refreshInterval}
-              onChange={(e) => changeRefreshInterval(Number(e.target.value))}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value={15000}>15s</option>
-              <option value={30000}>30s</option>
-              <option value={60000}>1m</option>
-              <option value={300000}>5m</option>
-            </select>
+              {/* Refresh interval selector */}
+              <select
+                value={refreshInterval}
+                onChange={(e) => changeRefreshInterval(Number(e.target.value))}
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full sm:w-auto"
+              >
+                <option value={15000}>15s</option>
+                <option value={30000}>30s</option>
+                <option value={60000}>1m</option>
+                <option value={300000}>5m</option>
+              </select>
 
-            {/* Manual refresh */}
-            <button
-              onClick={refreshDashboard}
-              disabled={refreshing}
-              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-            >
-              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-              <span>{refreshing ? 'Refreshing...' : 'Refresh Now'}</span>
-            </button>
+              {/* Manual refresh */}
+              <button
+                onClick={refreshDashboard}
+                disabled={refreshing}
+                className="flex items-center justify-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 w-full sm:w-auto"
+              >
+                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">{refreshing ? 'Refreshing...' : 'Refresh Now'}</span>
+                <span className="sm:hidden">{refreshing ? '...' : 'Refresh'}</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -391,65 +393,65 @@ const CitizenDashboard = () => {
         )}
 
         {/* Quick Actions */}
-        <div className="mb-8">
-          <h3 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="mb-6 sm:mb-8">
+          <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">Quick Actions</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <Link
               to="/register-complaint"
-              className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-300 transform hover:scale-105 group"
+              className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-300 transform hover:scale-105 group"
             >
-              <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center group-hover:bg-red-200 transition-colors">
-                  <AlertTriangle className="w-6 h-6 text-red-600" />
+              <div className="flex items-center space-x-3 sm:space-x-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-100 rounded-lg flex items-center justify-center group-hover:bg-red-200 transition-colors flex-shrink-0">
+                  <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-red-600" />
                 </div>
-                <div>
-                  <h4 className="font-semibold text-gray-900">Register Complaint</h4>
-                  <p className="text-sm text-gray-500">Report an issue</p>
+                <div className="min-w-0 flex-1">
+                  <h4 className="font-semibold text-gray-900 text-sm sm:text-base">Register Complaint</h4>
+                  <p className="text-xs sm:text-sm text-gray-500">Report an issue</p>
                 </div>
               </div>
             </Link>
 
             <Link
               to="/property-verification"
-              className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-300 transform hover:scale-105 group"
+              className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-300 transform hover:scale-105 group"
             >
-              <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors">
-                  <FileCheck className="w-6 h-6 text-blue-600" />
+              <div className="flex items-center space-x-3 sm:space-x-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors flex-shrink-0">
+                  <FileCheck className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
                 </div>
-                <div>
-                  <h4 className="font-semibold text-gray-900">Property Verification</h4>
-                  <p className="text-sm text-gray-500">Verify documents</p>
+                <div className="min-w-0 flex-1">
+                  <h4 className="font-semibold text-gray-900 text-sm sm:text-base">Property Verification</h4>
+                  <p className="text-xs sm:text-sm text-gray-500">Verify documents</p>
                 </div>
               </div>
             </Link>
 
             <Link
               to="/building-approval"
-              className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-300 transform hover:scale-105 group"
+              className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-300 transform hover:scale-105 group"
             >
-              <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center group-hover:bg-green-200 transition-colors">
-                  <Building2 className="w-6 h-6 text-green-600" />
+              <div className="flex items-center space-x-3 sm:space-x-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-lg flex items-center justify-center group-hover:bg-green-200 transition-colors flex-shrink-0">
+                  <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
                 </div>
-                <div>
-                  <h4 className="font-semibold text-gray-900">Building Approval</h4>
-                  <p className="text-sm text-gray-500">Apply for construction</p>
+                <div className="min-w-0 flex-1">
+                  <h4 className="font-semibold text-gray-900 text-sm sm:text-base">Building Approval</h4>
+                  <p className="text-xs sm:text-sm text-gray-500">Apply for construction</p>
                 </div>
               </div>
             </Link>
 
             <Link
               to="/track-complaint"
-              className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-300 transform hover:scale-105 group"
+              className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-300 transform hover:scale-105 group"
             >
-              <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center group-hover:bg-purple-200 transition-colors">
-                  <Search className="w-6 h-6 text-purple-600" />
+              <div className="flex items-center space-x-3 sm:space-x-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg flex items-center justify-center group-hover:bg-purple-200 transition-colors flex-shrink-0">
+                  <Search className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
                 </div>
-                <div>
-                  <h4 className="font-semibold text-gray-900">Track Complaint</h4>
-                  <p className="text-sm text-gray-500">Check status</p>
+                <div className="min-w-0 flex-1">
+                  <h4 className="font-semibold text-gray-900 text-sm sm:text-base">Track Complaint</h4>
+                  <p className="text-xs sm:text-sm text-gray-500">Check status</p>
                 </div>
               </div>
             </Link>
@@ -458,30 +460,30 @@ const CitizenDashboard = () => {
 
         {/* Statistics Overview */}
         {dashboardData && (
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-semibold text-gray-900">Statistics Overview</h3>
-              <div className="flex items-center space-x-2 text-sm text-gray-500">
+          <div className="mb-6 sm:mb-8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-900">Statistics Overview</h3>
+              <div className="flex items-center space-x-2 text-xs sm:text-sm text-gray-500">
                 <span>Last updated: {lastUpdate?.toLocaleTimeString()}</span>
               </div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
               {/* Complaints Stats */}
-              <div className={`bg-white p-6 rounded-xl shadow-sm border border-gray-200 transition-all duration-500 ${
+              <div className={`bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200 transition-all duration-500 ${
                 statsAnimation ? 'scale-105 shadow-lg' : ''
               }`}>
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Total Complaints</p>
-                    <p className="text-3xl font-bold text-gray-900">{dashboardData.complaints.total}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs sm:text-sm font-medium text-gray-600">Total Complaints</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-gray-900">{dashboardData.complaints.total}</p>
                   </div>
-                  <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                    <AlertTriangle className="w-6 h-6 text-red-600" />
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-red-600" />
                   </div>
                 </div>
-                <div className="mt-4">
-                  <div className="flex items-center justify-between text-sm">
+                <div className="mt-3 sm:mt-4">
+                  <div className="flex items-center justify-between text-xs sm:text-sm">
                     <span className="text-gray-600">Resolved</span>
                     <span className="font-medium text-green-600">{dashboardData.complaints.resolved}</span>
                   </div>
@@ -498,20 +500,20 @@ const CitizenDashboard = () => {
               </div>
 
               {/* Property Verifications Stats */}
-              <div className={`bg-white p-6 rounded-xl shadow-sm border border-gray-200 transition-all duration-500 ${
+              <div className={`bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200 transition-all duration-500 ${
                 statsAnimation ? 'scale-105 shadow-lg' : ''
               }`}>
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Property Verifications</p>
-                    <p className="text-3xl font-bold text-gray-900">{dashboardData.property_verifications.total}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs sm:text-sm font-medium text-gray-600">Property Verifications</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-gray-900">{dashboardData.property_verifications.total}</p>
                   </div>
-                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <FileCheck className="w-6 h-6 text-blue-600" />
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <FileCheck className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
                   </div>
                 </div>
-                <div className="mt-4">
-                  <div className="flex items-center justify-between text-sm">
+                <div className="mt-3 sm:mt-4">
+                  <div className="flex items-center justify-between text-xs sm:text-sm">
                     <span className="text-gray-600">Verified</span>
                     <span className="font-medium text-green-600">{dashboardData.property_verifications.verified}</span>
                   </div>
@@ -528,20 +530,20 @@ const CitizenDashboard = () => {
               </div>
 
               {/* Building Approvals Stats */}
-              <div className={`bg-white p-6 rounded-xl shadow-sm border border-gray-200 transition-all duration-500 ${
+              <div className={`bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200 transition-all duration-500 ${
                 statsAnimation ? 'scale-105 shadow-lg' : ''
               }`}>
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Building Approvals</p>
-                    <p className="text-3xl font-bold text-gray-900">{dashboardData.building_approvals.total}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs sm:text-sm font-medium text-gray-600">Building Approvals</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-gray-900">{dashboardData.building_approvals.total}</p>
                   </div>
-                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                    <Building2 className="w-6 h-6 text-green-600" />
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
                   </div>
                 </div>
-                <div className="mt-4">
-                  <div className="flex items-center justify-between text-sm">
+                <div className="mt-3 sm:mt-4">
+                  <div className="flex items-center justify-between text-xs sm:text-sm">
                     <span className="text-gray-600">Approved</span>
                     <span className="font-medium text-green-600">{dashboardData.building_approvals.approved}</span>
                   </div>
@@ -558,31 +560,31 @@ const CitizenDashboard = () => {
               </div>
 
               {/* Recent Activity Stats */}
-              <div className={`bg-white p-6 rounded-xl shadow-sm border border-gray-200 transition-all duration-500 ${
+              <div className={`bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200 transition-all duration-500 ${
                 statsAnimation ? 'scale-105 shadow-lg' : ''
               }`}>
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Recent Activity</p>
-                    <p className="text-3xl font-bold text-gray-900">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs sm:text-sm font-medium text-gray-600">Recent Activity</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-gray-900">
                       {dashboardData.recent_activity.complaints_last_30_days + 
                        dashboardData.recent_activity.property_verifications_last_30_days + 
                        dashboardData.recent_activity.building_approvals_last_30_days}
                     </p>
                   </div>
-                  <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <Activity className="w-6 h-6 text-purple-600" />
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Activity className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
                   </div>
                 </div>
-                <div className="mt-4">
-                  <p className="text-sm text-gray-600">Last 30 days</p>
+                <div className="mt-3 sm:mt-4">
+                  <p className="text-xs sm:text-sm text-gray-600">Last 30 days</p>
                   <div className="mt-2 flex space-x-1">
                     <div className="flex-1 bg-blue-500 h-2 rounded-full"></div>
                     <div className="flex-1 bg-green-500 h-2 rounded-full"></div>
                     <div className="flex-1 bg-purple-500 h-2 rounded-full"></div>
                   </div>
                   <div className="mt-2 text-xs text-gray-500">
-                    <div className="flex justify-between">
+                    <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0">
                       <span>Complaints: {dashboardData.recent_activity.complaints_last_30_days}</span>
                       <span>Property: {dashboardData.recent_activity.property_verifications_last_30_days}</span>
                       <span>Building: {dashboardData.recent_activity.building_approvals_last_30_days}</span>
@@ -595,8 +597,8 @@ const CitizenDashboard = () => {
         )}
 
         {/* Complaint Tracking */}
-        <div className="mb-8">
-          <h3 className="text-xl font-semibold text-gray-900 mb-4">Track Your Complaints</h3>
+        <div className="mb-6 sm:mb-8">
+          <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">Track Your Complaints</h3>
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
             <div className="p-6">
               <div className="flex space-x-4 mb-4">
@@ -700,27 +702,27 @@ const CitizenDashboard = () => {
         </div>
 
         {/* Recent Activities */}
-        <div className="mb-8">
-          <h3 className="text-xl font-semibold text-gray-900 mb-4">Recent Activities</h3>
+        <div className="mb-6 sm:mb-8">
+          <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">Recent Activities</h3>
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               {recentActivities.length > 0 ? (
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   {recentActivities.map((activity) => (
-                    <div key={activity.id} className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all duration-300 transform hover:scale-102">
+                    <div key={activity.id} className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 p-3 sm:p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all duration-300 transform hover:scale-102">
                       <div className="flex-shrink-0">
                         {getActivityIcon(activity.type)}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-900 truncate">{activity.title}</p>
                         <p className="text-sm text-gray-500 truncate">{activity.description}</p>
-                        <div className="flex items-center space-x-4 mt-2">
+                        <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-4 mt-2">
                           <span className="text-xs text-gray-500">
                             {new Date(activity.timestamp).toLocaleDateString()}
                           </span>
-                          <span className="text-xs text-gray-500">•</span>
+                          <span className="hidden sm:inline text-xs text-gray-500">•</span>
                           <span className="text-xs text-gray-500">{activity.category}</span>
-                          <span className="text-xs text-gray-500">•</span>
+                          <span className="hidden sm:inline text-xs text-gray-500">•</span>
                           <span className="text-xs text-gray-500">Priority: {activity.priority}</span>
                         </div>
                       </div>
@@ -734,10 +736,10 @@ const CitizenDashboard = () => {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8">
-                  <Activity className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">No recent activities</p>
-                  <p className="text-sm text-gray-400">Your activities will appear here</p>
+                <div className="text-center py-6 sm:py-8">
+                  <Activity className="w-10 h-10 sm:w-12 sm:h-12 text-gray-400 mx-auto mb-3 sm:mb-4" />
+                  <p className="text-gray-500 text-sm sm:text-base">No recent activities</p>
+                  <p className="text-xs sm:text-sm text-gray-400">Your activities will appear here</p>
                 </div>
               )}
             </div>
@@ -745,49 +747,49 @@ const CitizenDashboard = () => {
         </div>
 
         {/* Quick Links */}
-        <div className="mb-8">
-          <h3 className="text-xl font-semibold text-gray-900 mb-4">Quick Links</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="mb-6 sm:mb-8">
+          <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">Quick Links</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             <Link
               to="/direct-communication"
-              className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-300 transform hover:scale-105 group"
+              className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-300 transform hover:scale-105 group"
             >
-              <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center group-hover:bg-indigo-200 transition-colors">
-                  <MessageCircle className="w-6 h-6 text-indigo-600" />
+              <div className="flex items-center space-x-3 sm:space-x-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-indigo-100 rounded-lg flex items-center justify-center group-hover:bg-indigo-200 transition-colors flex-shrink-0">
+                  <MessageCircle className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600" />
                 </div>
-                <div>
-                  <h4 className="font-semibold text-gray-900">Direct Communication</h4>
-                  <p className="text-sm text-gray-500">Contact officials directly</p>
+                <div className="min-w-0 flex-1">
+                  <h4 className="font-semibold text-gray-900 text-sm sm:text-base">Direct Communication</h4>
+                  <p className="text-xs sm:text-sm text-gray-500">Contact officials directly</p>
                 </div>
               </div>
             </Link>
 
             <Link
               to="/anonymous-complaint"
-              className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-300 transform hover:scale-105 group"
+              className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-300 transform hover:scale-105 group"
             >
-              <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center group-hover:bg-orange-200 transition-colors">
-                  <Shield className="w-6 h-6 text-orange-600" />
+              <div className="flex items-center space-x-3 sm:space-x-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-100 rounded-lg flex items-center justify-center group-hover:bg-orange-200 transition-colors flex-shrink-0">
+                  <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-orange-600" />
                 </div>
-                <div>
-                  <h4 className="font-semibold text-gray-900">Anonymous Complaint</h4>
-                  <p className="text-sm text-gray-500">Report without revealing identity</p>
+                <div className="min-w-0 flex-1">
+                  <h4 className="font-semibold text-gray-900 text-sm sm:text-base">Anonymous Complaint</h4>
+                  <p className="text-xs sm:text-sm text-gray-500">Report without revealing identity</p>
                 </div>
               </div>
             </Link>
 
             <Link
               to="/profile"
-              className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-300 transform hover:scale-105 group"
+              className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-300 transform hover:scale-105 group"
             >
-              <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center group-hover:bg-gray-200 transition-colors">
-                  <User className="w-6 h-6 text-gray-600" />
+              <div className="flex items-center space-x-3 sm:space-x-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 rounded-lg flex items-center justify-center group-hover:bg-gray-200 transition-colors flex-shrink-0">
+                  <User className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
                 </div>
-                <div>
-                  <h4 className="font-semibold text-gray-900">Profile Settings</h4>
+                <div className="min-w-0 flex-1">
+                  <h4 className="font-semibold text-gray-900 text-sm sm:text-base">Profile Settings</h4>
                   <p className="text-sm text-gray-500">Manage your account</p>
                 </div>
               </div>

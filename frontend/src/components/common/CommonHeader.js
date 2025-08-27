@@ -52,7 +52,7 @@ const CommonHeader = ({
                  🏛️ Indore Smart City
                </h1>
                <p className="text-sm text-blue-200 font-medium">Indore Smart City Development Association</p>
-               <p className="text-xs text-gray-300">Ministry of Urban Development & Housing</p>
+                               <p className="text-xs text-gray-300">Municipal Corporation of Indore</p>
             </div>
           </div>
           

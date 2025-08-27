@@ -1413,7 +1413,7 @@ const AdminDashboard = () => {
             Welcome, {user?.name || 'Administrator'}! 🏛️
           </h2>
           <p className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
-            Monitor system performance, manage departments, conduct field surveys, and ensure efficient grievance resolution across all government departments for Indore Smart City Development Association.
+            Monitor system performance, manage departments, conduct field surveys, and ensure efficient grievance resolution across all government departments for Municipal Corporation of Indore.
           </p>
         </div>
 

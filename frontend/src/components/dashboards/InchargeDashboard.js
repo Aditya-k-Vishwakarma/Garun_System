@@ -2596,7 +2596,7 @@ const InchargeDashboard = () => {
             Welcome, {user?.name || 'Department Incharge'}!
           </h2>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
-            Manage your department's complaints, monitor team performance, and conduct field surveys with our advanced analytics platform for Indore Smart City Development Association.
+            Manage your department's complaints, monitor team performance, and conduct field surveys with our advanced analytics platform for Municipal Corporation of Indore.
           </p>
         </div>
 
