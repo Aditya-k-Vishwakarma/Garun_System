@@ -379,19 +379,7 @@ const Signup = () => {
                   />
                 </div>
 
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="autoGeolocation"
-                    name="autoGeolocation"
-                    checked={formData.autoGeolocation}
-                    onChange={handleInputChange}
-                    className="h-3 w-3 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
-                  <label htmlFor="autoGeolocation" className="text-xs text-gray-700">
-                    Allow auto-geolocation for better service
-                  </label>
-                </div>
+               
               </div>
 
               {/* Consent */}
