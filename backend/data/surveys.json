@@ -1882,5 +1882,235 @@
     "ward_name": "Ward 6",
     "incharge_id": "INC001",
     "survey_type": "Field Survey with Drone Data"
+  },
+  {
+    "id": "SUR202508280134015420ef2e",
+    "survey_data": {
+      "ward_no": "8",
+      "survey_date": "2025-08-27",
+      "drone_id": "ef",
+      "locality_name": "sv",
+      "area_name": "sevfgs",
+      "coordinates": {
+        "latitude": "22.671115",
+        "longitude": "75.825096"
+      },
+      "roads": [
+        {
+          "road_id": "4ftgc",
+          "length_meters": "41",
+          "width_meters": "45",
+          "surface_type": "asphalt"
+        }
+      ],
+      "buildings": [
+        {
+          "building_id": "gdsrfv",
+          "height_meters": "0.4",
+          "floors": "05435",
+          "area_sq_meters": "65",
+          "type": "residential",
+          "status": "legal"
+        }
+      ],
+      "land_usage": {
+        "residential_area_sq_meters": "",
+        "commercial_area_sq_meters": "",
+        "green_area_sq_meters": "",
+        "industrial_area_sq_meters": ""
+      },
+      "violations": {
+        "illegal_buildings_detected": 0,
+        "encroachment_on_roads": false
+      },
+      "incharge_id": "INC001",
+      "zone_type": "residential",
+      "timestamp": "2025-08-27T20:04:01.242Z"
+    },
+    "drone_file_path": "uploads\\surveys\\5dde390a-ad9e-456e-8355-472549eeeec3.json",
+    "drone_data_used": {
+      "ward_no": "8",
+      "survey_date": "2025-08-27",
+      "drone_id": "ef",
+      "locality_name": "sv",
+      "area_name": "sevfgs",
+      "coordinates": {
+        "latitude": "22.671115",
+        "longitude": "75.825096"
+      },
+      "roads": [
+        {
+          "road_id": "4ftgc",
+          "length_meters": "41",
+          "width_meters": "45",
+          "surface_type": "asphalt"
+        }
+      ],
+      "buildings": [
+        {
+          "building_id": "gdsrfv",
+          "height_meters": "0.4",
+          "floors": "05435",
+          "area_sq_meters": "65",
+          "type": "residential",
+          "status": "legal"
+        }
+      ],
+      "land_usage": {
+        "residential_area_sq_meters": "",
+        "commercial_area_sq_meters": "",
+        "green_area_sq_meters": "",
+        "industrial_area_sq_meters": ""
+      },
+      "violations": {
+        "illegal_buildings_detected": 0,
+        "encroachment_on_roads": false
+      },
+      "incharge_id": "INC001",
+      "zone_type": "residential",
+      "timestamp": "2025-08-27T20:04:01.242Z"
+    },
+    "violations": [
+      {
+        "building_id": "gdsrfv",
+        "type": "floor_violation",
+        "current": 5435,
+        "allowed": 5,
+        "severity": "high",
+        "description": "Building has 5435 floors, exceeding limit of 5 for residential zone"
+      },
+      {
+        "building_id": "gdsrfv",
+        "type": "far_violation",
+        "current": 5435.0,
+        "allowed": 1.5,
+        "severity": "medium",
+        "description": "FAR 5435.0 exceeds limit of 1.5 for residential zone"
+      }
+    ],
+    "regulations_used": {
+      "city": "Indore",
+      "year": 2025,
+      "zones": {
+        "residential": {
+          "zone_code": "RES",
+          "building_regulations": {
+            "building_height_limit_meters": 18,
+            "max_floors": 5,
+            "floor_area_ratio": 1.5,
+            "setbacks": {
+              "front_setback_meters": 3,
+              "rear_setback_meters": 2,
+              "side_setback_meters": 1.5
+            },
+            "land_use": "Residential",
+            "road_width_minimum_meters": 9,
+            "parking_requirement": {
+              "car": "1 per 75 sq.m builtup area",
+              "two_wheeler": "1 per 40 sq.m builtup area"
+            }
+          },
+          "special_restrictions": {
+            "basement_usage": "Only for parking, not for commercial",
+            "rooftop_construction": "Allowed only for utilities (water tank, solar panel)",
+            "green_area_minimum_percent": 10
+          }
+        },
+        "commercial": {
+          "zone_code": "COM",
+          "building_regulations": {
+            "building_height_limit_meters": 30,
+            "max_floors": 8,
+            "floor_area_ratio": 2.5,
+            "setbacks": {
+              "front_setback_meters": 5,
+              "rear_setback_meters": 3,
+              "side_setback_meters": 2
+            },
+            "land_use": "Commercial",
+            "road_width_minimum_meters": 12,
+            "parking_requirement": {
+              "car": "1 per 50 sq.m builtup area",
+              "two_wheeler": "1 per 30 sq.m builtup area"
+            }
+          },
+          "special_restrictions": {
+            "basement_usage": "Allowed for parking + storage (not retail)",
+            "rooftop_construction": "Allowed for utilities and solar panel only",
+            "green_area_minimum_percent": 5
+          }
+        },
+        "industrial": {
+          "zone_code": "IND",
+          "building_regulations": {
+            "building_height_limit_meters": 25,
+            "max_floors": 6,
+            "floor_area_ratio": 2.0,
+            "setbacks": {
+              "front_setback_meters": 8,
+              "rear_setback_meters": 5,
+              "side_setback_meters": 4
+            },
+            "land_use": "Industrial",
+            "road_width_minimum_meters": 15,
+            "parking_requirement": {
+              "car": "1 per 100 sq.m builtup area",
+              "two_wheeler": "1 per 50 sq.m builtup area"
+            }
+          },
+          "special_restrictions": {
+            "basement_usage": "Allowed for storage and utilities",
+            "rooftop_construction": "Allowed for utilities and solar panel",
+            "green_area_minimum_percent": 8
+          }
+        },
+        "mixed": {
+          "zone_code": "MIX",
+          "building_regulations": {
+            "building_height_limit_meters": 24,
+            "max_floors": 7,
+            "floor_area_ratio": 2.2,
+            "setbacks": {
+              "front_setback_meters": 4,
+              "rear_setback_meters": 3,
+              "side_setback_meters": 2.5
+            },
+            "land_use": "Mixed Use",
+            "road_width_minimum_meters": 10,
+            "parking_requirement": {
+              "car": "1 per 60 sq.m builtup area",
+              "two_wheeler": "1 per 35 sq.m builtup area"
+            }
+          },
+          "special_restrictions": {
+            "basement_usage": "Allowed for parking and storage",
+            "rooftop_construction": "Allowed for utilities and solar panel",
+            "green_area_minimum_percent": 7
+          }
+        }
+      }
+    },
+    "status": "completed",
+    "created_at": "2025-08-28T01:34:01.557024",
+    "ward_no": "8",
+    "survey_date": "2025-08-27",
+    "drone_id": "ef",
+    "coordinates": {
+      "latitude": "22.671115",
+      "longitude": "75.825096"
+    },
+    "total_violations": 2,
+    "total_buildings": 1,
+    "total_roads": 1,
+    "total_area_sq_meters": 0.0,
+    "severity_summary": {
+      "high": 1,
+      "medium": 1,
+      "low": 0
+    },
+    "compliance_score": 0.0,
+    "ward_name": "Ward 8",
+    "incharge_id": "INC001",
+    "survey_type": "Field Survey with Drone Data"
   }
 ]

@@ -105,7 +105,20 @@ def load_data():
                 print(f"Warning: Failed to load admin data: {e}")
         
         # Ensure admin data is synchronized with current databases
-        update_admin_data()
+        # Only update admin data if we have actual data loaded
+        if len(complaints_db) > 0 or len(property_verifications_db) > 0 or len(building_approvals_db) > 0:
+            update_admin_data()
+        else:
+            # If no data loaded from individual files, try to load from admin data
+            if "complaints" in admin_data and len(admin_data["complaints"]) > 0:
+                complaints_db = admin_data["complaints"]
+                print(f"Loaded {len(complaints_db)} complaints from admin data")
+            if "property_verifications" in admin_data and len(admin_data["property_verifications"]) > 0:
+                property_verifications_db = admin_data["property_verifications"]
+                print(f"Loaded {len(property_verifications_db)} property verifications from admin data")
+            if "building_approvals" in admin_data and len(admin_data["building_approvals"]) > 0:
+                building_approvals_db = admin_data["building_approvals"]
+                print(f"Loaded {len(building_approvals_db)} building approvals from admin data")
                 
         print(f"Loaded {len(complaints_db)} complaints, {len(property_verifications_db)} property verifications, {len(building_approvals_db)} building approvals")
     except Exception as e:
@@ -124,6 +137,38 @@ def update_admin_data():
     admin_data["building_approvals"] = building_approvals_db
     admin_data["surveys"] = surveys_db
     admin_data["illegal_constructions"] = illegal_constructions_db
+
+def save_data():
+    """Save all data to JSON files"""
+    try:
+        # Save complaints
+        with open(COMPLAINTS_FILE, 'w', encoding='utf-8') as f:
+            json.dump(complaints_db, f, indent=2, ensure_ascii=False, default=str)
+        
+        # Save property verifications
+        with open(PROPERTY_FILE, 'w', encoding='utf-8') as f:
+            json.dump(property_verifications_db, f, indent=2, ensure_ascii=False, default=str)
+        
+        # Save building approvals
+        with open(BUILDING_FILE, 'w', encoding='utf-8') as f:
+            json.dump(building_approvals_db, f, indent=2, ensure_ascii=False, default=str)
+        
+        # Save surveys
+        with open(SURVEYS_FILE, 'w', encoding='utf-8') as f:
+            json.dump(surveys_db, f, indent=2, ensure_ascii=False, default=str)
+        
+        # Save illegal constructions
+        with open(ILLEGAL_FILE, 'w', encoding='utf-8') as f:
+            json.dump(illegal_constructions_db, f, indent=2, ensure_ascii=False, default=str)
+        
+        # Save admin data
+        admin_file = DATA_DIR / "admin_data.json"
+        with open(admin_file, 'w', encoding='utf-8') as f:
+            json.dump(admin_data, f, indent=2, ensure_ascii=False, default=str)
+        
+        print("All data saved successfully")
+    except Exception as e:
+        print(f"Error saving data: {e}")
 
 # Load data on startup
 load_data()
@@ -691,10 +736,32 @@ async def get_user_dashboard_stats(user_contact: str):
 async def get_user_recent_activity(user_contact: str):
     """Get recent activity for a user"""
     try:
+        # Only reload data if the database is empty (to avoid overwriting new data)
+        if len(complaints_db) == 0:
+            load_data()
+        
+        print(f"Fetching recent activity for user: {user_contact}")
+        print(f"Total complaints in database: {len(complaints_db)}")
+        
         # Get all user activities
+        print(f"Looking for complaints with contact number: '{user_contact}'")
+        print(f"Available contact numbers in complaints: {[c['complainant']['contact_number'] for c in complaints_db]}")
+        
         user_complaints = [c for c in complaints_db if c["complainant"]["contact_number"] == user_contact]
         user_property_verifications = [v for v in property_verifications_db if v.get("contact_number") == user_contact]
         user_building_approvals = [a for a in building_approvals_db if a.get("contact_number") == user_contact]
+        
+        print(f"Found {len(user_complaints)} complaints for user {user_contact}")
+        
+        # Also try case-insensitive and trimmed matching
+        if len(user_complaints) == 0:
+            user_complaints = [c for c in complaints_db if c["complainant"]["contact_number"].strip().lower() == user_contact.strip().lower()]
+            print(f"After case-insensitive matching: {len(user_complaints)} complaints")
+        
+        # Try partial matching if still no results
+        if len(user_complaints) == 0:
+            user_complaints = [c for c in complaints_db if user_contact.strip().lower() in c["complainant"]["contact_number"].strip().lower()]
+            print(f"After partial matching: {len(user_complaints)} complaints")
         
         # Combine all activities with timestamps
         all_activities = []
@@ -741,12 +808,15 @@ async def get_user_recent_activity(user_contact: str):
         # Return recent activities (last 10)
         recent_activities = all_activities[:10]
         
+        print(f"Returning {len(recent_activities)} recent activities for user {user_contact}")
+        
         return {
             "success": True,
             "recent_activities": recent_activities,
             "total_activities": len(all_activities)
         }
     except Exception as e:
+        print(f"Error in recent activity endpoint: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch recent activity: {str(e)}")
 
 @app.get("/api/dashboard/notifications/{user_contact}")
@@ -800,6 +870,9 @@ async def mark_notification_read(notification_id: str):
 @app.get("/api/complaints/track/{complaint_id}")
 async def track_complaint(complaint_id: str):
     """Track complaint status by ID"""
+    # Force reload data to ensure we have the latest complaints
+    load_data()
+    
     print(f"Tracking complaint with ID: {complaint_id}")
     print(f"Available complaints: {[c['id'] for c in complaints_db]}")
     
@@ -810,6 +883,10 @@ async def track_complaint(complaint_id: str):
     if not complaint:
         complaint = next((c for c in complaints_db if c["id"].lower() == complaint_id.lower()), None)
     
+    # If still not found, try partial match (for user convenience)
+    if not complaint:
+        complaint = next((c for c in complaints_db if complaint_id.lower() in c["id"].lower()), None)
+    
     if not complaint:
         print(f"Complaint not found for ID: {complaint_id}")
         raise HTTPException(status_code=404, detail="Complaint not found")
@@ -818,7 +895,14 @@ async def track_complaint(complaint_id: str):
     
     return {
         "success": True,
-        "complaint": complaint
+        "complaint": complaint,
+        "tracking_info": {
+            "complaint_id": complaint["id"],
+            "status": complaint["status"],
+            "last_update": complaint["updates"][-1] if complaint["updates"] else None,
+            "estimated_resolution": complaint.get("estimated_resolution"),
+            "assigned_to": complaint.get("assigned_to")
+        }
     }
 
 @app.get("/api/complaints/user/{user_id}")
@@ -835,10 +919,155 @@ async def get_user_complaints(user_id: str):
 @app.get("/api/complaints/all")
 async def get_all_complaints():
     """Get all complaints (for admin dashboard)"""
+    # Force reload data to ensure we have the latest
+    load_data()
     return {
         "success": True,
         "complaints": complaints_db,
         "total": len(complaints_db)
+    }
+
+@app.get("/api/debug/complaints")
+async def debug_complaints():
+    """Debug endpoint to see what's in the complaints database"""
+    load_data()
+    return {
+        "success": True,
+        "complaints_db_length": len(complaints_db),
+        "admin_data_complaints_length": len(admin_data.get("complaints", [])),
+        "complaints": complaints_db,
+        "admin_data_complaints": admin_data.get("complaints", [])
+    }
+
+@app.get("/api/dashboard/incharge-stats")
+async def get_incharge_dashboard_stats():
+    """Get comprehensive statistics for Incharge Dashboard"""
+    try:
+        load_data()
+        
+        # Calculate complaint statistics
+        total_complaints = len(complaints_db)
+        pending_complaints = len([c for c in complaints_db if c["status"] == "New"])
+        in_progress_complaints = len([c for c in complaints_db if c["status"] in ["In Progress", "Under Review", "Assigned"]])
+        resolved_complaints = len([c for c in complaints_db if c["status"] == "Resolved"])
+        
+        # Calculate survey statistics
+        total_surveys = len(surveys_db)
+        completed_surveys = len([s for s in surveys_db if s.get("status") == "completed"])
+        pending_surveys = len([s for s in surveys_db if s.get("status") in ["pending", "in_progress"]])
+        
+        # Calculate violation statistics
+        total_violations = 0
+        high_severity_violations = 0
+        medium_severity_violations = 0
+        low_severity_violations = 0
+        
+        for survey in surveys_db:
+            if "violations" in survey and isinstance(survey["violations"], list):
+                for violation in survey["violations"]:
+                    total_violations += 1
+                    severity = violation.get("severity", "low")
+                    if severity == "high":
+                        high_severity_violations += 1
+                    elif severity == "medium":
+                        medium_severity_violations += 1
+                    else:
+                        low_severity_violations += 1
+        
+        # Calculate compliance rate
+        compliance_rate = round(((total_surveys - total_violations) / total_surveys) * 100, 1) if total_surveys > 0 else 100
+        
+        # Calculate performance metrics
+        avg_resolution_time = "2.1 days"  # This would be calculated from actual data
+        sla_compliance = "94.2%"  # This would be calculated from actual data
+        
+        # Team performance data
+        team_members = [
+            {
+                "id": 1,
+                "name": "Rajesh Kumar",
+                "role": "Senior Inspector",
+                "status": "Active",
+                "complaints": len([c for c in complaints_db if c.get("assigned_to") == "Rajesh Kumar"]),
+                "avg_time": "1.8 days"
+            },
+            {
+                "id": 2,
+                "name": "Priya Sharma",
+                "role": "Inspector",
+                "status": "Active",
+                "complaints": len([c for c in complaints_db if c.get("assigned_to") == "Priya Sharma"]),
+                "avg_time": "2.3 days"
+            }
+        ]
+        
+        # SLA alerts
+        sla_alerts = []
+        for complaint in complaints_db:
+            if complaint["status"] in ["New", "Assigned", "In Progress"]:
+                # Calculate days since submission
+                submitted_date = datetime.fromisoformat(complaint["submitted_at"])
+                days_elapsed = (datetime.now() - submitted_date).days
+                
+                if days_elapsed >= 5:
+                    sla_alerts.append({
+                        "id": complaint["id"],
+                        "complaint_id": complaint["id"],
+                        "title": complaint["title"],
+                        "assignee": complaint.get("assigned_to", "Unassigned"),
+                        "time_left": f"{7 - days_elapsed} days",
+                        "severity": "critical" if days_elapsed >= 6 else "warning"
+                    })
+        
+        return {
+            "success": True,
+            "stats": {
+                "complaints": {
+                    "total": total_complaints,
+                    "pending": pending_complaints,
+                    "in_progress": in_progress_complaints,
+                    "resolved": resolved_complaints
+                },
+                "surveys": {
+                    "total": total_surveys,
+                    "completed": completed_surveys,
+                    "pending": pending_surveys
+                },
+                "violations": {
+                    "total": total_violations,
+                    "high_severity": high_severity_violations,
+                    "medium_severity": medium_severity_violations,
+                    "low_severity": low_severity_violations
+                },
+                "performance": {
+                    "compliance_rate": compliance_rate,
+                    "avg_resolution_time": avg_resolution_time,
+                    "sla_compliance": sla_compliance
+                },
+                "team_members": team_members,
+                "sla_alerts": sla_alerts[:5]  # Top 5 alerts
+            }
+        }
+    except Exception as e:
+        print(f"Error getting incharge stats: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch incharge stats: {str(e)}")
+
+@app.get("/api/test/recent-activity")
+async def test_recent_activity():
+    """Test endpoint to see recent activities for a test user"""
+    # Test with a known contact number from the database
+    test_contact = "9876543210"  # This should match one of the test complaints
+    
+    load_data()
+    user_complaints = [c for c in complaints_db if c["complainant"]["contact_number"] == test_contact]
+    
+    return {
+        "success": True,
+        "test_contact": test_contact,
+        "total_complaints_in_db": len(complaints_db),
+        "user_complaints_found": len(user_complaints),
+        "user_complaints": user_complaints,
+        "all_complaint_contacts": [c["complainant"]["contact_number"] for c in complaints_db]
     }
 
 @app.put("/api/complaints/{complaint_id}/status")
@@ -867,8 +1096,9 @@ async def update_complaint_status(
     
     print(f"Found complaint: {complaint['id']} - {complaint['title']}")
     
-    # Update status
-    complaint["status"] = status
+    # Update complaint fields
+    if status:
+        complaint["status"] = status
     if priority:
         complaint["priority"] = priority
     if assigned_to:
@@ -876,27 +1106,117 @@ async def update_complaint_status(
     if estimated_resolution:
         complaint["estimated_resolution"] = estimated_resolution
     
-    # Add update to timeline
-    update_entry = {
+    # Add update to history
+    complaint["updates"].append({
         "date": datetime.now().isoformat(),
         "status": status,
         "message": message,
         "officer": officer
-    }
-    complaint["updates"].append(update_entry)
+    })
     
-    # Update resolved_at if status is resolved
-    if status == "Resolved":
-        complaint["resolved_at"] = datetime.now().isoformat()
-    
+    # Save updated data
     update_admin_data()
-    save_data() # Save data after each complaint status update
+    save_data()
     
     return {
         "success": True,
         "message": "Complaint status updated successfully",
         "complaint": complaint
     }
+
+@app.post("/api/complaints/{complaint_id}/assign")
+async def assign_complaint(
+    complaint_id: str,
+    assigned_to: str = Form(...),
+    priority: str = Form(...),
+    estimated_resolution: str = Form(...),
+    officer: str = Form(...)
+):
+    """Assign complaint to a team member"""
+    try:
+        # Find complaint
+        complaint = next((c for c in complaints_db if c["id"] == complaint_id), None)
+        if not complaint:
+            raise HTTPException(status_code=404, detail="Complaint not found")
+        
+        # Update assignment
+        complaint["assigned_to"] = assigned_to
+        complaint["priority"] = priority
+        complaint["estimated_resolution"] = estimated_resolution
+        complaint["status"] = "Assigned"
+        
+        # Add update to history
+        complaint["updates"].append({
+            "date": datetime.now().isoformat(),
+            "status": "Assigned",
+            "message": f"Complaint assigned to {assigned_to}",
+            "officer": officer
+        })
+        
+        # Save updated data
+        update_admin_data()
+        save_data()
+        
+        return {
+            "success": True,
+            "message": "Complaint assigned successfully",
+            "complaint": complaint
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to assign complaint: {str(e)}")
+
+@app.get("/api/dashboard/team-performance")
+async def get_team_performance():
+    """Get team performance data for Incharge Dashboard"""
+    try:
+        load_data()
+        
+        # Calculate team performance metrics
+        team_performance = []
+        
+        # Get unique team members from complaints
+        team_members = set()
+        for complaint in complaints_db:
+            if complaint.get("assigned_to"):
+                team_members.add(complaint["assigned_to"])
+        
+        # Calculate metrics for each team member
+        for member in team_members:
+            member_complaints = [c for c in complaints_db if c.get("assigned_to") == member]
+            resolved_complaints = [c for c in member_complaints if c["status"] == "Resolved"]
+            in_progress_complaints = [c for c in member_complaints if c["status"] in ["In Progress", "Under Review"]]
+            
+            # Calculate average resolution time
+            total_days = 0
+            for complaint in resolved_complaints:
+                if complaint.get("resolved_at") and complaint.get("submitted_at"):
+                    try:
+                        submitted = datetime.fromisoformat(complaint["submitted_at"])
+                        resolved = datetime.fromisoformat(complaint["resolved_at"])
+                        days = (resolved - submitted).days
+                        total_days += days
+                    except:
+                        pass
+            
+            avg_resolution_time = round(total_days / len(resolved_complaints), 1) if resolved_complaints else 0
+            
+            team_performance.append({
+                "name": member,
+                "role": "Inspector",  # Default role
+                "status": "Active",
+                "total_complaints": len(member_complaints),
+                "resolved_complaints": len(resolved_complaints),
+                "in_progress_complaints": len(in_progress_complaints),
+                "avg_resolution_time": f"{avg_resolution_time} days",
+                "resolution_rate": round((len(resolved_complaints) / len(member_complaints)) * 100, 1) if member_complaints else 0
+            })
+        
+        return {
+            "success": True,
+            "team_performance": team_performance
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch team performance: {str(e)}")
 
 # Property verification endpoints
 @app.post("/api/property/verify")

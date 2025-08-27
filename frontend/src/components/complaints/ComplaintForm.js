@@ -73,6 +73,8 @@ const ComplaintForm = () => {
     id_proof_document: null,
     selfie: null
   });
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [registeredComplaint, setRegisteredComplaint] = useState(null);
 
   const categories = [
     { id: 'illegal_construction', name: 'Illegal Construction', icon: Building, color: 'bg-red-100 text-red-800' },
@@ -283,8 +285,13 @@ const ComplaintForm = () => {
 
       if (response.ok) {
         const result = await response.json();
-        toast.success('Complaint registered successfully!');
-        navigate('/dashboard');
+        
+        // Show success message with complaint ID
+        toast.success(`Complaint registered successfully! Your complaint ID is: ${result.complaint_id}`);
+        
+        // Set the registered complaint and show success modal
+        setRegisteredComplaint(result);
+        setShowSuccessModal(true);
       } else {
         const error = await response.json();
         toast.error(error.detail || 'Failed to register complaint');
@@ -979,6 +986,116 @@ const ComplaintForm = () => {
           </div>
         </div>
       </main>
+
+      {/* Success Modal */}
+      {showSuccessModal && registeredComplaint && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-8 max-w-md w-full mx-4 shadow-2xl">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="w-8 h-8 text-green-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Complaint Registered Successfully!</h3>
+              <p className="text-gray-600 mb-6">Your complaint has been submitted and is under review.</p>
+              
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-left">
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium text-gray-700">Complaint ID:</span>
+                    <div className="flex items-center space-x-2">
+                      <span className="font-mono text-blue-800 font-bold">{registeredComplaint.complaint_id}</span>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(registeredComplaint.complaint_id);
+                          toast.success('Complaint ID copied to clipboard!');
+                        }}
+                        className="p-1 text-blue-600 hover:text-blue-800 transition-colors"
+                        title="Copy to clipboard"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="font-medium text-gray-700">Title:</span>
+                    <span className="text-gray-800">{registeredComplaint.complaint.title}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="font-medium text-gray-700">Status:</span>
+                    <span className="text-gray-800">{registeredComplaint.complaint.status}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="font-medium text-gray-700">Date:</span>
+                    <span className="text-gray-800">{new Date(registeredComplaint.complaint.submitted_at).toLocaleDateString()}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-6">
+                <p className="text-sm text-yellow-800">
+                  <strong>Important:</strong> Please save this complaint ID for tracking purposes.
+                </p>
+              </div>
+              
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => {
+                    setShowSuccessModal(false);
+                    setRegisteredComplaint(null);
+                    navigate('/dashboard');
+                  }}
+                  className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Go to Dashboard
+                </button>
+                <button
+                  onClick={() => {
+                    setShowSuccessModal(false);
+                    setRegisteredComplaint(null);
+                    // Reset form for new complaint
+                    setStep(1);
+                    setFormData({
+                      title: '',
+                      description: '',
+                      category: '',
+                      incident_date: '',
+                      incident_time: '',
+                      address: '',
+                      ward: '',
+                      zone: '',
+                      latitude: '',
+                      longitude: '',
+                      landmark: '',
+                      full_name: user?.fullName || '',
+                      father_name: '',
+                      mother_name: '',
+                      date_of_birth: '',
+                      gender: '',
+                      contact_number: user?.contactNumber || '',
+                      residential_address: '',
+                      permanent_address: '',
+                      id_proof_type: '',
+                      id_proof_number: ''
+                    });
+                    setFiles({
+                      photos: [],
+                      videos: [],
+                      documents: [],
+                      id_proof_document: null,
+                      selfie: null
+                    });
+                  }}
+                  className="flex-1 bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition-colors"
+                >
+                  Register Another
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

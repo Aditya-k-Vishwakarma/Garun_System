@@ -859,5 +859,47 @@
     "action_required": true,
     "priority": "high",
     "estimated_resolution_days": 30
+  },
+  {
+    "id": "ILL20250828013401c61b5a46",
+    "survey_id": "SUR202508280134015420ef2e",
+    "building_id": "gdsrfv",
+    "road_id": null,
+    "violation_type": "floor_violation",
+    "current_value": 5435,
+    "allowed_value": 5,
+    "severity": "high",
+    "ward_no": "8",
+    "ward_name": "Ward 8",
+    "coordinates": {
+      "latitude": "22.671115",
+      "longitude": "75.825096"
+    },
+    "detected_at": "2025-08-28T01:34:01.557024",
+    "status": "detected",
+    "action_required": true,
+    "priority": "high",
+    "estimated_resolution_days": 30
+  },
+  {
+    "id": "ILL202508280134011bf86ce4",
+    "survey_id": "SUR202508280134015420ef2e",
+    "building_id": "gdsrfv",
+    "road_id": null,
+    "violation_type": "far_violation",
+    "current_value": 5435.0,
+    "allowed_value": 1.5,
+    "severity": "medium",
+    "ward_no": "8",
+    "ward_name": "Ward 8",
+    "coordinates": {
+      "latitude": "22.671115",
+      "longitude": "75.825096"
+    },
+    "detected_at": "2025-08-28T01:34:01.557024",
+    "status": "detected",
+    "action_required": true,
+    "priority": "medium",
+    "estimated_resolution_days": 60
   }
 ]
