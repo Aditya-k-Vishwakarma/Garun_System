@@ -2,7 +2,7 @@
 
 A comprehensive municipal grievance management system built with React frontend and FastAPI backend, designed to handle citizen complaints, property verification, building approvals, and administrative oversight.
 
-## 🚀 Features
+##  Features
 
 ### Citizen Features
 - **Complaint Registration**: Submit complaints with photo/video uploads, location tagging, and category selection
