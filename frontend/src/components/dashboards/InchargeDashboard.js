@@ -46,6 +46,7 @@ import {
 import AuthContext from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 import * as XLSX from 'xlsx';
+import CommonHeader from '../common/CommonHeader';
 
 const InchargeDashboard = () => {
   const { user, logout } = useContext(AuthContext);
@@ -2466,7 +2467,7 @@ const InchargeDashboard = () => {
           transform: translateY(-2px);
         }
         .btn-primary {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: #3b82f6;
           color: white;
           padding: 0.75rem 1.5rem;
           border: none;
@@ -2477,11 +2478,12 @@ const InchargeDashboard = () => {
           box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
         .btn-primary:hover {
+          background: #2563eb;
           transform: translateY(-1px);
           box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
         .btn-secondary {
-          background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+          background: #6b7280;
           color: white;
           padding: 0.75rem 1.5rem;
           border: none;
@@ -2492,11 +2494,12 @@ const InchargeDashboard = () => {
           box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
         .btn-secondary:hover {
+          background: #4b5563;
           transform: translateY(-1px);
           box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
         .btn-success {
-          background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+          background: #10b981;
           color: white;
           padding: 0.75rem 1.5rem;
           border: none;
@@ -2507,6 +2510,7 @@ const InchargeDashboard = () => {
           box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
         .btn-success:hover {
+          background: #059669;
           transform: translateY(-1px);
           box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
@@ -2563,59 +2567,17 @@ const InchargeDashboard = () => {
         }
       `}</style>
       
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-md shadow-lg border-b border-white/20 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-20">
-            <div className="flex items-center space-x-6">
-              <div className="h-12 w-12 bg-gradient-to-br from-orange-500 via-red-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg">
-                <Building2 className="h-7 w-7 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
-                  Garun System
-                </h1>
-                <p className="text-sm text-gray-600 font-medium">Department Incharge Panel</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-6">
-              <button className="p-3 text-gray-500 hover:text-blue-600 relative transition-all duration-300 hover:scale-110">
-                <Bell className="h-6 w-6" />
-                <span className="absolute top-2 right-2 h-3 w-3 bg-red-500 rounded-full animate-pulse"></span>
-              </button>
-              <button 
-                onClick={() => setShowChat(!showChat)}
-                className="p-3 text-gray-500 hover:text-blue-600 relative transition-all duration-300 hover:scale-110"
-              >
-                <MessageCircle className="h-6 w-6" />
-                <span className="absolute top-2 right-2 h-3 w-3 bg-blue-500 rounded-full animate-pulse"></span>
-              </button>
-              <button 
-                onClick={fetchSurveysData}
-                className={`p-3 text-gray-500 hover:text-green-600 transition-all duration-300 hover:scale-110 ${loading ? 'animate-spin' : ''}`}
-                title="Refresh Data"
-                disabled={loading}
-              >
-                <RefreshCw className="h-6 w-6" />
-              </button>
-              <div className="flex items-center space-x-4">
-                <div className="h-10 w-10 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center shadow-lg">
-                  <User className="h-5 w-5 text-white" />
-                </div>
-                <span className="text-sm font-semibold text-gray-700">{user?.name || 'Incharge Officer'}</span>
-              </div>
-              <button
-                onClick={handleLogout}
-                className="p-3 text-gray-500 hover:text-red-600 transition-all duration-300 hover:scale-110"
-                title="Logout"
-              >
-                <LogOut className="h-5 w-5" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <CommonHeader
+        user={user}
+        userRole="incharge"
+        onLogout={handleLogout}
+        onRefresh={fetchSurveysData}
+        onChatToggle={() => setShowChat(!showChat)}
+        showChat={showChat}
+        loading={loading}
+        notifications={3}
+        messages={2}
+      />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Loading Overlay */}
@@ -2634,7 +2596,7 @@ const InchargeDashboard = () => {
             Welcome, {user?.name || 'Department Incharge'}!
           </h2>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
-            Manage your department's complaints, monitor team performance, and conduct field surveys with our advanced analytics platform.
+            Manage your department's complaints, monitor team performance, and conduct field surveys with our advanced analytics platform for Indore Smart City Development Association.
           </p>
         </div>
 

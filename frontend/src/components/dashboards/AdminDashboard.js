@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect, useMemo } from 'react';
+import React, { useState, useContext, useEffect, useMemo, useCallback } from 'react';
 import { 
   Shield, 
   Users, 
@@ -18,7 +18,6 @@ import {
   CheckSquare,
   XSquare,
   Building2,
-  DocumentText,
   MessageCircle,
   Search,
   Camera,
@@ -38,11 +37,31 @@ import {
   PieChart,
   LineChart,
   Plus,
-  RefreshCw
+  RefreshCw,
+  Map,
+  Activity,
+  Target,
+  Home,
+  Phone,
+  Mail,
+  Calendar,
+  Download,
+  Upload,
+  Filter,
+  ChevronDown,
+  ChevronUp,
+  Edit,
+  Trash2,
+  Star,
+  Award,
+  AlertCircle,
+  Info,
+  HelpCircle
 } from 'lucide-react';
 import AuthContext from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
+import CommonHeader from '../common/CommonHeader';
 
 const AdminDashboard = () => {
   const { user, logout } = useContext(AuthContext);
@@ -52,6 +71,43 @@ const AdminDashboard = () => {
   const [showFieldSurveyModal, setShowFieldSurveyModal] = useState(false);
   const [showDroneFleetModal, setShowDroneFleetModal] = useState(false);
   const [showDataOverviewModal, setShowDataOverviewModal] = useState(false);
+  const [showMapView, setShowMapView] = useState(false);
+  const [showSatelliteMap, setShowSatelliteMap] = useState(false);
+  const [showSurveyForm, setShowSurveyForm] = useState(false);
+  const [showVerificationPopup, setShowVerificationPopup] = useState(false);
+  const [showDroneManagement, setShowDroneManagement] = useState(false);
+  const [showDataManagement, setShowDataManagement] = useState(false);
+  const [showAnalysisModal, setShowAnalysisModal] = useState(false);
+  const [selectedTab, setSelectedTab] = useState('dashboard');
+  const [mapInstance, setMapInstance] = useState(null);
+  const [satelliteMapInstance, setSatelliteMapInstance] = useState(null);
+  const [markers, setMarkers] = useState([]);
+  const [satelliteMarkers, setSatelliteMarkers] = useState([]);
+  const [wardSummary, setWardSummary] = useState({});
+  const [mapLoading, setMapLoading] = useState(false);
+  const [detectedConstructions, setDetectedConstructions] = useState([]);
+  const [wardName, setWardName] = useState('');
+  const [wardNumber, setWardNumber] = useState('');
+  const [droneConnected, setDroneConnected] = useState(false);
+  const [excelData, setExcelData] = useState({
+    sheets: [],
+    selectedSheet: 0,
+    data: [],
+    headers: [],
+    expandedRows: new Set(),
+    searchTerm: '',
+    filteredData: [],
+    isLoading: false
+  });
+  const [droneSurveyData, setDroneSurveyData] = useState([]);
+  const [dynamicWards, setDynamicWards] = useState([]);
+  const [wardAnalysisData, setWardAnalysisData] = useState({});
+  const [analysisResults, setAnalysisResults] = useState({
+    violations: [],
+    riskScore: 0,
+    complianceRate: 0,
+    recommendations: []
+  });
 
   const [complaints, setComplaints] = useState([]);
   const [propertyVerifications, setPropertyVerifications] = useState([]);
@@ -86,17 +142,100 @@ const AdminDashboard = () => {
 
   const navigate = useNavigate();
 
+  // Wards data for map functionality
+  const wards = [
+    { name: 'Sirpur', lat: 22.7006, lng: 75.8133 },
+    { name: 'Chandan Nagar', lat: 22.7128, lng: 75.8208 },
+    { name: 'Kalani Nagar', lat: 22.7217, lng: 75.8235 },
+    { name: 'Sukhdev Nagar', lat: 22.726955, lng: 75.823616 },
+    { name: 'Raj Nagar', lat: 22.6696, lng: 75.8294 },
+    { name: 'Malharganj', lat: 22.7201, lng: 75.8443 },
+    { name: 'Janata Colony', lat: 22.7409, lng: 75.8746 },
+    { name: 'Juna Risala', lat: 22.7238, lng: 75.8501 },
+    { name: 'Vrindavan', lat: 22.7179, lng: 75.8573 },
+    { name: 'Banganga', lat: 22.7496, lng: 75.8429 }
+  ];
+
+  // Standard parameters for analysis
+  const standardParameters = {
+    buildingHeight: {
+      residential: { max: 15, unit: 'meters' },
+      commercial: { max: 30, unit: 'meters' },
+      industrial: { max: 45, unit: 'meters' },
+      mixed: { max: 25, unit: 'meters' }
+    },
+    floorArea: {
+      residential: { max: 200, unit: 'sq_meters' },
+      commercial: { max: 500, unit: 'sq_meters' },
+      industrial: { max: 1000, unit: 'sq_meters' },
+      mixed: { max: 350, unit: 'sq_meters' }
+    },
+    setbacks: {
+      front: { min: 3, unit: 'meters' },
+      rear: { min: 3, unit: 'meters' },
+      left: { min: 2, unit: 'meters' },
+      right: { min: 2, unit: 'meters' }
+    },
+    greenArea: { min: 10, unit: 'percentage' },
+    parkingSpaces: { min: 1, unit: 'per_100_sq_meters' }
+  };
+
   const handleLogout = () => {
     logout();
     toast.success('Logged out successfully');
   };
 
-  // Fetch data from backend
+  // Enhanced fetch function that integrates data from all dashboards
   const fetchAdminData = async () => {
     try {
       setLoading(true);
       
-      // Simulate API call with dummy data
+      // Fetch data from multiple sources
+      const [complaintsResponse, surveysResponse, propertyResponse, buildingResponse, inchargeResponse] = await Promise.all([
+        fetch('http://localhost:8000/api/complaints/all'),
+        fetch('http://localhost:8000/api/surveys/all'),
+        fetch('http://localhost:8000/api/property-verifications/all'),
+        fetch('http://localhost:8000/api/building-approvals/all'),
+        fetch('http://localhost:8000/api/dashboard/incharge-stats')
+      ]);
+
+      let complaintsData = [];
+      let surveysData = [];
+      let propertyData = [];
+      let buildingData = [];
+      let inchargeStats = {};
+
+      // Process complaints data
+      if (complaintsResponse.ok) {
+        const complaintsResult = await complaintsResponse.json();
+        complaintsData = complaintsResult.complaints || [];
+      }
+
+      // Process surveys data
+      if (surveysResponse.ok) {
+        const surveysResult = await surveysResponse.json();
+        surveysData = surveysResult.surveys || [];
+      }
+
+      // Process property verifications
+      if (propertyResponse.ok) {
+        const propertyResult = await propertyResponse.json();
+        propertyData = propertyResult.verifications || [];
+      }
+
+      // Process building approvals
+      if (buildingResponse.ok) {
+        const buildingResult = await buildingResponse.json();
+        buildingData = buildingResult.approvals || [];
+      }
+
+      // Process incharge stats
+      if (inchargeResponse.ok) {
+        const inchargeResult = await inchargeResponse.json();
+        inchargeStats = inchargeResult.stats || {};
+      }
+
+      // Use real data if available, otherwise fall back to dummy data
       const dummyComplaints = [
         {
           id: 'GRV001',
@@ -468,23 +607,30 @@ const AdminDashboard = () => {
         }
       ];
 
-      setComplaints(dummyComplaints);
-      setPropertyVerifications(dummyPropertyVerifications);
-      setBuildingApprovals(dummyBuildingApprovals);
-      setSurveys(dummySurveys);
+      // Set data with real data if available, otherwise use dummy data
+      setComplaints(complaintsData.length > 0 ? complaintsData : dummyComplaints);
+      setPropertyVerifications(propertyData.length > 0 ? propertyData : dummyPropertyVerifications);
+      setBuildingApprovals(buildingData.length > 0 ? buildingData : dummyBuildingApprovals);
+      setSurveys(surveysData.length > 0 ? surveysData : dummySurveys);
       setIllegalConstructions(dummyIllegalConstructions);
       
-      // Update statistics with proper data handling
-      const totalComplaints = dummyComplaints.length;
-      const pendingComplaints = dummyComplaints.filter(c => c.status === 'New' || c.status === 'Under Review').length;
-      const inProgressComplaints = dummyComplaints.filter(c => c.status === 'In Progress').length;
-      const resolvedComplaints = dummyComplaints.filter(c => c.status === 'Resolved').length;
+      // Calculate enhanced statistics including incharge data
+      const finalComplaints = complaintsData.length > 0 ? complaintsData : dummyComplaints;
+      const finalSurveys = surveysData.length > 0 ? surveysData : dummySurveys;
       
-      const totalPropertyVerifications = dummyPropertyVerifications.length;
-      const pendingVerifications = dummyPropertyVerifications.filter(v => v.status === 'Pending').length;
+      const totalComplaints = finalComplaints.length;
+      const pendingComplaints = finalComplaints.filter(c => c.status === 'New' || c.status === 'Under Review').length;
+      const inProgressComplaints = finalComplaints.filter(c => c.status === 'In Progress').length;
+      const resolvedComplaints = finalComplaints.filter(c => c.status === 'Resolved').length;
       
-      const totalBuildingApprovals = dummyBuildingApprovals.length;
-      const pendingApprovals = dummyBuildingApprovals.filter(a => a.status === 'Pending').length;
+      const totalPropertyVerifications = propertyData.length > 0 ? propertyData.length : dummyPropertyVerifications.length;
+      const pendingVerifications = (propertyData.length > 0 ? propertyData : dummyPropertyVerifications).filter(v => v.status === 'Pending' || v.status === 'Under Review').length;
+      
+      const totalBuildingApprovals = buildingData.length > 0 ? buildingData.length : dummyBuildingApprovals.length;
+      const pendingApprovals = (buildingData.length > 0 ? buildingData : dummyBuildingApprovals).filter(a => a.status === 'Pending' || a.status === 'Under Review').length;
+      
+      const totalSurveys = finalSurveys.length;
+      const totalViolations = finalSurveys.reduce((total, survey) => total + (survey.total_violations || 0), 0);
       
       setStatistics({
         totalComplaints,
@@ -494,7 +640,10 @@ const AdminDashboard = () => {
         totalPropertyVerifications,
         pendingVerifications,
         totalBuildingApprovals,
-        pendingApprovals
+        pendingApprovals,
+        totalSurveys,
+        totalViolations,
+        complianceRate: totalSurveys > 0 ? Math.round(((totalSurveys - totalViolations) / totalSurveys) * 100) : 100
       });
     } catch (error) {
       console.error('Error fetching admin data:', error);
@@ -504,9 +653,204 @@ const AdminDashboard = () => {
     }
   };
 
+  // Map functionality for admin dashboard
+  const showConstructionsOnMap = useCallback((constructions) => {
+    if (!mapInstance || !window.L) return;
+    
+    try {
+      // Clear existing markers
+      markers.forEach(marker => {
+        if (marker && marker.remove) marker.remove();
+      });
+      
+      const newMarkers = [];
+      const wardData = {};
+      
+      constructions.forEach(survey => {
+        if (survey.coordinates && survey.violations && survey.violations.length > 0) {
+          const highSeverity = survey.violations.filter(v => v.severity === 'high').length;
+          const mediumSeverity = survey.violations.filter(v => v.severity === 'medium').length;
+          
+          let markerColor = '#10B981';
+          if (highSeverity > 0) markerColor = '#EF4444';
+          else if (mediumSeverity > 0) markerColor = '#F59E0B';
+          
+          const marker = window.L.circleMarker([survey.coordinates.latitude, survey.coordinates.longitude], {
+            radius: 12,
+            fillColor: markerColor,
+            color: '#1F2937',
+            weight: 2,
+            opacity: 1,
+            fillOpacity: 0.8
+          }).addTo(mapInstance);
+          
+          marker.bindPopup(`
+            <div class="p-2">
+              <h3 class="font-bold">Survey ${survey.id}</h3>
+              <p><strong>Ward:</strong> ${survey.ward_no}</p>
+              <p><strong>Violations:</strong> ${survey.violations.length}</p>
+              <p><strong>Date:</strong> ${survey.survey_date}</p>
+              <p><strong>Compliance:</strong> ${survey.compliance_score || 100}%</p>
+            </div>
+          `);
+          
+          newMarkers.push(marker);
+          
+          if (!wardData[survey.ward_no]) {
+            wardData[survey.ward_no] = { count: 0, violations: 0 };
+          }
+          wardData[survey.ward_no].count++;
+          wardData[survey.ward_no].violations += survey.violations.length;
+        }
+      });
+      
+      setMarkers(newMarkers);
+      setWardSummary(wardData);
+      
+      if (newMarkers.length > 0) {
+        const group = window.L.featureGroup(newMarkers);
+        mapInstance.fitBounds(group.getBounds());
+      }
+    } catch (error) {
+      console.error('Error showing constructions on map:', error);
+    }
+  }, [mapInstance, markers]);
+
+  const initializeMap = useCallback(async () => {
+    if (mapInstance) return;
+    
+    try {
+      setMapLoading(true);
+      
+      // Load Leaflet dynamically
+      if (!window.L) {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+        document.head.appendChild(link);
+        
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+          script.onload = resolve;
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+      }
+      
+      const map = window.L.map('admin-map').setView([22.7196, 75.8577], 12);
+      
+      window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+      }).addTo(map);
+      
+      setMapInstance(map);
+      
+      // Show survey data on map
+      if (surveys.length > 0) {
+        showConstructionsOnMap(surveys.filter(s => s.coordinates));
+      }
+      
+      setMapLoading(false);
+    } catch (error) {
+      console.error('Error initializing map:', error);
+      toast.error('Failed to initialize map');
+      setMapLoading(false);
+    }
+  }, [mapInstance, surveys, showConstructionsOnMap]);
+
   useEffect(() => {
     fetchAdminData();
   }, []);
+
+  // Initialize map when map view is shown
+  useEffect(() => {
+    if (showMapView && !mapInstance) {
+      initializeMap();
+    }
+  }, [showMapView, mapInstance, initializeMap]);
+
+  // Cleanup map when component unmounts
+  useEffect(() => {
+    return () => {
+      if (mapInstance) {
+        mapInstance.remove();
+        setMapInstance(null);
+      }
+    };
+  }, [mapInstance]);
+
+  const detectWard = useCallback(() => {
+    if (!mapInstance) {
+      toast.error("Map is still loading. Please wait a moment.");
+      return;
+    }
+    
+    try {
+      const wardNum = parseInt(wardNumber);
+      const wardNameTrimmed = wardName.trim();
+      
+      if (!wardNum && !wardNameTrimmed) {
+        toast.error("Please enter Ward Number or Name!");
+        return;
+      }
+      
+      let targetWard;
+      if (wardNum) {
+        if (wardNum < 1 || wardNum > wards.length) {
+          toast.error(`Ward number must be between 1 and ${wards.length}!`);
+          return;
+        }
+        targetWard = wards[wardNum - 1];
+      } else {
+        targetWard = wards.find(w => w.name.toLowerCase().includes(wardNameTrimmed.toLowerCase()));
+      }
+      
+      if (!targetWard) {
+        toast.error("Ward not found!");
+        return;
+      }
+      
+      const wardSurveys = surveys.filter(s => 
+        s.ward_no === targetWard.name || s.ward_number === wards.indexOf(targetWard) + 1
+      );
+      
+      if (wardSurveys.length === 0) {
+        toast.info(`No survey data found for ${targetWard.name}`);
+        mapInstance.setView([targetWard.lat, targetWard.lng], 14);
+        return;
+      }
+      
+      showConstructionsOnMap(wardSurveys);
+      mapInstance.setView([targetWard.lat, targetWard.lng], 14);
+      toast.success(`Showing data for ${targetWard.name} (${wardSurveys.length} surveys found)`);
+    } catch (error) {
+      console.error('Error detecting ward:', error);
+      toast.error("An error occurred while detecting the ward. Please try again.");
+    }
+  }, [mapInstance, surveys, wardNumber, wardName, wards, showConstructionsOnMap]);
+
+  const showFullIndore = useCallback(() => {
+    if (!mapInstance) {
+      toast.error("Map is still loading. Please wait a moment.");
+      return;
+    }
+    
+    try {
+      const allSurveys = surveys.filter(s => s.coordinates);
+      if (allSurveys.length === 0) {
+        toast.info("No survey data available to display");
+        return;
+      }
+      
+      showConstructionsOnMap(allSurveys);
+      mapInstance.setView([22.7196, 75.8577], 12);
+      toast.success("Showing all survey data for Indore");
+    } catch (error) {
+      console.error('Error showing full Indore:', error);
+      toast.error("An error occurred while loading the full map. Please try again.");
+    }
+  }, [mapInstance, surveys, showConstructionsOnMap]);
 
   // Calculate average resolution time with proper error handling
   const calculateAverageResolutionTime = () => {
@@ -900,57 +1244,155 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-4">
-              <div className="h-10 w-10 bg-gradient-to-r from-red-600 to-pink-600 rounded-lg flex items-center justify-center">
-                <Shield className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">Garun System</h1>
-                <p className="text-sm text-gray-600">Admin Panel</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <button className="p-2 text-gray-400 hover:text-gray-600 relative">
-                <Bell className="h-6 w-6" />
-                <span className="absolute top-0 right-0 h-3 w-3 bg-red-500 rounded-full"></span>
-              </button>
-              <button 
-                onClick={() => setShowChat(!showChat)}
-                className="p-2 text-gray-400 hover:text-gray-600 relative"
-              >
-                <MessageCircle className="h-6 w-6" />
-                <span className="absolute top-0 right-0 h-3 w-3 bg-blue-500 rounded-full"></span>
-              </button>
-              <button 
-                onClick={fetchAdminData}
-                className="p-2 text-gray-400 hover:text-gray-600"
-                title="Refresh Data"
-              >
-                <RefreshCw className="h-6 w-6" />
-              </button>
-              <div className="flex items-center space-x-3">
-                <div className="h-8 w-8 bg-red-100 rounded-full flex items-center justify-center">
-                  <User className="h-4 w-4 text-red-600" />
-                </div>
-                <span className="text-sm font-medium text-gray-700">{user?.name || 'Administrator'}</span>
-              </div>
-              <button
-                onClick={handleLogout}
-                className="p-2 text-gray-400 hover:text-gray-600"
-                title="Logout"
-              >
-                <LogOut className="h-5 w-5" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      {/* Enhanced CSS Styles */}
+      <style jsx>{`
+        .card {
+          background: white;
+          border-radius: 1rem;
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          border: 1px solid rgba(255, 255, 255, 0.8);
+          backdrop-filter: blur(10px);
+        }
+        .card:hover {
+          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+          transform: translateY(-2px);
+        }
+        .btn-primary {
+          background: #3b82f6;
+          color: white;
+          padding: 0.75rem 1.5rem;
+          border: none;
+          border-radius: 0.75rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .btn-primary:hover {
+          background: #2563eb;
+          transform: translateY(-1px);
+          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .btn-secondary {
+          background: #6b7280;
+          color: white;
+          padding: 0.75rem 1.5rem;
+          border: none;
+          border-radius: 0.75rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .btn-secondary:hover {
+          background: #4b5563;
+          transform: translateY(-1px);
+          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .btn-success {
+          background: #10b981;
+          color: white;
+          padding: 0.75rem 1.5rem;
+          border: none;
+          border-radius: 0.75rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .btn-success:hover {
+          background: #059669;
+          transform: translateY(-1px);
+          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .btn-danger {
+          background: #ef4444;
+          color: white;
+          padding: 0.75rem 1.5rem;
+          border: none;
+          border-radius: 0.75rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .btn-danger:hover {
+          background: #dc2626;
+          transform: translateY(-1px);
+          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .input-field {
+          width: 100%;
+          padding: 0.75rem 1rem;
+          border: 2px solid #e2e8f0;
+          border-radius: 0.75rem;
+          font-size: 0.875rem;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          background: rgba(255, 255, 255, 0.9);
+        }
+        .input-field:focus {
+          outline: none;
+          border-color: #667eea;
+          box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+          background: white;
+        }
+        .form-label {
+          display: block;
+          font-size: 0.875rem;
+          font-weight: 600;
+          color: #1e293b;
+          margin-bottom: 0.75rem;
+        }
+        .shadow-medium {
+          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        
+        /* Modern scrollbar */
+        ::-webkit-scrollbar {
+          width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+          background: #f1f5f9;
+          border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+          background: #cbd5e1;
+          border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+          background: #94a3b8;
+        }
+        
+        /* Responsive grid adjustments */
+        @media (max-width: 768px) {
+          .grid-cols-1.md\\:grid-cols-2.lg\\:grid-cols-4 {
+            grid-template-columns: repeat(1, minmax(0, 1fr));
+          }
+          .grid-cols-1.md\\:grid-cols-3 {
+            grid-template-columns: repeat(1, minmax(0, 1fr));
+          }
+        }
+        
+        @media (max-width: 1024px) {
+          .grid-cols-1.md\\:grid-cols-2.lg\\:grid-cols-4 {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+        }
+      `}</style>
+      {/* Enhanced Header with Government Portal Styling */}
+      <CommonHeader
+        user={user}
+        userRole="admin"
+        onLogout={handleLogout}
+        onRefresh={fetchAdminData}
+        onChatToggle={() => setShowChat(!showChat)}
+        showChat={showChat}
+        loading={loading}
+        notifications={5}
+        messages={3}
+      />
 
       {/* Loading State */}
       {loading && (
@@ -966,13 +1408,182 @@ const AdminDashboard = () => {
       {!loading && (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Section */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            Welcome, {user?.name || 'Administrator'}! 🛡️
+        <div className="mb-8 text-center">
+          <h2 className="text-4xl font-bold text-gray-900 mb-4">
+            Welcome, {user?.name || 'Administrator'}! 🏛️
           </h2>
-          <p className="text-gray-600">
-            Monitor system performance, manage departments, and ensure efficient grievance resolution.
+          <p className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
+            Monitor system performance, manage departments, conduct field surveys, and ensure efficient grievance resolution across all government departments for Indore Smart City Development Association.
           </p>
+        </div>
+
+        {/* Enhanced Navigation Tabs */}
+        <div className="mb-8">
+          <div className="bg-white rounded-xl shadow-lg p-2 border border-gray-200">
+            <div className="flex flex-wrap gap-2">
+              {[
+                { id: 'dashboard', label: '📊 Dashboard', icon: BarChart3 },
+                { id: 'complaints', label: '📝 Complaints', icon: FileText },
+                { id: 'surveys', label: '📡 Surveys', icon: Camera },
+                { id: 'maps', label: '🗺️ Maps', icon: MapPin },
+                { id: 'analytics', label: '📈 Analytics', icon: TrendingUp },
+                { id: 'reports', label: '📋 Reports', icon: FileText },
+                { id: 'settings', label: '⚙️ Settings', icon: Settings }
+              ].map((tab) => {
+                const IconComponent = tab.icon;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setSelectedTab(tab.id)}
+                    className={`flex items-center space-x-2 px-4 py-3 rounded-lg font-medium transition-all duration-300 ${
+                      selectedTab === tab.id
+                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg transform scale-105'
+                        : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
+                    }`}
+                  >
+                    <IconComponent className="h-5 w-5" />
+                    <span className="hidden sm:inline">{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Actions Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="group bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-300 cursor-pointer transform hover:-translate-y-2 border border-gray-100" onClick={() => setShowMapView(true)}>
+            <div className="mx-auto h-16 w-16 bg-blue-500 rounded-2xl flex items-center justify-center mb-4 shadow-lg group-hover:shadow-xl transition-all duration-300">
+              <Map className="h-8 w-8 text-white" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors duration-300">Live Map View</h3>
+            <p className="text-gray-600 text-sm leading-relaxed">Monitor all surveys and violations in real-time</p>
+            <div className="mt-4 w-0 group-hover:w-full h-0.5 bg-blue-500 transition-all duration-300"></div>
+          </div>
+
+          <div className="group bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-300 cursor-pointer transform hover:-translate-y-2 border border-gray-100" onClick={() => setShowDroneManagement(true)}>
+            <div className="mx-auto h-16 w-16 bg-green-500 rounded-2xl flex items-center justify-center mb-4 shadow-lg group-hover:shadow-xl transition-all duration-300">
+              <Plane className="h-8 w-8 text-white" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-green-600 transition-colors duration-300">Drone Management</h3>
+            <p className="text-gray-600 text-sm leading-relaxed">Monitor and control drone fleet operations</p>
+            <div className="mt-4 w-0 group-hover:w-full h-0.5 bg-green-500 transition-all duration-300"></div>
+          </div>
+
+          <div className="group bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-300 cursor-pointer transform hover:-translate-y-2 border border-gray-100" onClick={() => setShowDataManagement(true)}>
+            <div className="mx-auto h-16 w-16 bg-purple-500 rounded-2xl flex items-center justify-center mb-4 shadow-lg group-hover:shadow-xl transition-all duration-300">
+              <Database className="h-8 w-8 text-white" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-purple-600 transition-colors duration-300">Data Management</h3>
+            <p className="text-gray-600 text-sm leading-relaxed">Manage Excel data and survey information</p>
+            <div className="mt-4 w-0 group-hover:w-full h-0.5 bg-purple-500 transition-all duration-300"></div>
+          </div>
+
+          <div className="group bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-300 cursor-pointer transform hover:-translate-y-2 border border-gray-100" onClick={() => setShowSatelliteMap(true)}>
+            <div className="mx-auto h-16 w-16 bg-orange-500 rounded-2xl flex items-center justify-center mb-4 shadow-lg group-hover:shadow-xl transition-all duration-300">
+              <Satellite className="h-8 w-8 text-white" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-orange-600 transition-colors duration-300">Satellite Analysis</h3>
+            <p className="text-gray-600 text-sm leading-relaxed">ESRI satellite imagery with advanced analysis</p>
+            <div className="mt-4 w-0 group-hover:w-full h-0.5 bg-orange-500 transition-all duration-300"></div>
+          </div>
+        </div>
+
+        {/* Enhanced System Overview Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="bg-blue-500 text-white rounded-xl shadow-lg p-6 transform hover:scale-105 transition-all duration-300">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-blue-100 text-sm font-medium">Total Complaints</p>
+                <p className="text-3xl font-bold">{systemStats.totalComplaints}</p>
+                <p className="text-blue-200 text-xs">Across all departments</p>
+              </div>
+              <div className="h-16 w-16 bg-white/20 rounded-full flex items-center justify-center">
+                <FileText className="h-8 w-8 text-white" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-green-500 text-white rounded-xl shadow-lg p-6 transform hover:scale-105 transition-all duration-300">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-green-100 text-sm font-medium">Resolved</p>
+                <p className="text-3xl font-bold">{systemStats.resolved}</p>
+                <p className="text-green-200 text-xs">Successfully closed</p>
+              </div>
+              <div className="h-16 w-16 bg-white/20 rounded-full flex items-center justify-center">
+                <CheckCircle className="h-8 w-8 text-white" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-purple-500 text-white rounded-xl shadow-lg p-6 transform hover:scale-105 transition-all duration-300">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-purple-100 text-sm font-medium">Total Surveys</p>
+                <p className="text-3xl font-bold">{statistics.totalSurveys || 0}</p>
+                <p className="text-purple-200 text-xs">Field & drone surveys</p>
+              </div>
+              <div className="h-16 w-16 bg-white/20 rounded-full flex items-center justify-center">
+                <Camera className="h-8 w-8 text-white" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-orange-500 text-white rounded-xl shadow-lg p-6 transform hover:scale-105 transition-all duration-300">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-orange-100 text-sm font-medium">Compliance Rate</p>
+                <p className="text-3xl font-bold">{statistics.complianceRate || 100}%</p>
+                <p className="text-orange-200 text-xs">Overall compliance</p>
+              </div>
+              <div className="h-16 w-16 bg-white/20 rounded-full flex items-center justify-center">
+                <Target className="h-8 w-8 text-white" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Additional Enhanced Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-all duration-300">
+            <div className="flex items-center">
+              <div className="h-12 w-12 bg-indigo-100 rounded-xl flex items-center justify-center">
+                <Users className="h-6 w-6 text-indigo-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Active Officials</p>
+                <p className="text-2xl font-bold text-gray-900">{systemStats.activeOfficers}</p>
+                <p className="text-xs text-gray-500">Currently assigned</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-all duration-300">
+            <div className="flex items-center">
+              <div className="h-12 w-12 bg-teal-100 rounded-xl flex items-center justify-center">
+                <TrendingUp className="h-6 w-6 text-teal-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Avg Resolution</p>
+                <p className="text-2xl font-bold text-gray-900">{systemStats.avgResolutionTime}</p>
+                <p className="text-xs text-gray-500">Time to resolve</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-all duration-300">
+            <div className="flex items-center">
+              <div className="h-12 w-12 bg-rose-100 rounded-xl flex items-center justify-center">
+                <AlertTriangle className="h-6 w-6 text-rose-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Total Violations</p>
+                <p className="text-2xl font-bold text-gray-900">{statistics.totalViolations || 0}</p>
+                <p className="text-xs text-gray-500">Detected violations</p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* System Overview Stats */}
@@ -1068,6 +1679,84 @@ const AdminDashboard = () => {
 
 
 
+
+          {/* Real-Time Monitoring Dashboard */}
+          <div className="bg-white rounded-xl shadow-xl p-6 mb-8 border border-gray-100">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-bold text-gray-900">🔄 Real-Time Monitoring Dashboard</h3>
+              <div className="flex items-center space-x-3">
+                <span className="text-sm text-gray-500">Live updates every 30 seconds</span>
+                <button 
+                  onClick={fetchAdminData}
+                  className={`p-2 text-gray-500 hover:text-blue-600 transition-all duration-300 hover:scale-110 ${loading ? 'animate-spin' : ''}`}
+                  title="Refresh Data"
+                  disabled={loading}
+                >
+                  <RefreshCw className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {/* Live Complaints */}
+              <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="h-10 w-10 bg-red-500 rounded-lg flex items-center justify-center">
+                    <AlertTriangle className="h-5 w-5 text-white" />
+                  </div>
+                  <span className="text-sm font-medium text-red-600">Live</span>
+                </div>
+                <h4 className="text-lg font-semibold text-red-900">New Complaints</h4>
+                <p className="text-2xl font-bold text-red-800">
+                  {complaints.filter(c => c.status === 'New').length}
+                </p>
+                <p className="text-xs text-red-600 mt-1">Require immediate attention</p>
+              </div>
+
+              {/* Active Surveys */}
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="h-10 w-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                    <Camera className="h-5 w-5 text-white" />
+                  </div>
+                  <span className="text-sm font-medium text-blue-600">Active</span>
+                </div>
+                <h4 className="text-lg font-semibold text-blue-900">Field Surveys</h4>
+                <p className="text-2xl font-bold text-blue-800">
+                  {surveys.filter(s => s.status === 'in_progress' || s.status === 'In Progress').length}
+                </p>
+                <p className="text-xs text-blue-600 mt-1">Currently in progress</p>
+              </div>
+
+              {/* Pending Approvals */}
+              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="h-10 w-10 bg-yellow-500 rounded-lg flex items-center justify-center">
+                    <Clock className="h-5 w-5 text-white" />
+                  </div>
+                  <span className="text-sm font-medium text-yellow-600">Pending</span>
+                </div>
+                <h4 className="text-lg font-semibold text-yellow-900">Building Approvals</h4>
+                <p className="text-2xl font-bold text-yellow-800">
+                  {buildingApprovals.filter(b => b.status === 'Pending').length}
+                </p>
+                <p className="text-xs text-yellow-600 mt-1">Awaiting review</p>
+              </div>
+
+              {/* System Health */}
+              <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="h-10 w-10 bg-green-500 rounded-lg flex items-center justify-center">
+                    <Shield className="h-5 w-5 text-white" />
+                  </div>
+                  <span className="text-sm font-medium text-green-600">Healthy</span>
+                </div>
+                <h4 className="text-lg font-semibold text-green-900">System Status</h4>
+                <p className="text-2xl font-bold text-green-800">100%</p>
+                <p className="text-xs text-green-600 mt-1">All systems operational</p>
+              </div>
+            </div>
+          </div>
 
           {/* Field Survey Monitoring */}
           <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
@@ -1256,8 +1945,8 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-          {/* Survey Analytics Dashboard */}
-          {surveys && surveys.length > 0 && (
+                  {/* Enhanced Survey Analytics Dashboard */}
+        {surveys && surveys.length > 0 && (
             <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-semibold text-gray-900">📈 Survey Analytics & Compliance Metrics</h3>
@@ -2187,24 +2876,24 @@ const AdminDashboard = () => {
                     <div className="flex space-x-2">
                       <button 
                         onClick={() => handleViolationAction(construction.id, 'investigate')}
-                        className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg"
+                        className="btn-primary text-xs px-3 py-1"
                         title="Investigate"
                       >
-                        <Eye className="h-4 w-4" />
+                        Investigate
                       </button>
                       <button 
                         onClick={() => handleViolationAction(construction.id, 'resolve')}
-                        className="p-2 text-green-600 hover:text-green-700 hover:bg-green-50 rounded-lg"
+                        className="btn-success text-xs px-3 py-1"
                         title="Mark Resolved"
                       >
-                        <CheckCircle className="h-4 w-4" />
+                        Resolve
                       </button>
                       <button 
                         onClick={() => handleViolationAction(construction.id, 'escalate')}
-                        className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg"
+                        className="btn-danger text-xs px-3 py-1"
                         title="Escalate"
                       >
-                        <AlertTriangle className="h-4 w-4" />
+                        Escalate
                       </button>
                     </div>
                   </div>
@@ -2691,9 +3380,272 @@ const AdminDashboard = () => {
         </div>
       )}
 
+      {/* Enhanced Map View Modal */}
+      {showMapView && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl w-full max-w-7xl mx-4 max-h-[90vh] overflow-hidden shadow-2xl">
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6 flex items-center justify-between">
+              <div>
+                <h3 className="text-2xl font-bold">🗺️ Live Map View - Indore City</h3>
+                <p className="text-blue-100">Monitor all surveys, violations, and ward data in real-time</p>
+              </div>
+              <button
+                onClick={() => setShowMapView(false)}
+                className="text-white hover:text-blue-200 transition-colors duration-300"
+              >
+                <XCircle className="h-8 w-8" />
+              </button>
+            </div>
+            
+            <div className="p-6">
+              {/* Map Controls */}
+              <div className="mb-6 flex flex-wrap gap-4 items-center justify-between bg-gray-50 p-4 rounded-xl">
+                <div className="flex flex-wrap gap-4 items-center">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="number"
+                      placeholder="Ward Number"
+                      value={wardNumber}
+                      onChange={(e) => setWardNumber(e.target.value)}
+                      className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      min="1"
+                      max={wards.length}
+                    />
+                    <input
+                      type="text"
+                      placeholder="Ward Name"
+                      value={wardName}
+                      onChange={(e) => setWardName(e.target.value)}
+                      className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    <button
+                      onClick={detectWard}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-300"
+                    >
+                      Detect Ward
+                    </button>
+                  </div>
+                  
+                  <button
+                    onClick={showFullIndore}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-300"
+                  >
+                    Show Full Indore
+                  </button>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-gray-600">Legend:</span>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-4 h-4 bg-red-500 rounded-full"></div>
+                    <span className="text-sm text-gray-600">High Severity</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-4 h-4 bg-yellow-500 rounded-full"></div>
+                    <span className="text-sm text-gray-600">Medium Severity</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-4 h-4 bg-green-500 rounded-full"></div>
+                    <span className="text-sm text-gray-600">Compliant</span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Map Container */}
+              <div className="relative">
+                {mapLoading && (
+                  <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10 rounded-lg">
+                    <div className="text-center">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                      <p className="text-gray-600">Loading map...</p>
+                    </div>
+                  </div>
+                )}
+                <div id="admin-map" className="h-96 w-full rounded-xl border border-gray-200"></div>
+              </div>
+              
+              {/* Ward Summary */}
+              {Object.keys(wardSummary).length > 0 && (
+                <div className="mt-6 bg-gray-50 rounded-xl p-4">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-3">Ward Summary</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {Object.entries(wardSummary).map(([wardName, data]) => (
+                      <div key={wardName} className="bg-white p-4 rounded-lg border border-gray-200">
+                        <h5 className="font-semibold text-gray-900">{wardName}</h5>
+                        <p className="text-sm text-gray-600">Surveys: {data.count}</p>
+                        <p className="text-sm text-gray-600">Violations: {data.violations}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
+      {/* Enhanced Drone Management Modal */}
+      {showDroneManagement && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl w-full max-w-6xl mx-4 max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white p-6 flex items-center justify-between sticky top-0">
+              <div>
+                <h3 className="text-2xl font-bold">🚁 Drone Fleet Management</h3>
+                <p className="text-green-100">Monitor and control all drone operations across the city</p>
+              </div>
+              <button
+                onClick={() => setShowDroneManagement(false)}
+                className="text-white hover:text-green-200 transition-colors duration-300"
+              >
+                <XCircle className="h-8 w-8" />
+              </button>
+            </div>
+            
+            <div className="p-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Drone Status */}
+                <div className="bg-gray-50 rounded-xl p-6">
+                  <h4 className="text-xl font-semibold text-gray-900 mb-4">Fleet Status</h4>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                        <span className="font-medium">DRONE001</span>
+                      </div>
+                      <span className="text-sm text-gray-600">Active</span>
+                    </div>
+                    <div className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                        <span className="font-medium">DRONE002</span>
+                      </div>
+                      <span className="text-sm text-gray-600">Maintenance</span>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Live Operations */}
+                <div className="bg-gray-50 rounded-xl p-6">
+                  <h4 className="text-xl font-semibold text-gray-900 mb-4">Live Operations</h4>
+                  <div className="space-y-4">
+                    <div className="bg-white p-4 rounded-lg border border-gray-200">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-medium text-green-600">Survey in Progress</span>
+                        <span className="text-sm text-gray-500">Ward 5</span>
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        <p>Drone: DRONE001</p>
+                        <p>Battery: 85%</p>
+                        <p>Altitude: 120m</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
+      {/* Enhanced Data Management Modal */}
+      {showDataManagement && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl w-full max-w-6xl mx-4 max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-6 flex items-center justify-between sticky top-0">
+              <div>
+                <h3 className="text-2xl font-bold">📊 Data Management Center</h3>
+                <p className="text-purple-100">Manage Excel data, surveys, and comprehensive analytics</p>
+              </div>
+              <button
+                onClick={() => setShowDataManagement(false)}
+                className="text-white hover:text-purple-200 transition-colors duration-300"
+              >
+                <XCircle className="h-8 w-8" />
+              </button>
+            </div>
+            
+            <div className="p-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Data Overview */}
+                <div className="bg-gray-50 rounded-xl p-6">
+                  <h4 className="text-xl font-semibold text-gray-900 mb-4">Data Overview</h4>
+                  <div className="space-y-4">
+                    <div className="bg-white p-4 rounded-lg border border-gray-200">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-medium">Total Surveys</span>
+                        <span className="text-2xl font-bold text-blue-600">{surveys.length}</span>
+                      </div>
+                    </div>
+                    <div className="bg-white p-4 rounded-lg border border-gray-200">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-medium">Total Violations</span>
+                        <span className="text-2xl font-bold text-red-600">
+                          {surveys.reduce((total, survey) => total + (survey.total_violations || 0), 0)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Recent Activity */}
+                <div className="bg-gray-50 rounded-xl p-6">
+                  <h4 className="text-xl font-semibold text-gray-900 mb-4">Recent Activity</h4>
+                  <div className="space-y-3">
+                    {surveys.slice(0, 3).map((survey) => (
+                      <div key={survey.id} className="bg-white p-3 rounded-lg border border-gray-200">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-sm">{survey.id}</span>
+                          <span className="text-xs text-gray-500">{survey.survey_date}</span>
+                        </div>
+                        <p className="text-sm text-gray-600">Ward: {survey.ward_no}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
+      {/* Enhanced Satellite Map Modal */}
+      {showSatelliteMap && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl w-full max-w-7xl mx-4 max-h-[90vh] overflow-hidden shadow-2xl">
+            <div className="bg-gradient-to-r from-orange-600 to-red-600 text-white p-6 flex items-center justify-between">
+              <div>
+                <h3 className="text-2xl font-bold">🛰️ Satellite Analysis - ESRI Imagery</h3>
+                <p className="text-orange-100">High-resolution satellite imagery with advanced ward analysis</p>
+              </div>
+              <button
+                onClick={() => setShowSatelliteMap(false)}
+                className="text-white hover:text-orange-200 transition-colors duration-300"
+              >
+                <XCircle className="h-8 w-8" />
+              </button>
+            </div>
+            
+            <div className="p-6">
+              <div className="bg-gray-50 rounded-xl p-4 mb-6">
+                <h4 className="text-lg font-semibold text-gray-900 mb-3">Satellite Map Features</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
+                  <div>• High-resolution ESRI World Imagery</div>
+                  <div>• Ward boundary overlays</div>
+                  <div>• Advanced compliance analysis</div>
+                </div>
+              </div>
+              
+              <div id="satellite-map" className="h-96 w-full rounded-xl border border-gray-200 bg-gray-100 flex items-center justify-center">
+                <div className="text-center text-gray-500">
+                  <Satellite className="h-16 w-16 mx-auto mb-4 text-gray-400" />
+                  <p className="text-lg font-medium">Satellite Map Loading...</p>
+                  <p className="text-sm">ESRI World Imagery with advanced analysis</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
         
     </div>
   );
