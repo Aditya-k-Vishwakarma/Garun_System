@@ -44,6 +44,7 @@ import {
 } from 'lucide-react';
 import AuthContext from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
+import CommonHeader from '../common/CommonHeader';
 
 const CitizenDashboard = () => {
   const { user, logout } = useContext(AuthContext);
@@ -294,115 +295,15 @@ const CitizenDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
-                  <Shield className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Garun System</h1>
-                  <p className="text-sm text-gray-500">Indore Municipal Corporation</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              {/* Connection Status */}
-              <div className="flex items-center space-x-2 px-3 py-1 rounded-full bg-gray-100">
-                <div className={`w-2 h-2 rounded-full ${connectionStatus === 'online' ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                <span className="text-xs text-gray-600">{connectionStatus}</span>
-              </div>
-
-              {/* Last Update */}
-              {lastUpdate && (
-                <div className="text-xs text-gray-500">
-                  Last updated: {lastUpdate.toLocaleTimeString()}
-                </div>
-              )}
-
-              {/* Notifications */}
-              <div className="relative">
-                <button
-                  onClick={() => setShowNotifications(!showNotifications)}
-                  className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors"
-                >
-                  <Bell className="w-6 h-6" />
-                  {notifications.filter(n => !n.read).length > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                      {notifications.filter(n => !n.read).length}
-                    </span>
-                  )}
-                </button>
-                
-                {/* Notifications Dropdown */}
-                {showNotifications && (
-                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
-                    <div className="p-4 border-b border-gray-200">
-                      <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
-                      <button
-                        onClick={() => setNotifications(prev => prev.map(n => ({ ...n, read: true })))}
-                        className="text-sm text-blue-600 hover:text-blue-800"
-                      >
-                        Mark all as read
-                      </button>
-                    </div>
-                    <div className="max-h-96 overflow-y-auto">
-                      {notifications.length > 0 ? (
-                        notifications.map((notification) => (
-                          <div 
-                            key={notification.id} 
-                            className={`p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${!notification.read ? 'bg-blue-50' : ''}`}
-                            onClick={() => markNotificationRead(notification.id)}
-                          >
-                            <div className="flex items-start space-x-3">
-                              <div className={`w-2 h-2 rounded-full mt-2 ${!notification.read ? 'bg-blue-500' : 'bg-gray-300'}`}></div>
-                              <div className="flex-1">
-                                <p className="text-sm font-medium text-gray-900">{notification.title}</p>
-                                <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
-                                <p className="text-xs text-gray-500 mt-2">
-                                  {new Date(notification.timestamp).toLocaleDateString()}
-                                </p>
-                              </div>
-                              {!notification.read && (
-                                <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full">New</span>
-                              )}
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="p-4 text-center text-gray-500">
-                          No new notifications
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* User Menu */}
-              <div className="flex items-center space-x-3">
-                <div className="text-right">
-                  <p className="text-sm font-medium text-gray-900">{user?.fullName || 'Citizen'}</p>
-                  <p className="text-xs text-gray-500">{user?.contactNumber || 'User'}</p>
-                </div>
-                <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center">
-                  <User className="w-5 h-5 text-white" />
-                </div>
-                <button
-                  onClick={handleLogout}
-                  className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors"
-                >
-                  <LogOut className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
+      <CommonHeader
+        user={user}
+        userRole="citizen"
+        onLogout={logout}
+        onChatToggle={() => setShowNotifications(!showNotifications)}
+        showChat={showNotifications}
+        notifications={notifications.filter(n => !n.read).length}
+        messages={0}
+      />
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -415,7 +316,7 @@ const CitizenDashboard = () => {
                   Welcome back, {user?.fullName || 'Citizen'}! 👋
                 </h2>
                 <p className="text-blue-100 text-lg mb-4">
-                  Track your complaints, property verifications, and building approvals in real-time
+                  Track your complaints, property verifications, and building approvals in real-time for Indore Smart City Development Association
                 </p>
                 
 
