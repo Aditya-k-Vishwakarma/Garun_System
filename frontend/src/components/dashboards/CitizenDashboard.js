@@ -306,16 +306,16 @@ const CitizenDashboard = () => {
       />
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
+      <main className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-3 sm:py-4 md:py-6 lg:py-8">
         {/* Welcome Section with Performance Score */}
-        <div className="mb-6 sm:mb-8">
+        <div className="mb-4 sm:mb-6 md:mb-8">
           <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 text-white">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
-              <div className="flex-1">
-                <h2 className="text-2xl sm:text-3xl font-bold mb-2">
+              <div className="flex-1 min-w-0">
+                <h2 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2 leading-tight">
                   Welcome back, {user?.fullName || 'Citizen'}! 👋
                 </h2>
-                <p className="text-blue-100 text-base sm:text-lg mb-4">
+                <p className="text-blue-100 text-sm sm:text-base md:text-lg mb-4 leading-relaxed">
                   Track your complaints, property verifications, and building approvals in real-time for Municipal Corporation of Indore
                 </p>
               </div>
@@ -329,62 +329,64 @@ const CitizenDashboard = () => {
         </div>
 
         {/* Dashboard Controls */}
-        <div className="mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <h3 className="text-lg sm:text-xl font-semibold text-gray-900">Dashboard Controls</h3>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
-            {/* Auto-refresh toggle */}
-            <button
-              onClick={toggleAutoRefresh}
+        <div className="mb-4 sm:mb-6 md:mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+            <h3 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900">Dashboard Controls</h3>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 md:space-x-3">
+              {/* Auto-refresh toggle */}
+              <button
+                onClick={toggleAutoRefresh}
                 className={`flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors w-full sm:w-auto ${
-                autoRefresh 
-                  ? 'bg-green-100 text-green-700 border border-green-300' 
-                  : 'bg-gray-100 text-gray-700 border border-gray-300'
-              }`}
-            >
-              <RefreshCw className={`w-4 h-4 ${autoRefresh ? 'animate-spin' : ''}`} />
+                  autoRefresh 
+                    ? 'bg-green-100 text-green-700 border border-green-300' 
+                    : 'bg-gray-100 text-gray-700 border border-gray-300'
+                }`}
+              >
+                <RefreshCw className={`w-4 h-4 ${autoRefresh ? 'animate-spin' : ''}`} />
                 <span className="hidden sm:inline">Auto-refresh {autoRefresh ? 'ON' : 'OFF'}</span>
                 <span className="sm:hidden">{autoRefresh ? 'ON' : 'OFF'}</span>
-            </button>
+              </button>
 
-            {/* Refresh interval selector */}
-            <select
-              value={refreshInterval}
-              onChange={(e) => changeRefreshInterval(Number(e.target.value))}
+              {/* Refresh interval selector */}
+              <select
+                value={refreshInterval}
+                onChange={(e) => changeRefreshInterval(Number(e.target.value))}
                 className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full sm:w-auto"
-            >
-              <option value={15000}>15s</option>
-              <option value={30000}>30s</option>
-              <option value={60000}>1m</option>
-              <option value={300000}>5m</option>
-            </select>
+              >
+                <option value={15000}>15s</option>
+                <option value={30000}>30s</option>
+                <option value={60000}>1m</option>
+                <option value={300000}>5m</option>
+              </select>
 
-            {/* Manual refresh */}
-            <button
-              onClick={refreshDashboard}
-              disabled={refreshing}
+              {/* Manual refresh */}
+              <button
+                onClick={refreshDashboard}
+                disabled={refreshing}
                 className="flex items-center justify-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 w-full sm:w-auto"
-            >
-              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+              >
+                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
                 <span className="hidden sm:inline">{refreshing ? 'Refreshing...' : 'Refresh Now'}</span>
                 <span className="sm:hidden">{refreshing ? '...' : 'Refresh'}</span>
-            </button>
+              </button>
             </div>
           </div>
         </div>
 
         {/* Error Display */}
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
-            <div className="flex items-center space-x-3">
-              <AlertCircle className="w-5 h-5 text-red-500" />
-              <div>
-                <h4 className="text-sm font-medium text-red-800">Connection Error</h4>
-                <p className="text-sm text-red-700">{error}</p>
+          <div className="mb-4 sm:mb-6 bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4">
+            <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
+              <div className="flex items-center space-x-2">
+                <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+                <div>
+                  <h4 className="text-sm font-medium text-red-800">Connection Error</h4>
+                  <p className="text-sm text-red-700">{error}</p>
+                </div>
               </div>
               <button
                 onClick={() => fetchDashboardData()}
-                className="text-sm text-red-600 hover:text-red-800 underline"
+                className="text-sm text-red-600 hover:text-red-800 underline self-start sm:self-center"
               >
                 Retry
               </button>
@@ -393,12 +395,12 @@ const CitizenDashboard = () => {
         )}
 
         {/* Quick Actions */}
-        <div className="mb-6 sm:mb-8">
-          <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">Quick Actions</h3>
+        <div className="mb-4 sm:mb-6 md:mb-8">
+          <h3 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">Quick Actions</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <Link
               to="/register-complaint"
-              className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-300 transform hover:scale-105 group"
+              className="bg-white p-3 sm:p-4 md:p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-300 transform hover:scale-105 group"
             >
               <div className="flex items-center space-x-3 sm:space-x-4">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-100 rounded-lg flex items-center justify-center group-hover:bg-red-200 transition-colors flex-shrink-0">
@@ -413,7 +415,7 @@ const CitizenDashboard = () => {
 
             <Link
               to="/property-verification"
-              className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-300 transform hover:scale-105 group"
+              className="bg-white p-3 sm:p-4 md:p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-300 transform hover:scale-105 group"
             >
               <div className="flex items-center space-x-3 sm:space-x-4">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors flex-shrink-0">
@@ -428,7 +430,7 @@ const CitizenDashboard = () => {
 
             <Link
               to="/building-approval"
-              className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-300 transform hover:scale-105 group"
+              className="bg-white p-3 sm:p-4 md:p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-300 transform hover:scale-105 group"
             >
               <div className="flex items-center space-x-3 sm:space-x-4">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-lg flex items-center justify-center group-hover:bg-green-200 transition-colors flex-shrink-0">
@@ -443,7 +445,7 @@ const CitizenDashboard = () => {
 
             <Link
               to="/track-complaint"
-              className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-300 transform hover:scale-105 group"
+              className="bg-white p-3 sm:p-4 md:p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-300 transform hover:scale-105 group"
             >
               <div className="flex items-center space-x-3 sm:space-x-4">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg flex items-center justify-center group-hover:bg-purple-200 transition-colors flex-shrink-0">
@@ -460,23 +462,23 @@ const CitizenDashboard = () => {
 
         {/* Statistics Overview */}
         {dashboardData && (
-          <div className="mb-6 sm:mb-8">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
-              <h3 className="text-lg sm:text-xl font-semibold text-gray-900">Statistics Overview</h3>
+          <div className="mb-4 sm:mb-6 md:mb-8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-4 gap-2">
+              <h3 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900">Statistics Overview</h3>
               <div className="flex items-center space-x-2 text-xs sm:text-sm text-gray-500">
                 <span>Last updated: {lastUpdate?.toLocaleTimeString()}</span>
               </div>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
               {/* Complaints Stats */}
-              <div className={`bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200 transition-all duration-500 ${
+              <div className={`bg-white p-3 sm:p-4 md:p-6 rounded-xl shadow-sm border border-gray-200 transition-all duration-500 ${
                 statsAnimation ? 'scale-105 shadow-lg' : ''
               }`}>
                 <div className="flex items-center justify-between">
                   <div className="min-w-0 flex-1">
                     <p className="text-xs sm:text-sm font-medium text-gray-600">Total Complaints</p>
-                    <p className="text-2xl sm:text-3xl font-bold text-gray-900">{dashboardData.complaints.total}</p>
+                    <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">{dashboardData.complaints.total}</p>
                   </div>
                   <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
                     <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-red-600" />
@@ -500,13 +502,13 @@ const CitizenDashboard = () => {
               </div>
 
               {/* Property Verifications Stats */}
-              <div className={`bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200 transition-all duration-500 ${
+              <div className={`bg-white p-3 sm:p-4 md:p-6 rounded-xl shadow-sm border border-gray-200 transition-all duration-500 ${
                 statsAnimation ? 'scale-105 shadow-lg' : ''
               }`}>
                 <div className="flex items-center justify-between">
                   <div className="min-w-0 flex-1">
                     <p className="text-xs sm:text-sm font-medium text-gray-600">Property Verifications</p>
-                    <p className="text-2xl sm:text-3xl font-bold text-gray-900">{dashboardData.property_verifications.total}</p>
+                    <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">{dashboardData.property_verifications.total}</p>
                   </div>
                   <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
                     <FileCheck className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
@@ -530,13 +532,13 @@ const CitizenDashboard = () => {
               </div>
 
               {/* Building Approvals Stats */}
-              <div className={`bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200 transition-all duration-500 ${
+              <div className={`bg-white p-3 sm:p-4 md:p-6 rounded-xl shadow-sm border border-gray-200 transition-all duration-500 ${
                 statsAnimation ? 'scale-105 shadow-lg' : ''
               }`}>
                 <div className="flex items-center justify-between">
                   <div className="min-w-0 flex-1">
                     <p className="text-xs sm:text-sm font-medium text-gray-600">Building Approvals</p>
-                    <p className="text-2xl sm:text-3xl font-bold text-gray-900">{dashboardData.building_approvals.total}</p>
+                    <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">{dashboardData.building_approvals.total}</p>
                   </div>
                   <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
                     <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
@@ -560,13 +562,13 @@ const CitizenDashboard = () => {
               </div>
 
               {/* Recent Activity Stats */}
-              <div className={`bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200 transition-all duration-500 ${
+              <div className={`bg-white p-3 sm:p-4 md:p-6 rounded-xl shadow-sm border border-gray-200 transition-all duration-500 ${
                 statsAnimation ? 'scale-105 shadow-lg' : ''
               }`}>
                 <div className="flex items-center justify-between">
                   <div className="min-w-0 flex-1">
                     <p className="text-xs sm:text-sm font-medium text-gray-600">Recent Activity</p>
-                    <p className="text-2xl sm:text-3xl font-bold text-gray-900">
+                    <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">
                       {dashboardData.recent_activity.complaints_last_30_days + 
                        dashboardData.recent_activity.property_verifications_last_30_days + 
                        dashboardData.recent_activity.building_approvals_last_30_days}
@@ -597,60 +599,64 @@ const CitizenDashboard = () => {
         )}
 
         {/* Complaint Tracking */}
-        <div className="mb-6 sm:mb-8">
-          <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">Track Your Complaints</h3>
+        <div className="mb-4 sm:mb-6 md:mb-8">
+          <h3 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">Track Your Complaints</h3>
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="p-6">
-              <div className="flex space-x-4 mb-4">
+            <div className="p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
                 <input
                   type="text"
                   placeholder="Enter Complaint ID (e.g., GRV20250820034301b945a803)"
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="flex-1 px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                   value={trackingId}
                   onChange={(e) => setTrackingId(e.target.value)}
                 />
-                <button
-                  onClick={trackComplaint}
-                  disabled={!trackingId.trim() || trackingLoading}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
-                >
-                  {trackingLoading ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 animate-spin" />
-                      <span>Tracking...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Search className="w-4 h-4" />
-                      <span>Track</span>
-                    </>
-                  )}
-                </button>
-                <button
-                  onClick={() => {
-                    setTrackingId('');
-                    setTrackingResult(null);
-                  }}
-                  className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
-                >
-                  Clear
-                </button>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={trackComplaint}
+                    disabled={!trackingId.trim() || trackingLoading}
+                    className="px-4 sm:px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center space-x-2 text-sm"
+                  >
+                    {trackingLoading ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        <span className="hidden sm:inline">Tracking...</span>
+                        <span className="sm:hidden">...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Search className="w-4 h-4" />
+                        <span className="hidden sm:inline">Track</span>
+                        <span className="sm:hidden">Track</span>
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setTrackingId('');
+                      setTrackingResult(null);
+                    }}
+                    className="px-3 sm:px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors text-sm"
+                  >
+                    Clear
+                  </button>
+                </div>
               </div>
               
               {trackingResult && (
-                <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <h4 className="font-semibold text-blue-900 mb-2">Complaint Details</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div className="mt-4 p-3 sm:p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <h4 className="font-semibold text-blue-900 mb-2 text-sm sm:text-base">Complaint Details</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 text-sm">
                     <div>
                       <span className="font-medium text-gray-700">ID:</span> 
-                      <div className="flex items-center space-x-2">
-                        <span className="font-mono text-blue-800">{trackingResult.complaint.id}</span>
+                      <div className="flex items-center space-x-2 mt-1">
+                        <span className="font-mono text-blue-800 text-xs break-all">{trackingResult.complaint.id}</span>
                         <button
                           onClick={() => {
                             navigator.clipboard.writeText(trackingResult.complaint.id);
                             toast.success('Complaint ID copied to clipboard!');
                           }}
-                          className="p-1 text-blue-600 hover:text-blue-800 transition-colors"
+                          className="p-1 text-blue-600 hover:text-blue-800 transition-colors flex-shrink-0"
                           title="Copy to clipboard"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -666,30 +672,34 @@ const CitizenDashboard = () => {
                       </span>
                     </div>
                     <div>
-                      <span className="font-medium text-gray-700">Title:</span> {trackingResult.complaint.title}
+                      <span className="font-medium text-gray-700">Title:</span> 
+                      <span className="ml-2 text-gray-800 break-words">{trackingResult.complaint.title}</span>
                     </div>
                     <div>
-                      <span className="font-medium text-gray-700">Category:</span> {trackingResult.complaint.category}
+                      <span className="font-medium text-gray-700">Category:</span> 
+                      <span className="ml-2 text-gray-800">{trackingResult.complaint.category}</span>
                     </div>
                     <div>
-                      <span className="font-medium text-gray-700">Submitted:</span> {new Date(trackingResult.complaint.submitted_at).toLocaleDateString()}
+                      <span className="font-medium text-gray-700">Submitted:</span> 
+                      <span className="ml-2 text-gray-800">{new Date(trackingResult.complaint.submitted_at).toLocaleDateString()}</span>
                     </div>
                     <div>
-                      <span className="font-medium text-gray-700">Priority:</span> {trackingResult.complaint.priority}
+                      <span className="font-medium text-gray-700">Priority:</span> 
+                      <span className="ml-2 text-gray-800">{trackingResult.complaint.priority}</span>
                     </div>
                   </div>
                   {trackingResult.complaint.updates && trackingResult.complaint.updates.length > 0 && (
                     <div className="mt-4">
-                      <h5 className="font-medium text-blue-900 mb-2">Latest Updates</h5>
+                      <h5 className="font-medium text-blue-900 mb-2 text-sm">Latest Updates</h5>
                       <div className="space-y-2">
                         {trackingResult.complaint.updates.slice(-3).reverse().map((update, index) => (
                           <div key={index} className="text-sm bg-white p-2 rounded border">
-                            <div className="flex justify-between">
+                            <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0">
                               <span className="font-medium">{update.status}</span>
-                              <span className="text-gray-500">{new Date(update.date).toLocaleDateString()}</span>
+                              <span className="text-gray-500 text-xs">{new Date(update.date).toLocaleDateString()}</span>
                             </div>
-                            <p className="text-gray-600">{update.message}</p>
-                            {update.officer && <p className="text-xs text-gray-500">By: {update.officer}</p>}
+                            <p className="text-gray-600 mt-1 break-words">{update.message}</p>
+                            {update.officer && <p className="text-xs text-gray-500 mt-1">By: {update.officer}</p>}
                           </div>
                         ))}
                       </div>
@@ -702,10 +712,10 @@ const CitizenDashboard = () => {
         </div>
 
         {/* Recent Activities */}
-        <div className="mb-6 sm:mb-8">
-          <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">Recent Activities</h3>
+        <div className="mb-4 sm:mb-6 md:mb-8">
+          <h3 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">Recent Activities</h3>
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="p-4 sm:p-6">
+            <div className="p-3 sm:p-4 md:p-6">
               {recentActivities.length > 0 ? (
                 <div className="space-y-3 sm:space-y-4">
                   {recentActivities.map((activity) => (
@@ -747,12 +757,12 @@ const CitizenDashboard = () => {
         </div>
 
         {/* Quick Links */}
-        <div className="mb-6 sm:mb-8">
-          <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">Quick Links</h3>
+        <div className="mb-4 sm:mb-6 md:mb-8">
+          <h3 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">Quick Links</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             <Link
               to="/direct-communication"
-              className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-300 transform hover:scale-105 group"
+              className="bg-white p-3 sm:p-4 md:p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-300 transform hover:scale-105 group"
             >
               <div className="flex items-center space-x-3 sm:space-x-4">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 bg-indigo-100 rounded-lg flex items-center justify-center group-hover:bg-indigo-200 transition-colors flex-shrink-0">
@@ -767,7 +777,7 @@ const CitizenDashboard = () => {
 
             <Link
               to="/anonymous-complaint"
-              className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-300 transform hover:scale-105 group"
+              className="bg-white p-3 sm:p-4 md:p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-300 transform hover:scale-105 group"
             >
               <div className="flex items-center space-x-3 sm:space-x-4">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-100 rounded-lg flex items-center justify-center group-hover:bg-orange-200 transition-colors flex-shrink-0">
@@ -782,7 +792,7 @@ const CitizenDashboard = () => {
 
             <Link
               to="/profile"
-              className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-300 transform hover:scale-105 group"
+              className="bg-white p-3 sm:p-4 md:p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-300 transform hover:scale-105 group"
             >
               <div className="flex items-center space-x-3 sm:space-x-4">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 rounded-lg flex items-center justify-center group-hover:bg-gray-200 transition-colors flex-shrink-0">
@@ -790,7 +800,7 @@ const CitizenDashboard = () => {
                 </div>
                 <div className="min-w-0 flex-1">
                   <h4 className="font-semibold text-gray-900 text-sm sm:text-base">Profile Settings</h4>
-                  <p className="text-sm text-gray-500">Manage your account</p>
+                  <p className="text-xs sm:text-sm text-gray-500">Manage your account</p>
                 </div>
               </div>
             </Link>

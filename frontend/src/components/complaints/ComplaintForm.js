@@ -306,7 +306,7 @@ const ComplaintForm = () => {
 
   const getCategoryIcon = (categoryId) => {
     const category = categories.find(c => c.id === categoryId);
-    return category ? React.createElement(category.icon, { className: "w-5 h-5" }) : null;
+    return category ? React.createElement(category.icon, { className: "w-4 h-4 sm:w-5 sm:h-5" }) : null;
   };
 
   const getCategoryColor = (categoryId) => {
@@ -318,22 +318,22 @@ const ComplaintForm = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between py-4">
-            <div className="flex items-center space-x-4">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+          <div className="flex items-center justify-between py-3 sm:py-4">
+            <div className="flex items-center space-x-2 sm:space-x-4">
               <button
                 onClick={() => navigate('/dashboard')}
                 className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors"
               >
-                <ArrowLeft className="w-6 h-6" />
+                <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6" />
               </button>
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-r from-red-600 to-pink-600 rounded-lg flex items-center justify-center">
-                  <AlertTriangle className="w-6 h-6 text-white" />
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-red-600 to-pink-600 rounded-lg flex items-center justify-center">
+                  <AlertTriangle className="w-4 w-4 sm:w-6 sm:h-6 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Register Complaint</h1>
-                  <p className="text-sm text-gray-500">Report an issue to the municipal corporation</p>
+                  <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">Register Complaint</h1>
+                  <p className="text-xs sm:text-sm text-gray-500">Report an issue to the municipal corporation</p>
                 </div>
               </div>
             </div>
@@ -341,13 +341,13 @@ const ComplaintForm = () => {
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-4xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
         {/* Progress Steps */}
-        <div className="mb-8">
+        <div className="mb-6 sm:mb-8">
           <div className="flex items-center justify-between">
             {[1, 2, 3, 4].map((stepNumber) => (
               <div key={stepNumber} className="flex items-center">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium ${
+                <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-xs sm:text-sm font-medium ${
                   stepNumber < step 
                     ? 'bg-green-500 text-white' 
                     : stepNumber === step 
@@ -355,35 +355,39 @@ const ComplaintForm = () => {
                     : 'bg-gray-200 text-gray-500'
                 }`}>
                   {stepNumber < step ? (
-                    <CheckCircle className="w-5 h-5" />
+                    <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />
                   ) : (
                     stepNumber
                   )}
                 </div>
                 {stepNumber < 4 && (
-                  <div className={`w-16 h-1 mx-2 ${
+                  <div className={`w-8 sm:w-16 h-1 mx-1 sm:mx-2 ${
                     stepNumber < step ? 'bg-green-500' : 'bg-gray-200'
                   }`}></div>
                 )}
               </div>
             ))}
           </div>
-          <div className="flex justify-between mt-2 text-sm text-gray-500">
-            <span>Issue Details</span>
-            <span>Location</span>
-            <span>Personal Info</span>
-            <span>Review & Submit</span>
+          <div className="flex justify-between mt-2 text-xs sm:text-sm text-gray-500">
+            <span className="hidden sm:inline">Issue Details</span>
+            <span className="sm:hidden">Details</span>
+            <span className="hidden sm:inline">Location</span>
+            <span className="sm:hidden">Location</span>
+            <span className="hidden sm:inline">Personal Info</span>
+            <span className="sm:hidden">Info</span>
+            <span className="hidden sm:inline">Review & Submit</span>
+            <span className="sm:hidden">Submit</span>
           </div>
         </div>
 
         {/* Form Content */}
-        <div className="bg-white rounded-2xl shadow-soft p-8">
+        <div className="bg-white rounded-xl sm:rounded-2xl shadow-soft p-4 sm:p-6 md:p-8">
           {/* Step 1: Issue Details */}
           {step === 1 && (
             <div className="animate-fade-in-up">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">What's the issue?</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6">What's the issue?</h2>
               
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 {/* Title */}
                 <div>
                   <label className="form-label">Complaint Title *</label>
@@ -415,23 +419,23 @@ const ComplaintForm = () => {
                 {/* Category */}
                 <div>
                   <label className="form-label">Category *</label>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     {categories.map((category) => (
                       <button
                         key={category.id}
                         type="button"
                         onClick={() => setFormData(prev => ({ ...prev, category: category.id }))}
-                        className={`p-4 rounded-lg border-2 text-left transition-all duration-200 ${
+                        className={`p-3 sm:p-4 rounded-lg border-2 text-left transition-all duration-200 ${
                           formData.category === category.id
                             ? 'border-blue-500 bg-blue-50'
                             : 'border-gray-200 hover:border-gray-300'
                         }`}
                       >
-                        <div className="flex items-center space-x-3">
-                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${category.color}`}>
-                            {React.createElement(category.icon, { className: "w-5 h-5" })}
+                        <div className="flex items-center space-x-2 sm:space-x-3">
+                          <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center ${category.color}`}>
+                            {React.createElement(category.icon, { className: "w-4 h-4 sm:w-5 sm:h-5" })}
                           </div>
-                          <span className="font-medium text-gray-900">{category.name}</span>
+                          <span className="font-medium text-gray-900 text-sm sm:text-base">{category.name}</span>
                         </div>
                       </button>
                     ))}
@@ -439,7 +443,7 @@ const ComplaintForm = () => {
                 </div>
 
                 {/* Date and Time */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
                     <label className="form-label">Incident Date *</label>
                     <input
@@ -469,9 +473,9 @@ const ComplaintForm = () => {
           {/* Step 2: Location */}
           {step === 2 && (
             <div className="animate-fade-in-up">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Where did this happen?</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6">Where did this happen?</h2>
               
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 {/* Address */}
                 <div>
                   <label className="form-label">Full Address *</label>
@@ -487,7 +491,7 @@ const ComplaintForm = () => {
                 </div>
 
                 {/* Ward and Zone */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
                     <label className="form-label">Ward *</label>
                     {/* Debug info */}
@@ -544,7 +548,7 @@ const ComplaintForm = () => {
                 </div>
 
                 {/* Coordinates */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
                     <label className="form-label">Latitude (Optional)</label>
                     <input
@@ -575,11 +579,11 @@ const ComplaintForm = () => {
           {/* Step 3: Personal Information */}
           {step === 3 && (
             <div className="animate-fade-in-up">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Your Information</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6">Your Information</h2>
               
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 {/* Personal Details */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
                     <label className="form-label">Full Name *</label>
                     <input
@@ -599,7 +603,7 @@ const ComplaintForm = () => {
                       name="contact_number"
                       value={formData.contact_number}
                       onChange={handleInputChange}
-                      placeholder="Your mobile number"
+                      placeholder="Your contact number"
                       className="form-input"
                       required
                     />

@@ -432,23 +432,23 @@ Area Covered: ${result.total_area_covered} sq m
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-white rounded-lg shadow-lg p-8">
-          <div className="text-center mb-8">
-            <div className="mx-auto h-16 w-16 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center mb-4">
-              <Camera className="h-8 w-8 text-white" />
+    <div className="min-h-screen bg-gray-50 py-4 sm:py-6 md:py-8">
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+        <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 md:p-8">
+          <div className="text-center mb-6 sm:mb-8">
+            <div className="mx-auto h-12 w-12 sm:h-16 sm:w-16 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center mb-3 sm:mb-4">
+              <Camera className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Start New Survey</h1>
-            <p className="text-gray-600">Upload drone data and analyze for illegal constructions</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Start New Survey</h1>
+            <p className="text-sm sm:text-base text-gray-600">Upload drone data and analyze for illegal constructions</p>
           </div>
 
           <form onSubmit={(e) => e.preventDefault()}>
             {/* Basic Survey Information */}
-            <div className="space-y-6 mb-8">
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">📋 Survey Information</h3>
+            <div className="space-y-4 sm:space-y-6 mb-6 sm:mb-8">
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">📋 Survey Information</h3>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Ward Number *</label>
                   <input
@@ -456,7 +456,7 @@ Area Covered: ${result.total_area_covered} sq m
                     name="ward_no"
                     value={surveyData.ward_no}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                     placeholder="e.g., 12"
                   />
                 </div>
@@ -468,25 +468,25 @@ Area Covered: ${result.total_area_covered} sq m
                     name="survey_date"
                     value={surveyData.survey_date}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                   />
                 </div>
                 
-                <div>
+                <div className="sm:col-span-2 lg:col-span-1">
                   <label className="block text-sm font-medium text-gray-700 mb-2">Drone ID *</label>
                   <input
                     type="text"
                     name="drone_id"
                     value={surveyData.drone_id}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                     placeholder="e.g., DRN_001"
                   />
                 </div>
               </div>
 
               {/* Location Information */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Locality Name *</label>
                   <input
@@ -494,7 +494,7 @@ Area Covered: ${result.total_area_covered} sq m
                     name="locality_name"
                     value={surveyData.locality_name}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                     placeholder="e.g., Vijay Nagar, Rajendra Nagar"
                   />
                 </div>
@@ -506,7 +506,7 @@ Area Covered: ${result.total_area_covered} sq m
                     name="area_name"
                     value={surveyData.area_name}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                     placeholder="e.g., Indore, Madhya Pradesh"
                   />
                 </div>
@@ -514,14 +514,14 @@ Area Covered: ${result.total_area_covered} sq m
 
               {/* Coordinates with Auto-detection */}
               <div>
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 gap-2">
                   <label className="block text-sm font-medium text-gray-700">Coordinates *</label>
-                  <div className="flex space-x-2">
+                  <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
                     <button
                       type="button"
                       onClick={detectLocation}
                       disabled={locationDetecting}
-                      className="px-3 py-1 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center space-x-1"
+                      className="px-3 py-1 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center justify-center space-x-1 w-full sm:w-auto"
                     >
                       <Navigation className="h-3 w-3" />
                       <span>{locationDetecting ? 'Detecting...' : 'Auto-detect'}</span>
@@ -529,14 +529,14 @@ Area Covered: ${result.total_area_covered} sq m
                     <button
                       type="button"
                       onClick={getLocalityFromCoordinates}
-                      className="px-3 py-1 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 flex items-center space-x-1"
+                      className="px-3 py-1 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 flex items-center justify-center space-x-1 w-full sm:w-auto"
                     >
                       <Globe className="h-3 w-3" />
                       <span>Get Locality</span>
                     </button>
                   </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
                     <label className="block text-xs text-gray-500 mb-1">Latitude</label>
                     <input
@@ -545,7 +545,7 @@ Area Covered: ${result.total_area_covered} sq m
                       name="latitude"
                       value={surveyData.coordinates.latitude}
                       onChange={handleCoordinateChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                       placeholder="e.g., 22.7196"
                     />
                   </div>
@@ -557,7 +557,7 @@ Area Covered: ${result.total_area_covered} sq m
                       name="longitude"
                       value={surveyData.coordinates.longitude}
                       onChange={handleCoordinateChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                       placeholder="e.g., 75.8577"
                     />
                   </div>
@@ -566,13 +566,13 @@ Area Covered: ${result.total_area_covered} sq m
             </div>
 
             {/* Roads Section */}
-            <div className="space-y-6 mb-8">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-semibold text-gray-900">🛣️ Roads Data</h3>
+            <div className="space-y-4 sm:space-y-6 mb-6 sm:mb-8">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+                <h3 className="text-lg sm:text-xl font-semibold text-gray-900">🛣️ Roads Data</h3>
                 <button
                   type="button"
                   onClick={addRoad}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
+                  className="px-3 sm:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center space-x-2 w-full sm:w-auto text-sm"
                 >
                   <MapPin className="h-4 w-4" />
                   <span>Add Road</span>
@@ -580,28 +580,28 @@ Area Covered: ${result.total_area_covered} sq m
               </div>
               
               {surveyData.roads.map((road, index) => (
-                <div key={index} className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <h4 className="font-medium text-gray-900">Road {index + 1}</h4>
+                <div key={index} className="border border-gray-200 rounded-lg p-3 sm:p-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-4 gap-2">
+                    <h4 className="font-medium text-gray-900 text-sm sm:text-base">Road {index + 1}</h4>
                     {surveyData.roads.length > 1 && (
                       <button
                         type="button"
                         onClick={() => removeRoad(index)}
-                        className="text-red-600 hover:text-red-800 text-sm"
+                        className="text-red-600 hover:text-red-800 text-sm self-start sm:self-center"
                       >
                         Remove
                       </button>
                     )}
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                     <div>
                       <label className="block text-xs text-gray-500 mb-1">Road ID</label>
                       <input
                         type="text"
                         value={road.road_id}
                         onChange={(e) => handleRoadChange(index, 'road_id', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                         placeholder="e.g., R001"
                       />
                     </div>
@@ -612,7 +612,7 @@ Area Covered: ${result.total_area_covered} sq m
                         step="0.1"
                         value={road.length_meters}
                         onChange={(e) => handleRoadChange(index, 'length_meters', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                         placeholder="e.g., 520.5"
                       />
                     </div>
@@ -623,7 +623,7 @@ Area Covered: ${result.total_area_covered} sq m
                         step="0.1"
                         value={road.width_meters}
                         onChange={(e) => handleRoadChange(index, 'width_meters', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                         placeholder="e.g., 8.2"
                       />
                     </div>
@@ -632,7 +632,7 @@ Area Covered: ${result.total_area_covered} sq m
                       <select
                         value={road.surface_type}
                         onChange={(e) => handleRoadChange(index, 'surface_type', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                       >
                         <option value="asphalt">Asphalt</option>
                         <option value="concrete">Concrete</option>
@@ -646,13 +646,13 @@ Area Covered: ${result.total_area_covered} sq m
             </div>
 
             {/* Buildings Section */}
-            <div className="space-y-6 mb-8">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-semibold text-gray-900">🏗️ Buildings Data</h3>
+            <div className="space-y-4 sm:space-y-6 mb-6 sm:mb-8">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+                <h3 className="text-lg sm:text-xl font-semibold text-gray-900">🏗️ Buildings Data</h3>
                 <button
                   type="button"
                   onClick={addBuilding}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+                  className="px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2 w-full sm:w-auto text-sm"
                 >
                   <Building className="h-4 w-4" />
                   <span>Add Building</span>
@@ -660,28 +660,28 @@ Area Covered: ${result.total_area_covered} sq m
               </div>
               
               {surveyData.buildings.map((building, index) => (
-                <div key={index} className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <h4 className="font-medium text-gray-900">Building {index + 1}</h4>
+                <div key={index} className="border border-gray-200 rounded-lg p-3 sm:p-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-4 gap-2">
+                    <h4 className="font-medium text-gray-900 text-sm sm:text-base">Building {index + 1}</h4>
                     {surveyData.buildings.length > 1 && (
                       <button
                         type="button"
                         onClick={() => removeBuilding(index)}
-                        className="text-red-600 hover:text-red-800 text-sm"
+                        className="text-red-600 hover:text-red-800 text-sm self-start sm:self-center"
                       >
                         Remove
                       </button>
                     )}
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-                    <div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
+                    <div className="sm:col-span-2 lg:col-span-1">
                       <label className="block text-xs text-gray-500 mb-1">Building ID</label>
                       <input
                         type="text"
                         value={building.building_id}
                         onChange={(e) => handleBuildingChange(index, 'building_id', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                         placeholder="e.g., B001"
                       />
                     </div>
@@ -692,7 +692,7 @@ Area Covered: ${result.total_area_covered} sq m
                         step="0.1"
                         value={building.height_meters}
                         onChange={(e) => handleBuildingChange(index, 'height_meters', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                         placeholder="e.g., 25.0"
                       />
                     </div>
@@ -702,7 +702,7 @@ Area Covered: ${result.total_area_covered} sq m
                         type="number"
                         value={building.floors}
                         onChange={(e) => handleBuildingChange(index, 'floors', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                         placeholder="e.g., 7"
                       />
                     </div>
@@ -713,7 +713,7 @@ Area Covered: ${result.total_area_covered} sq m
                         step="0.1"
                         value={building.area_sq_meters}
                         onChange={(e) => handleBuildingChange(index, 'area_sq_meters', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                         placeholder="e.g., 320.0"
                       />
                     </div>
@@ -722,7 +722,7 @@ Area Covered: ${result.total_area_covered} sq m
                       <select
                         value={building.type}
                         onChange={(e) => handleBuildingChange(index, 'type', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                       >
                         <option value="residential">Residential</option>
                         <option value="commercial">Commercial</option>
@@ -735,7 +735,7 @@ Area Covered: ${result.total_area_covered} sq m
                       <select
                         value={building.status}
                         onChange={(e) => handleBuildingChange(index, 'status', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                       >
                         <option value="legal">Legal</option>
                         <option value="illegal">Illegal</option>
@@ -748,10 +748,10 @@ Area Covered: ${result.total_area_covered} sq m
             </div>
 
             {/* Land Usage Section */}
-            <div className="space-y-6 mb-8">
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">🌍 Land Usage Data</h3>
+            <div className="space-y-4 sm:space-y-6 mb-6 sm:mb-8">
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">🌍 Land Usage Data</h3>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Residential Area (sq m)</label>
                   <input
@@ -759,7 +759,7 @@ Area Covered: ${result.total_area_covered} sq m
                     name="residential_area_sq_meters"
                     value={surveyData.land_usage.residential_area_sq_meters}
                     onChange={handleLandUsageChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                     placeholder="e.g., 12000"
                   />
                 </div>
@@ -771,7 +771,7 @@ Area Covered: ${result.total_area_covered} sq m
                     name="commercial_area_sq_meters"
                     value={surveyData.land_usage.commercial_area_sq_meters}
                     onChange={handleLandUsageChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                     placeholder="e.g., 5000"
                   />
                 </div>
@@ -783,7 +783,7 @@ Area Covered: ${result.total_area_covered} sq m
                     name="green_area_sq_meters"
                     value={surveyData.land_usage.green_area_sq_meters}
                     onChange={handleLandUsageChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                     placeholder="e.g., 2500"
                   />
                 </div>
@@ -795,7 +795,7 @@ Area Covered: ${result.total_area_covered} sq m
                     name="industrial_area_sq_meters"
                     value={surveyData.land_usage.industrial_area_sq_meters}
                     onChange={handleLandUsageChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                     placeholder="e.g., 800"
                   />
                 </div>
@@ -803,10 +803,10 @@ Area Covered: ${result.total_area_covered} sq m
             </div>
 
             {/* Violations Section */}
-            <div className="space-y-6 mb-8">
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">🚨 Violations Summary</h3>
+            <div className="space-y-4 sm:space-y-6 mb-6 sm:mb-8">
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">🚨 Violations Summary</h3>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Illegal Buildings Detected</label>
                   <input
@@ -814,7 +814,7 @@ Area Covered: ${result.total_area_covered} sq m
                     name="illegal_buildings_detected"
                     value={surveyData.violations.illegal_buildings_detected}
                     onChange={handleViolationChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                     placeholder="e.g., 1"
                   />
                 </div>
@@ -835,25 +835,25 @@ Area Covered: ${result.total_area_covered} sq m
             </div>
 
             {/* Data Import Section */}
-            <div className="space-y-6 mb-8">
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">📥 Data Import & Sample Data</h3>
+            <div className="space-y-4 sm:space-y-6 mb-6 sm:mb-8">
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">📥 Data Import & Sample Data</h3>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 {/* Load Sample Data */}
-                <div className="border-2 border-dashed border-green-300 rounded-lg p-4 text-center">
+                <div className="border-2 border-dashed border-green-300 rounded-lg p-3 sm:p-4 text-center">
                   <button
                     type="button"
                     onClick={loadSampleData}
-                    className="w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center space-x-2"
+                    className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center space-x-2 text-sm"
                   >
-                    <FileText className="h-5 w-5" />
+                    <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
                     <span>Load Sample Data</span>
                   </button>
                   <p className="text-xs text-gray-500 mt-2">Load predefined sample data</p>
                 </div>
 
                 {/* Import JSON */}
-                <div className="border-2 border-dashed border-blue-300 rounded-lg p-4 text-center">
+                <div className="border-2 border-dashed border-blue-300 rounded-lg p-3 sm:p-4 text-center">
                   <input
                     type="file"
                     accept=".json"
@@ -862,8 +862,8 @@ Area Covered: ${result.total_area_covered} sq m
                     id="json-import"
                   />
                   <label htmlFor="json-import" className="cursor-pointer w-full">
-                    <div className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2">
-                      <Upload className="h-5 w-5" />
+                    <div className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2 text-sm">
+                      <Upload className="h-4 w-4 sm:h-5 sm:w-5" />
                       <span>Import JSON</span>
                     </div>
                   </label>
@@ -871,13 +871,13 @@ Area Covered: ${result.total_area_covered} sq m
                 </div>
 
                 {/* Download Sample JSON */}
-                <div className="border-2 border-dashed border-purple-300 rounded-lg p-4 text-center">
+                <div className="border-2 border-dashed border-purple-300 rounded-lg p-3 sm:p-4 text-center">
                   <a
                     href="/sample-survey-data.json"
                     download
-                    className="w-full px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center space-x-2"
+                    className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center space-x-2 text-sm"
                   >
-                    <Download className="h-5 w-5" />
+                    <Download className="h-4 w-4 sm:h-5 sm:w-5" />
                     <span>Download Sample</span>
                   </a>
                   <p className="text-xs text-gray-500 mt-2">Download sample JSON template</p>
@@ -885,37 +885,37 @@ Area Covered: ${result.total_area_covered} sq m
               </div>
 
               {/* Drone Data File Upload */}
-              <div className="mt-6">
-                <h4 className="text-lg font-medium text-gray-900 mb-3">📁 Drone Data File (Optional)</h4>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                {droneDataFile ? (
-                  <div className="space-y-2">
-                    <FileText className="mx-auto h-8 w-8 text-green-600" />
-                    <p className="text-sm text-gray-600">{droneDataFile.name}</p>
-                    <button
-                      type="button"
-                      onClick={() => setDroneDataFile(null)}
-                      className="text-red-500 hover:text-red-700 text-sm"
-                    >
-                      Remove File
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    <input
-                      type="file"
-                      accept=".json,.csv,.xlsx,.xls"
-                      onChange={handleFileUpload}
-                      className="hidden"
-                      id="drone-data-upload"
-                    />
-                    <label htmlFor="drone-data-upload" className="cursor-pointer">
-                      <Upload className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-                      <p className="text-sm text-gray-600">Click to upload drone data file</p>
-                      <p className="text-xs text-gray-500">JSON, CSV, Excel files supported</p>
-                    </label>
-                  </>
-                )}
+              <div className="mt-4 sm:mt-6">
+                <h4 className="text-base sm:text-lg font-medium text-gray-900 mb-3">📁 Drone Data File (Optional)</h4>
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 sm:p-6 text-center">
+                  {droneDataFile ? (
+                    <div className="space-y-2">
+                      <FileText className="mx-auto h-6 w-6 sm:h-8 sm:w-8 text-green-600" />
+                      <p className="text-sm text-gray-600 break-words">{droneDataFile.name}</p>
+                      <button
+                        type="button"
+                        onClick={() => setDroneDataFile(null)}
+                        className="text-red-500 hover:text-red-700 text-sm"
+                      >
+                        Remove File
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <input
+                        type="file"
+                        accept=".json,.csv,.xlsx,.xls"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                        id="drone-data-upload"
+                      />
+                      <label htmlFor="drone-data-upload" className="cursor-pointer">
+                        <Upload className="mx-auto h-6 w-6 sm:h-8 sm:w-8 text-gray-400 mb-2" />
+                        <p className="text-sm text-gray-600">Click to upload drone data file</p>
+                        <p className="text-xs text-gray-500">JSON, CSV, Excel files supported</p>
+                      </label>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -925,12 +925,12 @@ Area Covered: ${result.total_area_covered} sq m
               <button
                 onClick={handleSubmit}
                 disabled={loading}
-                className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center space-x-2 mx-auto"
+                className="px-6 sm:px-8 py-2 sm:py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center space-x-2 mx-auto text-sm sm:text-base w-full sm:w-auto"
               >
                 {loading ? (
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white"></div>
                 ) : (
-                  <Send className="h-5 w-5" />
+                  <Send className="h-4 w-4 sm:h-5 sm:w-5" />
                 )}
                 <span>{loading ? 'Processing Survey...' : 'Start Survey & Analyze'}</span>
               </button>
