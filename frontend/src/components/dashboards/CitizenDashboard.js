@@ -333,42 +333,42 @@ const CitizenDashboard = () => {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <h3 className="text-lg sm:text-xl font-semibold text-gray-900">Dashboard Controls</h3>
             <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
-              {/* Auto-refresh toggle */}
-              <button
-                onClick={toggleAutoRefresh}
+            {/* Auto-refresh toggle */}
+            <button
+              onClick={toggleAutoRefresh}
                 className={`flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors w-full sm:w-auto ${
-                  autoRefresh 
-                    ? 'bg-green-100 text-green-700 border border-green-300' 
-                    : 'bg-gray-100 text-gray-700 border border-gray-300'
-                }`}
-              >
-                <RefreshCw className={`w-4 h-4 ${autoRefresh ? 'animate-spin' : ''}`} />
+                autoRefresh 
+                  ? 'bg-green-100 text-green-700 border border-green-300' 
+                  : 'bg-gray-100 text-gray-700 border border-gray-300'
+              }`}
+            >
+              <RefreshCw className={`w-4 h-4 ${autoRefresh ? 'animate-spin' : ''}`} />
                 <span className="hidden sm:inline">Auto-refresh {autoRefresh ? 'ON' : 'OFF'}</span>
                 <span className="sm:hidden">{autoRefresh ? 'ON' : 'OFF'}</span>
-              </button>
+            </button>
 
-              {/* Refresh interval selector */}
-              <select
-                value={refreshInterval}
-                onChange={(e) => changeRefreshInterval(Number(e.target.value))}
+            {/* Refresh interval selector */}
+            <select
+              value={refreshInterval}
+              onChange={(e) => changeRefreshInterval(Number(e.target.value))}
                 className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full sm:w-auto"
-              >
-                <option value={15000}>15s</option>
-                <option value={30000}>30s</option>
-                <option value={60000}>1m</option>
-                <option value={300000}>5m</option>
-              </select>
+            >
+              <option value={15000}>15s</option>
+              <option value={30000}>30s</option>
+              <option value={60000}>1m</option>
+              <option value={300000}>5m</option>
+            </select>
 
-              {/* Manual refresh */}
-              <button
-                onClick={refreshDashboard}
-                disabled={refreshing}
+            {/* Manual refresh */}
+            <button
+              onClick={refreshDashboard}
+              disabled={refreshing}
                 className="flex items-center justify-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 w-full sm:w-auto"
-              >
-                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+            >
+              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
                 <span className="hidden sm:inline">{refreshing ? 'Refreshing...' : 'Refresh Now'}</span>
                 <span className="sm:hidden">{refreshing ? '...' : 'Refresh'}</span>
-              </button>
+            </button>
             </div>
           </div>
         </div>
