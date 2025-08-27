@@ -454,16 +454,16 @@ const LandingPage = () => {
             </div>
             
             <div className="animate-on-scroll from-right">
-              <div className="relative p-8 rounded-2xl bg-gradient-to-br from-blue-500 via-purple-600 to-blue-600 text-white overflow-hidden">
+              <div className="relative p-8 rounded-2xl bg-gradient-to-br from-gray-50 to-blue-50 border border-blue-200 shadow-xl overflow-hidden">
                 {/* Background Pattern */}
-                <div className="absolute inset-0 opacity-10">
-                  <div className="absolute top-4 right-4 w-16 h-16 bg-white rounded-full"></div>
-                  <div className="absolute bottom-4 left-4 w-20 h-20 bg-white rounded-full"></div>
-                  <div className="absolute top-1/2 left-1/3 w-12 h-12 bg-white rounded-full"></div>
+                <div className="absolute inset-0 opacity-5">
+                  <div className="absolute top-4 right-4 w-16 h-16 bg-blue-400 rounded-full"></div>
+                  <div className="absolute bottom-4 left-4 w-20 h-20 bg-purple-400 rounded-full"></div>
+                  <div className="absolute top-1/2 left-1/3 w-12 h-12 bg-blue-300 rounded-full"></div>
                 </div>
                 
                 <div className="relative z-10">
-                  <h3 className="text-2xl font-bold mb-6">Why Choose Garun Systems?</h3>
+                  <h3 className="text-2xl font-bold mb-6 text-gray-800">Why Choose Garun Systems?</h3>
                   <ul className="space-y-4">
                     {[
                       "Advanced geo-spatial analysis capabilities",
@@ -472,15 +472,15 @@ const LandingPage = () => {
                       "Comprehensive property verification system"
                     ].map((item, index) => (
                       <li key={index} className={`animate-on-scroll stagger-delay-${index + 1} flex items-start group`}>
-                        <CheckCircle className="h-5 w-5 text-green-300 mr-3 mt-0.5 flex-shrink-0 group-hover:scale-110 group-hover:text-green-200 transition-all duration-300" />
-                        <span className="group-hover:text-white/95 transition-colors duration-300">{item}</span>
+                        <CheckCircle className="h-5 w-5 text-green-500 mr-3 mt-0.5 flex-shrink-0 group-hover:scale-110 group-hover:text-green-600 transition-all duration-300" />
+                        <span className="text-gray-700 group-hover:text-gray-900 transition-colors duration-300">{item}</span>
                       </li>
                     ))}
                   </ul>
                 </div>
                 
                 {/* Floating decoration */}
-                <div className="absolute -top-4 -right-4 w-24 h-24 bg-white/20 rounded-full blur-xl floating-animation"></div>
+                <div className="absolute -top-4 -right-4 w-24 h-24 bg-blue-200/30 rounded-full blur-xl floating-animation"></div>
               </div>
             </div>
           </div>
@@ -488,30 +488,30 @@ const LandingPage = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-br from-blue-600 via-purple-600 to-blue-700 relative overflow-hidden">
+      <section className="py-20 bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 relative overflow-hidden border-t border-gray-200">
         {/* Background Elements */}
-        <div className="absolute inset-0 opacity-20">
-          <div className="absolute top-10 left-10 w-32 h-32 bg-white rounded-full blur-2xl floating-animation"></div>
-          <div className="absolute bottom-10 right-10 w-40 h-40 bg-white rounded-full blur-2xl floating-animation" style={{ animationDelay: '1s' }}></div>
-          <div className="absolute top-1/2 left-1/3 w-24 h-24 bg-white rounded-full blur-xl floating-animation" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-10 left-10 w-32 h-32 bg-blue-400 rounded-full blur-2xl floating-animation"></div>
+          <div className="absolute bottom-10 right-10 w-40 h-40 bg-purple-400 rounded-full blur-2xl floating-animation" style={{ animationDelay: '1s' }}></div>
+          <div className="absolute top-1/2 left-1/3 w-24 h-24 bg-blue-300 rounded-full blur-xl floating-animation" style={{ animationDelay: '2s' }}></div>
         </div>
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
           <div className="animate-on-scroll">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-6">
               Ready to Transform Your City?
             </h2>
-            <p className="text-xl text-blue-100 mb-8 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
               Join the smart city revolution with Garun Systems. Experience the future of urban development today.
             </p>
           </div>
           
           <div className="flex flex-col sm:flex-row gap-6 justify-center animate-on-scroll stagger-delay-2">
-            <Link to="/signup" className="group inline-flex items-center justify-center px-8 py-4 border border-transparent text-base font-medium rounded-xl text-blue-600 bg-white hover:bg-gray-50 transition-all duration-300 transform hover:scale-105 hover:shadow-2xl ripple-effect">
+            <Link to="/signup" className="group inline-flex items-center justify-center px-8 py-4 border border-transparent text-base font-medium rounded-xl text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 hover:shadow-2xl ripple-effect">
               Get Started Now
               <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
             </Link>
-            <Link to="/login" className="inline-flex items-center justify-center px-8 py-4 border-2 border-white text-base font-medium rounded-xl text-white hover:bg-white/10 transition-all duration-300 transform hover:scale-105 glass-effect ripple-effect">
+            <Link to="/login" className="inline-flex items-center justify-center px-8 py-4 border-2 border-blue-600 text-base font-medium rounded-xl text-blue-600 hover:bg-blue-600 hover:text-white transition-all duration-300 transform hover:scale-105 ripple-effect">
               Sign In
             </Link>
           </div>
@@ -519,18 +519,19 @@ const LandingPage = () => {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-16 relative overflow-hidden">
+      <footer className="bg-gradient-to-br from-gray-800 via-blue-900 to-gray-900 text-white py-16 relative overflow-hidden">
         {/* Background Pattern */}
-        <div className="absolute inset-0 opacity-5">
-          <div className="absolute top-10 left-10 w-32 h-32 bg-blue-500 rounded-full blur-2xl"></div>
-          <div className="absolute bottom-10 right-10 w-40 h-40 bg-purple-500 rounded-full blur-2xl"></div>
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-10 left-10 w-32 h-32 bg-blue-400 rounded-full blur-2xl floating-animation"></div>
+          <div className="absolute bottom-10 right-10 w-40 h-40 bg-purple-400 rounded-full blur-2xl floating-animation" style={{ animationDelay: '2s' }}></div>
+          <div className="absolute top-1/2 left-1/3 w-24 h-24 bg-blue-300 rounded-full blur-xl floating-animation" style={{ animationDelay: '1s' }}></div>
         </div>
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid md:grid-cols-4 gap-8 mb-12">
             <div className="animate-on-scroll from-left">
-              <h3 className="text-xl font-bold text-blue-400 mb-4">Garun Systems</h3>
-              <p className="text-gray-400 leading-relaxed">
+              <h3 className="text-xl font-bold text-blue-300 mb-4">Garun Systems</h3>
+              <p className="text-gray-300 leading-relaxed">
                 Transforming urban development through advanced geo-spatial analysis and smart city solutions.
               </p>
             </div>
@@ -552,7 +553,7 @@ const LandingPage = () => {
               {
                 title: "Contact",
                 content: (
-                  <div className="text-gray-400 space-y-2">
+                  <div className="text-gray-300 space-y-2">
                     <p>Indore Municipal Corporation</p>
                     <p>Smart City Development Association</p>
                     <p>Madhya Pradesh, India</p>
@@ -561,21 +562,21 @@ const LandingPage = () => {
               }
             ].map((section, index) => (
               <div key={index} className={`animate-on-scroll stagger-delay-${index + 1}`}>
-                <h4 className="text-lg font-semibold mb-4">{section.title}</h4>
+                <h4 className="text-lg font-semibold mb-4 text-blue-200">{section.title}</h4>
                 {section.items ? (
                   <ul className="space-y-2">
                     {section.items.map((item, itemIndex) => (
                       <li key={itemIndex}>
                         {typeof item === 'string' ? (
-                          <span className="text-gray-400 hover:text-white transition-colors duration-300 cursor-default">
+                          <span className="text-gray-300 hover:text-white transition-colors duration-300 cursor-default">
                             {item}
                           </span>
                         ) : item.link ? (
-                          <Link to={item.link} className="text-gray-400 hover:text-white transition-colors duration-300">
+                          <Link to={item.link} className="text-gray-300 hover:text-white transition-colors duration-300">
                             {item.text}
                           </Link>
                         ) : (
-                          <button onClick={item.action} className="text-gray-400 hover:text-white transition-colors duration-300">
+                          <button onClick={item.action} className="text-gray-300 hover:text-white transition-colors duration-300">
                             {item.text}
                           </button>
                         )}
@@ -589,8 +590,8 @@ const LandingPage = () => {
             ))}
           </div>
           
-          <div className="border-t border-gray-800 pt-8 text-center animate-on-scroll">
-            <p className="text-gray-400">&copy; 2025 Garun Systems. All rights reserved.</p>
+          <div className="border-t border-blue-800 pt-8 text-center animate-on-scroll">
+            <p className="text-gray-300">&copy; 2025 Garun Systems. All rights reserved.</p>
           </div>
         </div>
       </footer>
