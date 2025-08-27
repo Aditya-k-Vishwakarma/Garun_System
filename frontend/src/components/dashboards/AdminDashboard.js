@@ -95,43 +95,407 @@ const AdminDashboard = () => {
   const fetchAdminData = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:8000/api/admin/dashboard');
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          setComplaints(data.data.complaints || []);
-          setPropertyVerifications(data.data.property_verifications || []);
-          setBuildingApprovals(data.data.building_approvals || []);
-          setSurveys(data.data.surveys || []);
-          setIllegalConstructions(data.data.illegal_constructions || []);
-          
-          // Update statistics with proper data handling
-          const totalComplaints = data.data.complaints?.length || 0;
-          const pendingComplaints = data.data.complaints?.filter(c => c.status === 'New' || c.status === 'Under Review')?.length || 0;
-          const inProgressComplaints = data.data.complaints?.filter(c => c.status === 'In Progress')?.length || 0;
-          const resolvedComplaints = data.data.complaints?.filter(c => c.status === 'Resolved')?.length || 0;
-          
-          const totalPropertyVerifications = data.data.property_verifications?.length || 0;
-          const pendingVerifications = data.data.property_verifications?.filter(v => v.status === 'Pending')?.length || 0;
-          
-          const totalBuildingApprovals = data.data.building_approvals?.length || 0;
-          const pendingApprovals = data.data.building_approvals?.filter(a => a.status === 'Pending')?.length || 0;
-          
-          setStatistics({
-            totalComplaints,
-            pendingComplaints,
-            inProgressComplaints,
-            resolvedComplaints,
-            totalPropertyVerifications,
-            pendingVerifications,
-            totalBuildingApprovals,
-            pendingApprovals
-          });
+      
+      // Simulate API call with dummy data
+      const dummyComplaints = [
+        {
+          id: 'GRV001',
+          title: 'Broken street light on MG Road',
+          description: 'Street light number 45 on MG Road has been broken for 3 days',
+          status: 'Resolved',
+          category: 'Street Lighting',
+          priority: 'Medium',
+          submitted_at: '2024-01-10T10:30:00Z',
+          resolved_at: '2024-01-12T16:00:00Z',
+          assigned_to: 'Rajesh Kumar',
+          complainant: { full_name: 'Amit Sharma' },
+          updates: [
+            { status: 'Assigned', message: 'Complaint assigned to electrical department', date: '2024-01-10T14:00:00Z' },
+            { status: 'In Progress', message: 'Technician dispatched to location', date: '2024-01-11T09:00:00Z' },
+            { status: 'Resolved', message: 'Street light repaired and tested', date: '2024-01-12T16:00:00Z' }
+          ]
+        },
+        {
+          id: 'GRV002',
+          title: 'Water supply disruption in Sector A',
+          description: 'No water supply in Sector A, Ward 5 for the past 2 days',
+          status: 'In Progress',
+          category: 'Water Supply',
+          priority: 'High',
+          submitted_at: '2024-01-13T08:15:00Z',
+          assigned_to: 'Priya Sharma',
+          complainant: { full_name: 'Rajesh Patel' },
+          updates: [
+            { status: 'Under Review', message: 'Complaint received and under investigation', date: '2024-01-13T10:00:00Z' },
+            { status: 'In Progress', message: 'Pipeline repair work started', date: '2024-01-14T07:00:00Z' }
+          ]
+        },
+        {
+          id: 'GRV003',
+          title: 'Illegal parking on main road',
+          description: 'Vehicles are illegally parked on both sides of the main road causing traffic jams',
+          status: 'New',
+          category: 'Traffic',
+          priority: 'Medium',
+          submitted_at: '2024-01-15T12:45:00Z',
+          complainant: { full_name: 'Sneha Reddy' }
+        },
+        {
+          id: 'GRV004',
+          title: 'Garbage not collected for 4 days',
+          description: 'Garbage bins in our locality have not been emptied for 4 days',
+          status: 'Resolved',
+          category: 'Sanitation',
+          priority: 'High',
+          submitted_at: '2024-01-08T09:20:00Z',
+          resolved_at: '2024-01-09T15:00:00Z',
+          assigned_to: 'Sanitation Dept',
+          complainant: { full_name: 'Vikram Singh' },
+          updates: [
+            { status: 'Assigned', message: 'Complaint assigned to sanitation department', date: '2024-01-08T11:00:00Z' },
+            { status: 'Resolved', message: 'Garbage collected and area cleaned', date: '2024-01-09T15:00:00Z' }
+          ]
+        },
+        {
+          id: 'GRV005',
+          title: 'Potholes on residential road',
+          description: 'Multiple potholes on the road leading to our residential area',
+          status: 'Under Review',
+          category: 'Road Issues',
+          priority: 'Medium',
+          submitted_at: '2024-01-14T16:30:00Z',
+          complainant: { full_name: 'Priya Verma' }
+        },
+        {
+          id: 'GRV006',
+          title: 'Street dog menace in park',
+          description: 'Large number of street dogs in Central Park causing safety concerns',
+          status: 'In Progress',
+          category: 'Animal Control',
+          priority: 'Medium',
+          submitted_at: '2024-01-12T11:00:00Z',
+          assigned_to: 'Animal Control Dept',
+          complainant: { full_name: 'Arun Kumar' },
+          updates: [
+            { status: 'Assigned', message: 'Complaint assigned to animal control department', date: '2024-01-12T13:00:00Z' },
+            { status: 'In Progress', message: 'Team dispatched for assessment', date: '2024-01-13T09:00:00Z' }
+          ]
+        },
+        {
+          id: 'GRV007',
+          title: 'Noise pollution from construction site',
+          description: 'Construction work going on 24/7 causing severe noise pollution',
+          status: 'Resolved',
+          category: 'Noise Pollution',
+          priority: 'High',
+          submitted_at: '2024-01-06T08:00:00Z',
+          resolved_at: '2024-01-08T12:00:00Z',
+          assigned_to: 'Environmental Dept',
+          complainant: { full_name: 'Meera Iyer' },
+          updates: [
+            { status: 'Assigned', message: 'Complaint assigned to environmental department', date: '2024-01-06T10:00:00Z' },
+            { status: 'In Progress', message: 'Notice served to construction company', date: '2024-01-07T14:00:00Z' },
+            { status: 'Resolved', message: 'Construction timings restricted to 6 AM - 8 PM', date: '2024-01-08T12:00:00Z' }
+          ]
+        },
+        {
+          id: 'GRV008',
+          title: 'Broken footpath tiles',
+          description: 'Several footpath tiles are broken near the bus stand',
+          status: 'New',
+          category: 'Infrastructure',
+          priority: 'Low',
+          submitted_at: '2024-01-15T15:20:00Z',
+          complainant: { full_name: 'Rahul Gupta' }
         }
-      } else {
-        console.error('Failed to fetch admin data');
-        toast.error('Failed to fetch admin dashboard data');
-      }
+      ];
+
+      const dummyPropertyVerifications = [
+        {
+          id: 'PV001',
+          document_type: 'Property Tax Receipt',
+          status: 'Verified',
+          submitted_at: '2024-01-05T11:00:00Z',
+          verified_by: 'Property Department',
+          verification_date: '2024-01-07T14:30:00Z',
+          notes: 'All documents verified successfully',
+          full_name: 'Amit Sharma',
+          ward_name: 'Ward 5',
+          priority: 'Medium'
+        },
+        {
+          id: 'PV002',
+          document_type: 'Building Plan Approval',
+          status: 'Pending',
+          submitted_at: '2024-01-12T09:15:00Z',
+          estimated_completion: '2024-01-20T00:00:00Z',
+          full_name: 'Rajesh Patel',
+          ward_name: 'Ward 3',
+          priority: 'High'
+        },
+        {
+          id: 'PV003',
+          document_type: 'Land Ownership Certificate',
+          status: 'Under Review',
+          submitted_at: '2024-01-10T14:20:00Z',
+          review_deadline: '2024-01-17T00:00:00Z',
+          full_name: 'Sneha Reddy',
+          ward_name: 'Ward 7',
+          priority: 'Medium'
+        },
+        {
+          id: 'PV004',
+          document_type: 'Property Registration',
+          status: 'Verified',
+          submitted_at: '2024-01-03T10:30:00Z',
+          verified_by: 'Registration Dept',
+          verification_date: '2024-01-05T16:00:00Z',
+          notes: 'Registration completed successfully',
+          full_name: 'Vikram Singh',
+          ward_name: 'Ward 12',
+          priority: 'Low'
+        },
+        {
+          id: 'PV005',
+          document_type: 'Mutation Certificate',
+          status: 'Pending',
+          submitted_at: '2024-01-11T13:45:00Z',
+          full_name: 'Priya Verma',
+          ward_name: 'Ward 8',
+          priority: 'Medium'
+        }
+      ];
+
+      const dummyBuildingApprovals = [
+        {
+          id: 'BA001',
+          project_name: 'Residential Complex - Phase 1',
+          status: 'Approved',
+          submitted_at: '2024-01-02T10:00:00Z',
+          approved_at: '2024-01-08T16:00:00Z',
+          approved_by: 'Building Authority',
+          estimated_cost: '₹2,50,00,000',
+          project_type: 'Residential',
+          floors: 5,
+          total_area: '5000 sq ft',
+          applicant_name: 'ABC Developers',
+          ward_name: 'Ward 5'
+        },
+        {
+          id: 'BA002',
+          project_name: 'Commercial Shop Extension',
+          status: 'Under Review',
+          submitted_at: '2024-01-11T13:45:00Z',
+          estimated_cost: '₹15,00,000',
+          project_type: 'Commercial',
+          floors: 2,
+          total_area: '800 sq ft',
+          applicant_name: 'XYZ Traders',
+          ward_name: 'Ward 3'
+        },
+        {
+          id: 'BA003',
+          project_name: 'Warehouse Construction',
+          status: 'Pending',
+          submitted_at: '2024-01-09T08:30:00Z',
+          estimated_cost: '₹75,00,000',
+          project_type: 'Industrial',
+          floors: 1,
+          total_area: '10000 sq ft',
+          applicant_name: 'Industrial Corp',
+          ward_name: 'Ward 7'
+        },
+        {
+          id: 'BA004',
+          project_name: 'Apartment Building',
+          status: 'Approved',
+          submitted_at: '2024-01-01T09:00:00Z',
+          approved_at: '2024-01-06T14:00:00Z',
+          approved_by: 'Building Authority',
+          estimated_cost: '₹5,00,00,000',
+          project_type: 'Residential',
+          floors: 8,
+          total_area: '12000 sq ft',
+          applicant_name: 'Modern Homes Ltd',
+          ward_name: 'Ward 12'
+        },
+        {
+          id: 'BA005',
+          project_name: 'Office Complex',
+          status: 'Under Review',
+          submitted_at: '2024-01-10T11:20:00Z',
+          estimated_cost: '₹3,50,00,000',
+          project_type: 'Commercial',
+          floors: 6,
+          total_area: '8000 sq ft',
+          applicant_name: 'Corporate Solutions',
+          ward_name: 'Ward 8'
+        }
+      ];
+
+      const dummySurveys = [
+        {
+          id: 'SUR001',
+          ward_no: 5,
+          survey_date: '2024-01-15',
+          drone_id: 'DRONE001',
+          status: 'completed',
+          total_violations: 3,
+          total_buildings: 25,
+          compliance_score: 88,
+          survey_type: 'Drone Survey',
+          coordinates: { latitude: 22.7041, longitude: 75.8025 },
+          violations: [
+            { type: 'Setback Violation', current: '2m', allowed: '3m', severity: 'medium' },
+            { type: 'Height Violation', current: '15m', allowed: '12m', severity: 'high' },
+            { type: 'Parking Violation', current: '8 spaces', allowed: '12 spaces', severity: 'low' }
+          ],
+          created_at: '2024-01-15T10:00:00Z'
+        },
+        {
+          id: 'SUR002',
+          ward_no: 3,
+          survey_date: '2024-01-14',
+          drone_id: 'DRONE002',
+          status: 'completed',
+          total_violations: 1,
+          total_buildings: 18,
+          compliance_score: 94,
+          survey_type: 'Manual Survey',
+          coordinates: { latitude: 22.7128, longitude: 75.8208 },
+          violations: [
+            { type: 'Green Area Violation', current: '8%', allowed: '10%', severity: 'low' }
+          ],
+          created_at: '2024-01-14T14:30:00Z'
+        },
+        {
+          id: 'SUR003',
+          ward_no: 7,
+          survey_date: '2024-01-13',
+          drone_id: 'DRONE003',
+          status: 'completed',
+          total_violations: 5,
+          total_buildings: 32,
+          compliance_score: 84,
+          survey_type: 'Drone Survey',
+          coordinates: { latitude: 22.7217, longitude: 75.8235 },
+          violations: [
+            { type: 'Floor Area Violation', current: '120%', allowed: '100%', severity: 'high' },
+            { type: 'Setback Violation', current: '1.5m', allowed: '3m', severity: 'high' },
+            { type: 'Height Violation', current: '18m', allowed: '15m', severity: 'medium' },
+            { type: 'Parking Violation', current: '6 spaces', allowed: '15 spaces', severity: 'medium' },
+            { type: 'Green Area Violation', current: '5%', allowed: '10%', severity: 'low' }
+          ],
+          created_at: '2024-01-13T09:15:00Z'
+        }
+      ];
+
+      const dummyIllegalConstructions = [
+        {
+          id: 'IC001',
+          violation_type: 'Floor Area Violation',
+          current_value: '120%',
+          allowed_value: '100%',
+          severity: 'high',
+          status: 'detected',
+          detected_at: '2024-01-13T09:15:00Z',
+          ward_name: 'Ward 7',
+          description: 'Building exceeds permitted floor area by 20%',
+          priority: 'high',
+          coordinates: { latitude: 22.7217, longitude: 75.8235 },
+          survey_id: 'SUR003',
+          estimated_resolution_days: 15
+        },
+        {
+          id: 'IC002',
+          violation_type: 'Height Violation',
+          current_value: '15m',
+          allowed_value: '12m',
+          severity: 'high',
+          status: 'under_investigation',
+          detected_at: '2024-01-15T10:00:00Z',
+          ward_name: 'Ward 5',
+          description: 'Building height exceeds permitted limit by 3m',
+          priority: 'high',
+          coordinates: { latitude: 22.7041, longitude: 75.8025 },
+          survey_id: 'SUR001',
+          estimated_resolution_days: 20
+        },
+        {
+          id: 'IC003',
+          violation_type: 'Setback Violation',
+          current_value: '1.5m',
+          allowed_value: '3m',
+          severity: 'high',
+          status: 'detected',
+          detected_at: '2024-01-13T09:15:00Z',
+          ward_name: 'Ward 7',
+          description: 'Building setback is only 1.5m instead of required 3m',
+          priority: 'medium',
+          coordinates: { latitude: 22.7217, longitude: 75.8235 },
+          survey_id: 'SUR003',
+          estimated_resolution_days: 12
+        },
+        {
+          id: 'IC004',
+          violation_type: 'Parking Violation',
+          current_value: '6 spaces',
+          allowed_value: '15 spaces',
+          severity: 'medium',
+          status: 'detected',
+          detected_at: '2024-01-13T09:15:00Z',
+          ward_name: 'Ward 7',
+          description: 'Insufficient parking spaces provided',
+          priority: 'medium',
+          coordinates: { latitude: 22.7217, longitude: 75.8235 },
+          survey_id: 'SUR003',
+          estimated_resolution_days: 8
+        },
+        {
+          id: 'IC005',
+          violation_type: 'Green Area Violation',
+          current_value: '5%',
+          allowed_value: '10%',
+          severity: 'low',
+          status: 'detected',
+          detected_at: '2024-01-13T09:15:00Z',
+          ward_name: 'Ward 7',
+          description: 'Green area coverage is below required minimum',
+          priority: 'low',
+          coordinates: { latitude: 22.7217, longitude: 75.8235 },
+          survey_id: 'SUR003',
+          estimated_resolution_days: 5
+        }
+      ];
+
+      setComplaints(dummyComplaints);
+      setPropertyVerifications(dummyPropertyVerifications);
+      setBuildingApprovals(dummyBuildingApprovals);
+      setSurveys(dummySurveys);
+      setIllegalConstructions(dummyIllegalConstructions);
+      
+      // Update statistics with proper data handling
+      const totalComplaints = dummyComplaints.length;
+      const pendingComplaints = dummyComplaints.filter(c => c.status === 'New' || c.status === 'Under Review').length;
+      const inProgressComplaints = dummyComplaints.filter(c => c.status === 'In Progress').length;
+      const resolvedComplaints = dummyComplaints.filter(c => c.status === 'Resolved').length;
+      
+      const totalPropertyVerifications = dummyPropertyVerifications.length;
+      const pendingVerifications = dummyPropertyVerifications.filter(v => v.status === 'Pending').length;
+      
+      const totalBuildingApprovals = dummyBuildingApprovals.length;
+      const pendingApprovals = dummyBuildingApprovals.filter(a => a.status === 'Pending').length;
+      
+      setStatistics({
+        totalComplaints,
+        pendingComplaints,
+        inProgressComplaints,
+        resolvedComplaints,
+        totalPropertyVerifications,
+        pendingVerifications,
+        totalBuildingApprovals,
+        pendingApprovals
+      });
     } catch (error) {
       console.error('Error fetching admin data:', error);
       toast.error('Error fetching admin dashboard data');
@@ -333,19 +697,25 @@ const AdminDashboard = () => {
   const fieldSurveys = [
     { id: 'FS001', incharge: 'Rajesh Kumar', location: 'Ward 5, Sector A', type: 'Drone Survey', status: 'Completed', date: '2024-01-15', droneModel: 'DJI Mavic 3', dataCollected: 'Images, Lidar, GPS', coordinates: '28.7041°N, 77.1025°E' },
     { id: 'FS002', incharge: 'Priya Sharma', location: 'Ward 3, Sector B', type: 'Manual Survey', status: 'In Progress', date: '2024-01-15', droneModel: 'N/A', dataCollected: 'Photos, Measurements', coordinates: '28.7041°N, 77.1025°E' },
-    { id: 'FS003', incharge: 'Amit Patel', location: 'Ward 7, Sector C', type: 'Drone Survey', status: 'Scheduled', date: '2024-01-16', droneModel: 'DJI Mavic 3', dataCollected: 'Pending', coordinates: '28.7041°N, 77.1025°E' }
+    { id: 'FS003', incharge: 'Amit Patel', location: 'Ward 7, Sector C', type: 'Drone Survey', status: 'Scheduled', date: '2024-01-16', droneModel: 'DJI Mavic 3', dataCollected: 'Pending', coordinates: '28.7041°N, 77.1025°E' },
+    { id: 'FS004', incharge: 'Sneha Reddy', location: 'Ward 12, Sector D', type: 'Drone Survey', status: 'Completed', date: '2024-01-14', droneModel: 'DJI Mavic 3', dataCollected: 'Images, Lidar, GPS', coordinates: '28.7041°N, 77.1025°E' },
+    { id: 'FS005', incharge: 'Vikram Singh', location: 'Ward 8, Sector E', type: 'Manual Survey', status: 'Completed', date: '2024-01-13', droneModel: 'N/A', dataCollected: 'Photos, Measurements', coordinates: '28.7041°N, 77.1025°E' }
   ];
 
   const droneFleet = [
     { id: 'DRONE001', model: 'DJI Mavic 3 Enterprise', status: 'Active', operator: 'Rajesh Kumar', lastMission: '2024-01-15', batteryLevel: 85, sensors: ['GPS', 'Lidar', 'Camera', 'ADS-B'], location: 'Ward 5', missionType: 'Survey' },
     { id: 'DRONE002', model: 'DJI Mavic 3 Enterprise', status: 'Maintenance', operator: 'Priya Sharma', lastMission: '2024-01-14', batteryLevel: 45, sensors: ['GPS', 'Camera'], location: 'Hangar', missionType: 'Inspection' },
-    { id: 'DRONE003', model: 'Custom Quadcopter', status: 'Active', operator: 'Amit Patel', lastMission: '2024-01-15', batteryLevel: 92, sensors: ['GPS', 'Thermal', 'Multispectral'], location: 'Ward 7', missionType: 'Agriculture' }
+    { id: 'DRONE003', model: 'Custom Quadcopter', status: 'Active', operator: 'Amit Patel', lastMission: '2024-01-15', batteryLevel: 92, sensors: ['GPS', 'Thermal', 'Multispectral'], location: 'Ward 7', missionType: 'Agriculture' },
+    { id: 'DRONE004', model: 'DJI Mavic 3 Enterprise', status: 'Active', operator: 'Sneha Reddy', lastMission: '2024-01-14', batteryLevel: 78, sensors: ['GPS', 'Lidar', 'Camera'], location: 'Ward 12', missionType: 'Survey' },
+    { id: 'DRONE005', model: 'DJI Mavic 3 Enterprise', status: 'Charging', operator: 'Vikram Singh', lastMission: '2024-01-13', batteryLevel: 15, sensors: ['GPS', 'Camera'], location: 'Charging Station', missionType: 'Inspection' }
   ];
 
   const dataCollectionOverview = [
     { sheet: 'Ward 5 Survey Data', records: 1247, lastUpdated: '2024-01-15 14:30', incharge: 'Rajesh Kumar', status: 'Complete', dataTypes: ['GPS', 'Images', 'Measurements'] },
     { sheet: 'Ward 3 Construction Data', records: 892, lastUpdated: '2024-01-15 16:45', incharge: 'Priya Sharma', status: 'In Progress', dataTypes: ['Photos', 'Documents', 'Coordinates'] },
-    { sheet: 'Ward 7 Infrastructure Data', records: 1567, lastUpdated: '2024-01-15 12:15', incharge: 'Amit Patel', status: 'Pending Review', dataTypes: ['Lidar', 'Thermal', 'Satellite'] }
+    { sheet: 'Ward 7 Infrastructure Data', records: 1567, lastUpdated: '2024-01-15 12:15', incharge: 'Amit Patel', status: 'Pending Review', dataTypes: ['Lidar', 'Thermal', 'Satellite'] },
+    { sheet: 'Ward 12 Property Data', records: 2341, lastUpdated: '2024-01-14 18:20', incharge: 'Sneha Reddy', status: 'Complete', dataTypes: ['GPS', 'Images', 'Documents'] },
+    { sheet: 'Ward 8 Building Data', records: 1789, lastUpdated: '2024-01-13 15:45', incharge: 'Vikram Singh', status: 'Complete', dataTypes: ['Photos', 'Measurements', 'GPS'] }
   ];
 
 
@@ -594,106 +964,106 @@ const AdminDashboard = () => {
 
       {/* Main Content */}
       {!loading && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Welcome Section */}
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              Welcome, {user?.name || 'Administrator'}! 🛡️
-            </h2>
-            <p className="text-gray-600">
-              Monitor system performance, manage departments, and ensure efficient grievance resolution.
-            </p>
-          </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Welcome Section */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            Welcome, {user?.name || 'Administrator'}! 🛡️
+          </h2>
+          <p className="text-gray-600">
+            Monitor system performance, manage departments, and ensure efficient grievance resolution.
+          </p>
+        </div>
 
-          {/* System Overview Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {/* System Overview Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <div className="bg-white rounded-lg shadow-lg p-6">
-              <div className="flex items-center">
-                <div className="p-3 bg-blue-100 rounded-lg">
-                  <FileText className="h-6 w-6 text-blue-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Complaints</p>
-                  <p className="text-2xl font-bold text-gray-900">{systemStats.totalComplaints}</p>
-                </div>
+            <div className="flex items-center">
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <FileText className="h-6 w-6 text-blue-600" />
               </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-lg p-6">
-              <div className="flex items-center">
-                <div className="p-3 bg-green-100 rounded-lg">
-                  <CheckCircle className="h-6 w-6 text-green-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Resolved</p>
-                  <p className="text-2xl font-bold text-gray-900">{systemStats.resolved}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-lg p-6">
-              <div className="flex items-center">
-                <div className="p-3 bg-yellow-100 rounded-lg">
-                  <Clock className="h-6 w-6 text-yellow-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">In Progress</p>
-                  <p className="text-2xl font-bold text-gray-900">{systemStats.inProgress}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-lg p-6">
-              <div className="flex items-center">
-                <div className="p-3 bg-red-100 rounded-lg">
-                  <XCircle className="h-6 w-6 text-red-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Pending</p>
-                  <p className="text-2xl font-bold text-gray-900">{systemStats.pending}</p>
-                </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Total Complaints</p>
+                <p className="text-2xl font-bold text-gray-900">{systemStats.totalComplaints}</p>
               </div>
             </div>
           </div>
 
-          {/* Additional Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <div className="bg-white rounded-lg shadow-lg p-6">
-              <div className="flex items-center">
-                <div className="p-3 bg-purple-100 rounded-lg">
-                  <Users className="h-6 w-6 text-purple-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Users</p>
-                  <p className="text-2xl font-bold text-gray-900">{systemStats.totalUsers}</p>
-                </div>
+            <div className="flex items-center">
+              <div className="p-3 bg-green-100 rounded-lg">
+                <CheckCircle className="h-6 w-6 text-green-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Resolved</p>
+                <p className="text-2xl font-bold text-gray-900">{systemStats.resolved}</p>
               </div>
             </div>
+          </div>
 
             <div className="bg-white rounded-lg shadow-lg p-6">
-              <div className="flex items-center">
-                <div className="p-3 bg-indigo-100 rounded-lg">
-                  <Shield className="h-6 w-6 text-indigo-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Active Officials</p>
+            <div className="flex items-center">
+              <div className="p-3 bg-yellow-100 rounded-lg">
+                <Clock className="h-6 w-6 text-yellow-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">In Progress</p>
+                <p className="text-2xl font-bold text-gray-900">{systemStats.inProgress}</p>
+              </div>
+            </div>
+          </div>
+
+            <div className="bg-white rounded-lg shadow-lg p-6">
+            <div className="flex items-center">
+              <div className="p-3 bg-red-100 rounded-lg">
+                <XCircle className="h-6 w-6 text-red-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Pending</p>
+                <p className="text-2xl font-bold text-gray-900">{systemStats.pending}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Additional Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="bg-white rounded-lg shadow-lg p-6">
+            <div className="flex items-center">
+              <div className="p-3 bg-purple-100 rounded-lg">
+                <Users className="h-6 w-6 text-purple-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Total Users</p>
+                <p className="text-2xl font-bold text-gray-900">{systemStats.totalUsers}</p>
+              </div>
+            </div>
+          </div>
+
+            <div className="bg-white rounded-lg shadow-lg p-6">
+            <div className="flex items-center">
+              <div className="p-3 bg-indigo-100 rounded-lg">
+                <Shield className="h-6 w-6 text-indigo-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Active Officials</p>
                   <p className="text-2xl font-bold text-gray-900">{systemStats.activeOfficers}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-lg p-6">
-              <div className="flex items-center">
-                <div className="p-3 bg-teal-100 rounded-lg">
-                  <TrendingUp className="h-6 w-6 text-teal-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Avg Resolution</p>
-                  <p className="text-2xl font-bold text-gray-900">{systemStats.avgResolutionTime}</p>
-                </div>
               </div>
             </div>
           </div>
+
+            <div className="bg-white rounded-lg shadow-lg p-6">
+            <div className="flex items-center">
+              <div className="p-3 bg-teal-100 rounded-lg">
+                <TrendingUp className="h-6 w-6 text-teal-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Avg Resolution</p>
+                <p className="text-2xl font-bold text-gray-900">{systemStats.avgResolutionTime}</p>
+              </div>
+            </div>
+          </div>
+        </div>
 
 
 
@@ -701,7 +1071,7 @@ const AdminDashboard = () => {
 
           {/* Field Survey Monitoring */}
           <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
-            <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-gray-900">Field Survey Monitoring</h3>
               <div className="flex items-center space-x-3">
                 <span className="text-sm text-gray-500">Track all surveys from Incharge Dashboard</span>
@@ -713,8 +1083,8 @@ const AdminDashboard = () => {
                   View All
                 </button>
               </div>
-            </div>
-            
+          </div>
+          
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {fieldSurveys.map((survey) => (
                 <div key={survey.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
@@ -765,10 +1135,10 @@ const AdminDashboard = () => {
           <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-gray-900">📊 Surveys & Illegal Constructions</h3>
-              <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-3">
                 <span className="text-sm text-gray-500">Monitor field surveys and violations</span>
-              </div>
-            </div>
+                  </div>
+                </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Surveys Summary */}
@@ -845,8 +1215,8 @@ const AdminDashboard = () => {
                               : 'bg-yellow-100 text-yellow-800'
                           }`}>
                             {violation.severity}
-                          </span>
-                        </div>
+                  </span>
+                </div>
                         <div className="text-sm text-gray-600 space-y-1">
                           <p><span className="font-medium">Ward:</span> {violation.ward_name || `Ward ${violation.ward_no}`}</p>
                           <p><span className="font-medium">Status:</span> {violation.status}</p>
@@ -866,8 +1236,8 @@ const AdminDashboard = () => {
                             </p>
                           )}
                         </div>
-                      </div>
-                    ))}
+              </div>
+            ))}
                     {illegalConstructions.length > 3 && (
                       <div className="text-center pt-2">
                         <button className="text-red-600 hover:text-red-800 text-sm font-medium">
@@ -883,8 +1253,8 @@ const AdminDashboard = () => {
                   </div>
                 )}
               </div>
-            </div>
           </div>
+        </div>
 
           {/* Survey Analytics Dashboard */}
           {surveys && surveys.length > 0 && (
@@ -1025,81 +1395,81 @@ const AdminDashboard = () => {
             </div>
           )}
 
-          {/* Grievance Platform Responses */}
+        {/* Grievance Platform Responses */}
           <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-gray-900">Grievance Platform Responses</h3>
-              <div className="flex items-center space-x-3">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search responses..."
-                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  />
-                </div>
-                <button className="btn-secondary">
-                  Filter
-                </button>
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-gray-900">Grievance Platform Responses</h3>
+            <div className="flex items-center space-x-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search responses..."
+                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
               </div>
-            </div>
-            
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Citizen</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Complaint</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Response</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {grievanceResponses.map((response) => (
-                    <tr key={response.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{response.id}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{response.citizen}</td>
-                      <td className="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">{response.complaint}</td>
-                      <td className="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">{response.response}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          response.status === 'Completed' ? 'bg-green-100 text-green-800' :
-                          response.status === 'In Progress' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-blue-100 text-blue-800'
-                        }`}>
-                          {response.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex items-center space-x-2">
-                          <button
-                            onClick={() => setSelectedRequest(response)}
-                            className="text-primary-600 hover:text-primary-700"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => handleStatusChange('Grievance Response', response.id, 'Approved')}
-                            className="text-green-600 hover:text-green-700"
-                          >
-                            <CheckSquare className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => handleStatusChange('Grievance Response', response.id, 'Rejected')}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <XSquare className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <button className="btn-secondary">
+                Filter
+              </button>
             </div>
           </div>
+          
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Citizen</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Complaint</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Response</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {grievanceResponses.map((response) => (
+                  <tr key={response.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{response.id}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{response.citizen}</td>
+                    <td className="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">{response.complaint}</td>
+                    <td className="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">{response.response}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        response.status === 'Completed' ? 'bg-green-100 text-green-800' :
+                        response.status === 'In Progress' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-blue-100 text-blue-800'
+                      }`}>
+                        {response.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => setSelectedRequest(response)}
+                          className="text-primary-600 hover:text-primary-700"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleStatusChange('Grievance Response', response.id, 'Approved')}
+                          className="text-green-600 hover:text-green-700"
+                        >
+                          <CheckSquare className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleStatusChange('Grievance Response', response.id, 'Rejected')}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <XSquare className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
 
           {/* Drone Fleet Management */}
           <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
@@ -1163,57 +1533,57 @@ const AdminDashboard = () => {
             </div>
           </div>
 
-          {/* Document Verification Requests */}
+        {/* Document Verification Requests */}
           <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-gray-900">Document Verification Requests</h3>
-              <span className="text-sm text-gray-500">Ward-wise verification</span>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {documentVerificationRequests.map((doc) => (
-                <div key={doc.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm font-medium text-gray-900">{doc.id}</span>
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      doc.priority === 'High' ? 'bg-red-100 text-red-800' :
-                      doc.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-green-100 text-green-800'
-                    }`}>
-                      {doc.priority}
-                    </span>
-                  </div>
-                  <div className="space-y-2 mb-4">
-                    <p className="text-sm text-gray-600"><span className="font-medium">Citizen:</span> {doc.citizen}</p>
-                    <p className="text-sm text-gray-600"><span className="font-medium">Document:</span> {doc.documentType}</p>
-                    <p className="text-sm text-gray-600"><span className="font-medium">Ward:</span> {doc.ward}</p>
-                    <p className="text-sm text-gray-600"><span className="font-medium">Status:</span> {doc.status}</p>
-                    <p className="text-sm text-gray-600"><span className="font-medium">Submitted:</span> {doc.submittedDate}</p>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={() => handleStatusChange('Document', doc.id, 'Verified')}
-                      className="btn-success text-xs px-3 py-1"
-                    >
-                      Verify
-                    </button>
-                    <button
-                      onClick={() => handleStatusChange('Document', doc.id, 'Rejected')}
-                      className="btn-danger text-xs px-3 py-1"
-                    >
-                      Reject
-                    </button>
-                    <button
-                      onClick={() => setSelectedRequest(doc)}
-                      className="btn-secondary text-xs px-3 py-1"
-                    >
-                      View Details
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-gray-900">Document Verification Requests</h3>
+            <span className="text-sm text-gray-500">Ward-wise verification</span>
           </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {documentVerificationRequests.map((doc) => (
+              <div key={doc.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-medium text-gray-900">{doc.id}</span>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    doc.priority === 'High' ? 'bg-red-100 text-red-800' :
+                    doc.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-green-100 text-green-800'
+                  }`}>
+                    {doc.priority}
+                  </span>
+                </div>
+                <div className="space-y-2 mb-4">
+                  <p className="text-sm text-gray-600"><span className="font-medium">Citizen:</span> {doc.citizen}</p>
+                  <p className="text-sm text-gray-600"><span className="font-medium">Document:</span> {doc.documentType}</p>
+                  <p className="text-sm text-gray-600"><span className="font-medium">Ward:</span> {doc.ward}</p>
+                  <p className="text-sm text-gray-600"><span className="font-medium">Status:</span> {doc.status}</p>
+                  <p className="text-sm text-gray-600"><span className="font-medium">Submitted:</span> {doc.submittedDate}</p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => handleStatusChange('Document', doc.id, 'Verified')}
+                    className="btn-success text-xs px-3 py-1"
+                  >
+                    Verify
+                  </button>
+                  <button
+                    onClick={() => handleStatusChange('Document', doc.id, 'Rejected')}
+                    className="btn-danger text-xs px-3 py-1"
+                  >
+                    Reject
+                  </button>
+                  <button
+                    onClick={() => setSelectedRequest(doc)}
+                    className="btn-secondary text-xs px-3 py-1"
+                  >
+                    View Details
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
 
           {/* Data Collection Overview */}
           <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
@@ -1275,210 +1645,210 @@ const AdminDashboard = () => {
             </div>
           </div>
 
-          {/* Building Permission Requests */}
+        {/* Building Permission Requests */}
           <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-gray-900">Building Construction Permission Requests</h3>
-              <span className="text-sm text-gray-500">Large scale projects</span>
-            </div>
-            
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Applicant</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ward</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cost</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {buildingPermissionRequests.map((request) => (
-                    <tr key={request.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{request.id}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{request.applicant}</td>
-                      <td className="px-6 py-4 text-sm text-gray-900">{request.project}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{request.ward}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{request.estimatedCost}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          request.status === 'Pending Approval' ? 'bg-red-100 text-red-800' :
-                          request.status === 'Under Review' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-blue-100 text-blue-800'
-                        }`}>
-                          {request.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex items-center space-x-2">
-                          <button
-                            onClick={() => handleStatusChange('Building Permission', request.id, 'Approved')}
-                            className="btn-success text-xs px-3 py-1"
-                          >
-                            Approve
-                          </button>
-                          <button
-                            onClick={() => handleStatusChange('Building Permission', request.id, 'Rejected')}
-                            className="btn-danger text-xs px-3 py-1"
-                          >
-                            Reject
-                          </button>
-                          <button
-                            onClick={() => setSelectedRequest(request)}
-                            className="btn-secondary text-xs px-3 py-1"
-                          >
-                            Details
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-gray-900">Building Construction Permission Requests</h3>
+            <span className="text-sm text-gray-500">Large scale projects</span>
           </div>
+          
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Applicant</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ward</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cost</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {buildingPermissionRequests.map((request) => (
+                  <tr key={request.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{request.id}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{request.applicant}</td>
+                    <td className="px-6 py-4 text-sm text-gray-900">{request.project}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{request.ward}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{request.estimatedCost}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        request.status === 'Pending Approval' ? 'bg-red-100 text-red-800' :
+                        request.status === 'Under Review' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-blue-100 text-blue-800'
+                      }`}>
+                        {request.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => handleStatusChange('Building Permission', request.id, 'Approved')}
+                          className="btn-success text-xs px-3 py-1"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => handleStatusChange('Building Permission', request.id, 'Rejected')}
+                          className="btn-danger text-xs px-3 py-1"
+                        >
+                          Reject
+                        </button>
+                        <button
+                          onClick={() => setSelectedRequest(request)}
+                          className="btn-secondary text-xs px-3 py-1"
+                        >
+                          Details
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
 
 
 
-          {/* Illegal Construction Reports */}
+        {/* Illegal Construction Reports */}
           <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-gray-900">Illegal Construction Reports</h3>
-              <span className="text-sm text-gray-500">Ward-wise monitoring</span>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {illegalConstructionReports.map((report) => (
-                <div key={report.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm font-medium text-gray-900">{report.id}</span>
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-gray-900">Illegal Construction Reports</h3>
+            <span className="text-sm text-gray-500">Ward-wise monitoring</span>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {illegalConstructionReports.map((report) => (
+              <div key={report.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-medium text-gray-900">{report.id}</span>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    report.severity === 'High' ? 'bg-red-100 text-red-800' :
+                    report.severity === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-green-100 text-green-800'
+                  }`}>
+                    {report.severity}
+                  </span>
+                </div>
+                <div className="space-y-2 mb-4">
+                  <p className="text-sm text-gray-600"><span className="font-medium">Location:</span> {report.location}</p>
+                  <p className="text-sm text-gray-600"><span className="font-medium">Reporter:</span> {report.reporter}</p>
+                  <p className="text-sm text-gray-600"><span className="font-medium">Coordinates:</span> {report.coordinates}</p>
+                  <p className="text-sm text-gray-600"><span className="font-medium">Status:</span> {report.status}</p>
+                  <p className="text-sm text-gray-600"><span className="font-medium">Date:</span> {report.date}</p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => handleStatusChange('Illegal Construction', report.id, 'Under Investigation')}
+                    className="btn-secondary text-xs px-3 py-1"
+                  >
+                    Investigate
+                  </button>
+                  <button
+                    onClick={() => handleStatusChange('Illegal Construction', report.id, 'Resolved')}
+                    className="btn-success text-xs px-3 py-1"
+                  >
+                    Resolve
+                  </button>
+                  <button
+                    onClick={() => setSelectedRequest(report)}
+                    className="btn-primary text-xs px-3 py-1"
+                  >
+                    View Details
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+
+
+
+
+        {/* Recent Complaints */}
+          <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-gray-900">Recent Complaints</h3>
+            <button className="text-primary-600 hover:text-primary-700 text-sm font-medium">
+              View All
+            </button>
+          </div>
+          
+          <div className="space-y-4">
+            {recentComplaints.map((complaint) => (
+              <div key={complaint.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center space-x-4">
+                  <div className="h-10 w-10 bg-primary-100 rounded-lg flex items-center justify-center">
+                    <FileText className="h-5 w-5 text-primary-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">{complaint.title}</p>
+                    <p className="text-sm text-gray-600">ID: {complaint.id} • {complaint.department}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="flex items-center space-x-2 mb-1">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      report.severity === 'High' ? 'bg-red-100 text-red-800' :
-                      report.severity === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                      complaint.priority === 'High' ? 'bg-red-100 text-red-800' :
+                      complaint.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
                       'bg-green-100 text-green-800'
                     }`}>
-                      {report.severity}
+                      {complaint.priority}
+                    </span>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      complaint.status === 'Resolved' ? 'bg-green-100 text-green-800' :
+                      complaint.status === 'In Progress' ? 'bg-yellow-100 text-yellow-800' :
+                      complaint.status === 'Assigned' ? 'bg-blue-100 text-blue-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {complaint.status}
                     </span>
                   </div>
-                  <div className="space-y-2 mb-4">
-                    <p className="text-sm text-gray-600"><span className="font-medium">Location:</span> {report.location}</p>
-                    <p className="text-sm text-gray-600"><span className="font-medium">Reporter:</span> {report.reporter}</p>
-                    <p className="text-sm text-gray-600"><span className="font-medium">Coordinates:</span> {report.coordinates}</p>
-                    <p className="text-sm text-gray-600"><span className="font-medium">Status:</span> {report.status}</p>
-                    <p className="text-sm text-gray-600"><span className="font-medium">Date:</span> {report.date}</p>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={() => handleStatusChange('Illegal Construction', report.id, 'Under Investigation')}
-                      className="btn-secondary text-xs px-3 py-1"
-                    >
-                      Investigate
-                    </button>
-                    <button
-                      onClick={() => handleStatusChange('Illegal Construction', report.id, 'Resolved')}
-                      className="btn-success text-xs px-3 py-1"
-                    >
-                      Resolve
-                    </button>
-                    <button
-                      onClick={() => setSelectedRequest(report)}
-                      className="btn-primary text-xs px-3 py-1"
-                    >
-                      View Details
-                    </button>
-                  </div>
+                  <p className="text-sm text-gray-500">{complaint.date}</p>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
-
-
-
-
-
-          {/* Recent Complaints */}
-          <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-gray-900">Recent Complaints</h3>
-              <button className="text-primary-600 hover:text-primary-700 text-sm font-medium">
-                View All
-              </button>
-            </div>
-            
-            <div className="space-y-4">
-              {recentComplaints.map((complaint) => (
-                <div key={complaint.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                  <div className="flex items-center space-x-4">
-                    <div className="h-10 w-10 bg-primary-100 rounded-lg flex items-center justify-center">
-                      <FileText className="h-5 w-5 text-primary-600" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">{complaint.title}</p>
-                      <p className="text-sm text-gray-600">ID: {complaint.id} • {complaint.department}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="flex items-center space-x-2 mb-1">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        complaint.priority === 'High' ? 'bg-red-100 text-red-800' :
-                        complaint.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-green-100 text-green-800'
-                      }`}>
-                        {complaint.priority}
-                      </span>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        complaint.status === 'Resolved' ? 'bg-green-100 text-green-800' :
-                        complaint.status === 'In Progress' ? 'bg-yellow-100 text-yellow-800' :
-                        complaint.status === 'Assigned' ? 'bg-blue-100 text-blue-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {complaint.status}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-500">{complaint.date}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+        </div>
 
           {/* Enhanced Quick Actions */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="bg-white rounded-lg shadow-lg p-6 text-center hover:shadow-xl transition-shadow cursor-pointer">
-              <div className="mx-auto h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
-                <Users className="h-6 w-6 text-blue-600" />
-              </div>
-              <h3 className="text-sm font-medium text-gray-900 mb-2">Manage Users</h3>
-              <p className="text-xs text-gray-600">Add, edit, or remove system users</p>
+            <div className="mx-auto h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+              <Users className="h-6 w-6 text-blue-600" />
             </div>
-
-            <div className="bg-white rounded-lg shadow-lg p-6 text-center hover:shadow-xl transition-shadow cursor-pointer">
-              <div className="mx-auto h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
-                <BarChart3 className="h-6 w-6 text-green-600" />
-              </div>
-              <h3 className="text-sm font-medium text-gray-900 mb-2">Analytics</h3>
-              <p className="text-xs text-gray-600">View detailed system analytics</p>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-lg p-6 text-center hover:shadow-xl transition-shadow cursor-pointer">
-              <div className="mx-auto h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
-                <Settings className="h-6 w-6 text-purple-600" />
-              </div>
-              <h3 className="text-sm font-medium text-gray-900 mb-2">System Settings</h3>
-              <p className="text-xs text-gray-600">Configure system parameters</p>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-lg p-6 text-center hover:shadow-xl transition-shadow cursor-pointer">
-              <div className="mx-auto h-12 w-12 bg-orange-100 rounded-lg flex items-center justify-center mb-4">
-                <Globe className="h-6 w-6 text-orange-600" />
-              </div>
-              <h3 className="text-sm font-medium text-gray-900 mb-2">Broadcast</h3>
-              <p className="text-xs text-gray-600">Send system-wide notifications</p>
-            </div>
+            <h3 className="text-sm font-medium text-gray-900 mb-2">Manage Users</h3>
+            <p className="text-xs text-gray-600">Add, edit, or remove system users</p>
           </div>
+
+            <div className="bg-white rounded-lg shadow-lg p-6 text-center hover:shadow-xl transition-shadow cursor-pointer">
+            <div className="mx-auto h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
+              <BarChart3 className="h-6 w-6 text-green-600" />
+            </div>
+            <h3 className="text-sm font-medium text-gray-900 mb-2">Analytics</h3>
+            <p className="text-xs text-gray-600">View detailed system analytics</p>
+          </div>
+
+            <div className="bg-white rounded-lg shadow-lg p-6 text-center hover:shadow-xl transition-shadow cursor-pointer">
+            <div className="mx-auto h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
+              <Settings className="h-6 w-6 text-purple-600" />
+            </div>
+            <h3 className="text-sm font-medium text-gray-900 mb-2">System Settings</h3>
+            <p className="text-xs text-gray-600">Configure system parameters</p>
+          </div>
+
+            <div className="bg-white rounded-lg shadow-lg p-6 text-center hover:shadow-xl transition-shadow cursor-pointer">
+            <div className="mx-auto h-12 w-12 bg-orange-100 rounded-lg flex items-center justify-center mb-4">
+                <Globe className="h-6 w-6 text-orange-600" />
+            </div>
+            <h3 className="text-sm font-medium text-gray-900 mb-2">Broadcast</h3>
+            <p className="text-xs text-gray-600">Send system-wide notifications</p>
+          </div>
+        </div>
 
           {/* Additional Quick Actions */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
@@ -1488,7 +1858,7 @@ const AdminDashboard = () => {
               </div>
               <h3 className="text-sm font-medium text-gray-900 mb-2">Survey Monitor</h3>
               <p className="text-xs text-gray-600">Monitor all field surveys</p>
-            </div>
+      </div>
 
             <div className="bg-white rounded-lg shadow-lg p-6 text-center hover:shadow-xl transition-shadow cursor-pointer">
               <div className="mx-auto h-12 w-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">

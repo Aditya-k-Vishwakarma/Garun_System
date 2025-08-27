@@ -1,593 +1,984 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Upload, Camera, Video, FileText, X, Send, AlertCircle } from 'lucide-react';
+import { 
+  ArrowLeft, 
+  AlertTriangle, 
+  MapPin, 
+  Calendar, 
+  User, 
+  Phone, 
+  Mail, 
+  Camera, 
+  Video, 
+  FileText, 
+  Upload, 
+  Shield, 
+  CheckCircle,
+  XCircle,
+  Info,
+  Clock,
+  Building,
+  Car,
+  TreeDeciduous,
+  Lightbulb,
+  Droplets,
+  Trash2,
+  Wifi,
+  Zap,
+  Home,
+  Construction,
+  MessageSquare,
+  Download,
+  Share2,
+  RefreshCw
+} from 'lucide-react';
 import AuthContext from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 
 const ComplaintForm = () => {
-  const navigate = useNavigate();
   const { user } = useContext(AuthContext);
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
+  const [wards, setWards] = useState([]);
+  const [wardsLoading, setWardsLoading] = useState(true);
   const [formData, setFormData] = useState({
-    title: '', description: '', category: '', incidentDate: '', incidentTime: '',
-    address: '', ward: '', zone: '', latitude: '', longitude: '', landmark: '',
-    photos: [], videos: [], documents: [],
-    fullName: '', fatherName: '', motherName: '', dateOfBirth: '', gender: '',
-    contactNumber: '', residentialAddress: '', permanentAddress: '',
-    idProofType: '', idProofNumber: '', idProofDocument: null, selfie: null
+    title: '',
+    description: '',
+    category: '',
+    incident_date: '',
+    incident_time: '',
+    address: '',
+    ward: '',
+    zone: '',
+    latitude: '',
+    longitude: '',
+    landmark: '',
+    full_name: user?.fullName || '',
+    father_name: '',
+    mother_name: '',
+    date_of_birth: '',
+    gender: '',
+    contact_number: user?.contactNumber || '',
+    residential_address: '',
+    permanent_address: '',
+    id_proof_type: '',
+    id_proof_number: ''
   });
 
-  const [errors, setErrors] = useState({});
+  const [files, setFiles] = useState({
+    photos: [],
+    videos: [],
+    documents: [],
+    id_proof_document: null,
+    selfie: null
+  });
 
-  const complaintCategories = [
-    'Illegal Construction', 'Encroachment', 'Sanitation', 'Water Supply', 'Road Issues',
-    'Street Lighting', 'Garbage Collection', 'Drainage Issues', 'Street Vendors',
-    'Traffic Violations', 'Noise Pollution', 'Air Pollution', 'Street Dogs', 'Other'
+  const categories = [
+    { id: 'illegal_construction', name: 'Illegal Construction', icon: Building, color: 'bg-red-100 text-red-800' },
+    { id: 'encroachment', name: 'Encroachment', icon: Construction, color: 'bg-orange-100 text-orange-800' },
+    { id: 'sanitation', name: 'Sanitation & Garbage', icon: Trash2, color: 'bg-yellow-100 text-yellow-800' },
+    { id: 'water_supply', name: 'Water Supply', icon: Droplets, color: 'bg-blue-100 text-blue-800' },
+    { id: 'street_lighting', name: 'Street Lighting', icon: Lightbulb, color: 'bg-purple-100 text-purple-800' },
+    { id: 'road_issues', name: 'Road Issues', icon: Construction, color: 'bg-indigo-100 text-indigo-800' },
+    { id: 'traffic', name: 'Traffic & Parking', icon: Car, color: 'bg-green-100 text-green-800' },
+    { id: 'environment', name: 'Environment', icon: TreeDeciduous, color: 'bg-emerald-100 text-emerald-800' },
+    { id: 'utilities', name: 'Utilities', icon: Zap, color: 'bg-amber-100 text-amber-800' },
+    { id: 'internet', name: 'Internet & Connectivity', icon: Wifi, color: 'bg-cyan-100 text-cyan-800' },
+    { id: 'other', name: 'Other', icon: Info, color: 'bg-gray-100 text-gray-800' }
   ];
 
-  const wards = ['Ward 1', 'Ward 2', 'Ward 3', 'Ward 4', 'Ward 5', 'Ward 6', 'Ward 7', 'Ward 8', 'Ward 9', 'Ward 10'];
-  const zones = ['North Zone', 'South Zone', 'East Zone', 'West Zone', 'Central Zone'];
-  const idProofTypes = ['Aadhaar Card', 'PAN Card', 'Voter ID', 'Passport', 'Driving License', 'Ration Card'];
+  const zones = ['North Zone', 'South Zone', 'East Zone', 'West Zone', 'Central Zone', 'North-East Zone', 'North-West Zone', 'South-East Zone', 'South-West Zone'];
+
+  const idProofTypes = [
+    'Aadhaar Card', 'PAN Card', 'Voter ID', 'Driving License', 'Passport', 'Ration Card', 'Bank Passbook'
+  ];
+
+  // Fetch wards from API on component mount
+  useEffect(() => {
+    const fetchWards = async () => {
+      try {
+        console.log('Fetching wards from API...');
+        setWardsLoading(true);
+        
+        const response = await fetch('http://localhost:8000/api/wards');
+        console.log('API Response status:', response.status);
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('API Response data:', data);
+          
+          if (data.success && data.wards && data.wards.length > 0) {
+            // Extract ward names from the API response
+            const wardNames = data.wards.map(ward => ward.ward_name);
+            console.log('Setting wards:', wardNames);
+            setWards(wardNames);
+          } else {
+            console.log('No wards data in response, using fallback');
+            setWards([
+              'Ward 1', 'Ward 2', 'Ward 3', 'Ward 4', 'Ward 5', 'Ward 6', 'Ward 7', 'Ward 8', 'Ward 9', 'Ward 10',
+              'Ward 11', 'Ward 12', 'Ward 13', 'Ward 14', 'Ward 15', 'Ward 16', 'Ward 17', 'Ward 18', 'Ward 19', 'Ward 20'
+            ]);
+          }
+        } else {
+          console.error('API response not ok:', response.status, response.statusText);
+          // Fallback to hardcoded wards if API fails
+          setWards([
+            'Ward 1', 'Ward 2', 'Ward 3', 'Ward 4', 'Ward 5', 'Ward 6', 'Ward 7', 'Ward 8', 'Ward 9', 'Ward 10',
+            'Ward 11', 'Ward 12', 'Ward 13', 'Ward 14', 'Ward 15', 'Ward 16', 'Ward 17', 'Ward 18', 'Ward 19', 'Ward 20'
+          ]);
+        }
+      } catch (error) {
+        console.error('Failed to fetch wards:', error);
+        // Fallback to hardcoded wards if API fails
+        setWards([
+          'Ward 1', 'Ward 2', 'Ward 3', 'Ward 4', 'Ward 5', 'Ward 6', 'Ward 7', 'Ward 8', 'Ward 9', 'Ward 10',
+          'Ward 11', 'Ward 12', 'Ward 13', 'Ward 14', 'Ward 15', 'Ward 16', 'Ward 17', 'Ward 18', 'Ward 19', 'Ward 20'
+        ]);
+      } finally {
+        setWardsLoading(false);
+      }
+    };
+
+    fetchWards();
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
-  };
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
 
-  const handleFileUpload = (e, type) => {
-    const files = Array.from(e.target.files);
-    if (type === 'photos') {
-      const imageFiles = files.filter(file => file.type.startsWith('image/'));
-      setFormData(prev => ({ ...prev, photos: [...prev.photos, ...imageFiles] }));
-    } else if (type === 'videos') {
-      const videoFiles = files.filter(file => file.type.startsWith('video/'));
-      setFormData(prev => ({ ...prev, videos: [...prev.videos, ...videoFiles] }));
-    } else if (type === 'documents') {
-      setFormData(prev => ({ ...prev, documents: [...prev.documents, ...files] }));
+    // Auto-fetch coordinates when ward is selected
+    if (name === 'ward' && value) {
+      fetchWardCoordinates(value);
     }
   };
 
-  const removeFile = (index, type) => {
-    setFormData(prev => ({ ...prev, [type]: prev[type].filter((_, i) => i !== index) }));
-  };
-
-  const captureLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
+  const fetchWardCoordinates = async (wardName) => {
+    try {
+      const response = await fetch(`http://localhost:8000/api/wards/coordinates/${encodeURIComponent(wardName)}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.coordinates) {
           setFormData(prev => ({
             ...prev,
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude
+            latitude: data.coordinates.latitude.toString(),
+            longitude: data.coordinates.longitude.toString()
           }));
-          toast.success('Location captured successfully!');
-        },
-        (error) => toast.error('Unable to capture location. Please enter manually.')
-      );
+          toast.success(`Coordinates fetched for ${wardName}`);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch coordinates for ward:', error);
+      toast.error('Failed to fetch coordinates for selected ward');
+    }
+  };
+
+  const handleFileChange = (e, fileType) => {
+    const selectedFiles = Array.from(e.target.files);
+    
+    if (fileType === 'id_proof_document' || fileType === 'selfie') {
+      setFiles(prev => ({
+        ...prev,
+        [fileType]: selectedFiles[0]
+      }));
     } else {
-      toast.error('Geolocation is not supported by this browser.');
+      setFiles(prev => ({
+        ...prev,
+        [fileType]: [...prev[fileType], ...selectedFiles]
+      }));
+    }
+  };
+
+  const removeFile = (fileType, index) => {
+    if (fileType === 'id_proof_document' || fileType === 'selfie') {
+      setFiles(prev => ({
+        ...prev,
+        [fileType]: null
+      }));
+    } else {
+      setFiles(prev => ({
+        ...prev,
+        [fileType]: prev[fileType].filter((_, i) => i !== index)
+      }));
     }
   };
 
   const validateStep = (currentStep) => {
-    const newErrors = {};
-    if (currentStep === 1) {
-      if (!formData.title.trim()) newErrors.title = 'Complaint title is required';
-      if (!formData.description.trim()) newErrors.description = 'Complaint description is required';
-      if (!formData.category) newErrors.category = 'Please select a category';
-      if (!formData.incidentDate) newErrors.incidentDate = 'Incident date is required';
+    switch (currentStep) {
+      case 1:
+        return formData.title && formData.description && formData.category && formData.incident_date;
+      case 2:
+        return formData.address && formData.ward && formData.zone;
+      case 3:
+        return formData.full_name && formData.contact_number && formData.id_proof_type && formData.id_proof_number;
+      default:
+        return true;
     }
-    if (currentStep === 2) {
-      if (!formData.address.trim()) newErrors.address = 'Address is required';
-      if (!formData.ward) newErrors.ward = 'Please select a ward';
-      if (!formData.zone) newErrors.zone = 'Please select a zone';
-    }
-    if (currentStep === 3) {
-      if (formData.photos.length === 0) newErrors.photos = 'At least one photo is required';
-    }
-    if (currentStep === 4) {
-      if (!formData.fullName.trim()) newErrors.fullName = 'Full name is required';
-      if (!formData.contactNumber.trim()) newErrors.contactNumber = 'Contact number is required';
-      if (!formData.idProofType) newErrors.idProofType = 'Please select ID proof type';
-      if (!formData.idProofNumber.trim()) newErrors.idProofNumber = 'ID proof number is required';
-    }
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
   };
 
   const nextStep = () => {
-    if (validateStep(step)) setStep(step + 1);
-  };
-
-  const prevStep = () => setStep(step - 1);
-
-  const handleSubmit = async () => {
-    if (!validateStep(step)) return;
-    
-    try {
-      // Create FormData for file upload
-      const formDataToSend = new FormData();
-      
-      // Add text fields
-      formDataToSend.append('title', formData.title);
-      formDataToSend.append('description', formData.description);
-      formDataToSend.append('category', formData.category);
-      formDataToSend.append('incident_date', formData.incidentDate);
-      formDataToSend.append('incident_time', formData.incidentTime || '');
-      formDataToSend.append('address', formData.address);
-      formDataToSend.append('ward', formData.ward);
-      formDataToSend.append('zone', formData.zone);
-      formDataToSend.append('latitude', formData.latitude || '');
-      formDataToSend.append('longitude', formData.longitude || '');
-      formDataToSend.append('landmark', formData.landmark || '');
-      formDataToSend.append('full_name', formData.fullName);
-      formDataToSend.append('father_name', formData.fatherName || '');
-      formDataToSend.append('mother_name', formData.motherName || '');
-      formDataToSend.append('date_of_birth', formData.dateOfBirth || '');
-      formDataToSend.append('gender', formData.gender || '');
-      formDataToSend.append('contact_number', formData.contactNumber);
-      formDataToSend.append('residential_address', formData.residentialAddress || '');
-      formDataToSend.append('permanent_address', formData.permanentAddress || '');
-      formDataToSend.append('id_proof_type', formData.idProofType);
-      formDataToSend.append('id_proof_number', formData.idProofNumber);
-      
-      // Add files
-      formData.photos.forEach((photo, index) => {
-        formDataToSend.append('photos', photo);
-      });
-      
-      formData.videos.forEach((video, index) => {
-        formDataToSend.append('videos', video);
-      });
-      
-      formData.documents.forEach((doc, index) => {
-        formDataToSend.append('documents', doc);
-      });
-      
-      if (formData.idProofDocument) {
-        formDataToSend.append('id_proof_document', formData.idProofDocument);
-      }
-      
-      if (formData.selfie) {
-        formDataToSend.append('selfie', formData.selfie);
-      }
-      
-      // Send to backend
-      const response = await fetch('http://localhost:8000/api/complaints/register', {
-        method: 'POST',
-        body: formDataToSend,
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || 'Failed to submit complaint');
-      }
-      
-      const result = await response.json();
-      console.log('Complaint submission result:', result);
-      
-      if (result.success && result.complaint_id) {
-        toast.success(`Complaint submitted successfully! Your complaint ID is: ${result.complaint_id}`);
-        navigate('/track-complaint', { state: { complaintId: result.complaint_id, status: 'New' } });
-      } else {
-        throw new Error('Invalid response from server');
-      }
-    } catch (error) {
-      console.error('Error submitting complaint:', error);
-      toast.error(`Failed to submit complaint: ${error.message}`);
+    if (validateStep(step)) {
+      setStep(step + 1);
+    } else {
+      toast.error('Please fill in all required fields');
     }
   };
 
-  const renderStep1 = () => (
-    <div className="space-y-6">
-      <h3 className="text-xl font-semibold text-gray-900 mb-4">Basic Complaint Details</h3>
+  const prevStep = () => {
+    setStep(step - 1);
+  };
+
+  const handleSubmit = async () => {
+    if (!validateStep(step)) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    setLoading(true);
+    
+    try {
+      const formDataToSend = new FormData();
       
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Complaint Title / Subject *</label>
-        <input type="text" name="title" value={formData.title} onChange={handleInputChange}
-               placeholder="Brief description of the issue" 
-               className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
-                 errors.title ? 'border-red-500' : 'border-gray-300'}`} />
-        {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title}</p>}
-      </div>
+      // Add form fields
+      Object.keys(formData).forEach(key => {
+        if (formData[key]) {
+          formDataToSend.append(key, formData[key]);
+        }
+      });
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Complaint Description *</label>
-        <textarea name="description" value={formData.description} onChange={handleInputChange} rows={4}
-                  placeholder="Provide detailed description of the issue..." 
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
-                    errors.description ? 'border-red-500' : 'border-gray-300'}`} />
-        {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Complaint Category / Type *</label>
-        <select name="category" value={formData.category} onChange={handleInputChange}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
-                  errors.category ? 'border-red-500' : 'border-gray-300'}`}>
-          <option value="">Select a category</option>
-          {complaintCategories.map(category => <option key={category} value={category}>{category}</option>)}
-        </select>
-        {errors.category && <p className="text-red-500 text-sm mt-1">{errors.category}</p>}
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Date of Incident *</label>
-          <input type="date" name="incidentDate" value={formData.incidentDate} onChange={handleInputChange}
-                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
-                   errors.incidentDate ? 'border-red-500' : 'border-gray-300'}`} />
-          {errors.incidentDate && <p className="text-red-500 text-sm mt-1">{errors.incidentDate}</p>}
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Time of Incident</label>
-          <input type="time" name="incidentTime" value={formData.incidentTime} onChange={handleInputChange}
-                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" />
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderStep2 = () => (
-    <div className="space-y-6">
-      <h3 className="text-xl font-semibold text-gray-900 mb-4">📍 Location Details</h3>
+      // Add files
+      if (files.photos.length > 0) {
+        files.photos.forEach(photo => {
+          formDataToSend.append('photos', photo);
+        });
+      }
       
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Address of Complaint Location *</label>
-        <textarea name="address" value={formData.address} onChange={handleInputChange} rows={3}
-                  placeholder="House/Street/Ward/City details" 
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
-                    errors.address ? 'border-red-500' : 'border-gray-300'}`} />
-        {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address}</p>}
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Ward Selection *</label>
-          <select name="ward" value={formData.ward} onChange={handleInputChange}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
-                    errors.ward ? 'border-red-500' : 'border-gray-300'}`}>
-            <option value="">Select Ward</option>
-            {wards.map(ward => <option key={ward} value={ward}>{ward}</option>)}
-          </select>
-          {errors.ward && <p className="text-red-500 text-sm mt-1">{errors.ward}</p>}
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Zone Selection *</label>
-          <select name="zone" value={formData.zone} onChange={handleInputChange}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
-                    errors.zone ? 'border-red-500' : 'border-gray-300'}`}>
-            <option value="">Select Zone</option>
-            {zones.map(zone => <option key={zone} value={zone}>{zone}</option>)}
-          </select>
-          {errors.zone && <p className="text-red-500 text-sm mt-1">{errors.zone}</p>}
-        </div>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Landmark (Optional)</label>
-        <input type="text" name="landmark" value={formData.landmark} onChange={handleInputChange}
-               placeholder="Nearby landmark for easy identification"
-               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" />
-      </div>
-
-      <div className="bg-blue-50 p-4 rounded-lg">
-        <div className="flex items-center space-x-3 mb-3">
-          <MapPin className="h-5 w-5 text-blue-600" />
-          <h4 className="font-medium text-blue-900">Geo-location Capture</h4>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-blue-700 mb-2">Latitude</label>
-            <input type="text" name="latitude" value={formData.latitude} onChange={handleInputChange}
-                   placeholder="Auto-captured or enter manually"
-                   className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-blue-700 mb-2">Longitude</label>
-            <input type="text" name="longitude" value={formData.longitude} onChange={handleInputChange}
-                   placeholder="Auto-captured or enter manually"
-                   className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
-          </div>
-        </div>
-        <button type="button" onClick={captureLocation}
-                className="mt-3 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2">
-          <MapPin className="h-4 w-4" />
-          <span>Capture Current Location</span>
-        </button>
-      </div>
-    </div>
-  );
-
-  const renderStep3 = () => (
-    <div className="space-y-6">
-      <h3 className="text-xl font-semibold text-gray-900 mb-4">📎 Evidence / Proof</h3>
+      if (files.videos.length > 0) {
+        files.videos.forEach(video => {
+          formDataToSend.append('videos', video);
+        });
+      }
       
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Photo Upload * (At least one photo required)</label>
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-          <input type="file" multiple accept="image/*" onChange={(e) => handleFileUpload(e, 'photos')}
-                 className="hidden" id="photo-upload" />
-          <label htmlFor="photo-upload" className="cursor-pointer">
-            <Camera className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <p className="text-gray-600 mb-2">Click to upload photos or drag and drop</p>
-            <p className="text-sm text-gray-500">PNG, JPG, JPEG up to 10MB each</p>
-          </label>
-        </div>
-        {errors.photos && <p className="text-red-500 text-sm mt-1">{errors.photos}</p>}
-        
-        {formData.photos.length > 0 && (
-          <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
-            {formData.photos.map((photo, index) => (
-              <div key={index} className="relative">
-                <img src={URL.createObjectURL(photo)} alt={`Photo ${index + 1}`}
-                     className="w-full h-24 object-cover rounded-lg" />
-                <button type="button" onClick={() => removeFile(index, 'photos')}
-                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600">
-                  <X className="h-3 w-3" />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Video Upload (Optional)</label>
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-          <input type="file" multiple accept="video/*" onChange={(e) => handleFileUpload(e, 'videos')}
-                 className="hidden" id="video-upload" />
-          <label htmlFor="video-upload" className="cursor-pointer">
-            <Video className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <p className="text-gray-600 mb-2">Click to upload videos or drag and drop</p>
-            <p className="text-sm text-gray-500">MP4, AVI, MOV up to 50MB each</p>
-          </label>
-        </div>
-        
-        {formData.videos.length > 0 && (
-          <div className="mt-4 space-y-2">
-            {formData.videos.map((video, index) => (
-              <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                <Video className="h-5 w-5 text-gray-600" />
-                <span className="text-sm text-gray-700">{video.name}</span>
-                <button type="button" onClick={() => removeFile(index, 'videos')}
-                        className="ml-auto text-red-500 hover:text-red-600">
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Document Upload (Optional)</label>
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-          <input type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" 
-                 onChange={(e) => handleFileUpload(e, 'documents')}
-                 className="hidden" id="document-upload" />
-          <label htmlFor="document-upload" className="cursor-pointer">
-            <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <p className="text-gray-600 mb-2">Click to upload documents or drag and drop</p>
-            <p className="text-sm text-gray-500">PDF, JPG, PNG, DOC up to 20MB each</p>
-          </label>
-        </div>
-        
-        {formData.documents.length > 0 && (
-          <div className="mt-4 space-y-2">
-            {formData.documents.map((doc, index) => (
-              <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                <FileText className="h-5 w-5 text-gray-600" />
-                <span className="text-sm text-gray-700">{doc.name}</span>
-                <button type="button" onClick={() => removeFile(index, 'documents')}
-                        className="ml-auto text-red-500 hover:text-red-600">
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-
-  const renderStep4 = () => (
-    <div className="space-y-6">
-      <h3 className="text-xl font-semibold text-gray-900 mb-4">👤 Complainant Details</h3>
+      if (files.documents.length > 0) {
+        files.documents.forEach(doc => {
+          formDataToSend.append('documents', doc);
+        });
+      }
       
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
-        <input type="text" name="fullName" value={formData.fullName} onChange={handleInputChange}
-               placeholder="As per government ID" 
-               className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
-                 errors.fullName ? 'border-red-500' : 'border-gray-300'}`} />
-        {errors.fullName && <p className="text-red-500 text-sm mt-1">{errors.fullName}</p>}
-      </div>
+      if (files.id_proof_document) {
+        formDataToSend.append('id_proof_document', files.id_proof_document);
+      }
+      
+      if (files.selfie) {
+        formDataToSend.append('selfie', files.selfie);
+      }
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Father's Name</label>
-          <input type="text" name="fatherName" value={formData.fatherName} onChange={handleInputChange}
-                 placeholder="Father's full name"
-                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Mother's Name</label>
-          <input type="text" name="motherName" value={formData.motherName} onChange={handleInputChange}
-                 placeholder="Mother's full name"
-                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" />
-        </div>
-      </div>
+      const response = await fetch('http://localhost:8000/api/complaints/register', {
+        method: 'POST',
+        body: formDataToSend
+      });
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Date of Birth</label>
-          <input type="date" name="dateOfBirth" value={formData.dateOfBirth} onChange={handleInputChange}
-                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Gender</label>
-          <select name="gender" value={formData.gender} onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
-            <option value="">Select Gender</option>
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-            <option value="other">Other</option>
-            <option value="prefer-not-to-say">Prefer not to say</option>
-          </select>
-        </div>
-      </div>
+      if (response.ok) {
+        const result = await response.json();
+        toast.success('Complaint registered successfully!');
+        navigate('/dashboard');
+      } else {
+        const error = await response.json();
+        toast.error(error.detail || 'Failed to register complaint');
+      }
+    } catch (error) {
+      console.error('Error submitting complaint:', error);
+      toast.error('Failed to register complaint. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Contact Number (Mobile) *</label>
-        <input type="tel" name="contactNumber" value={formData.contactNumber} onChange={handleInputChange}
-               placeholder="10-digit mobile number" 
-               className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
-                 errors.contactNumber ? 'border-red-500' : 'border-gray-300'}`} />
-        {errors.contactNumber && <p className="text-red-500 text-sm mt-1">{errors.contactNumber}</p>}
-      </div>
+  const getCategoryIcon = (categoryId) => {
+    const category = categories.find(c => c.id === categoryId);
+    return category ? React.createElement(category.icon, { className: "w-5 h-5" }) : null;
+  };
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Residential Address</label>
-        <textarea name="residentialAddress" value={formData.residentialAddress} onChange={handleInputChange} rows={3}
-                  placeholder="House No., Street, City, State, PIN Code"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Permanent Address (if different)</label>
-        <textarea name="permanentAddress" value={formData.permanentAddress} onChange={handleInputChange} rows={3}
-                  placeholder="Permanent address if different from residential"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" />
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">ID Proof Type *</label>
-          <select name="idProofType" value={formData.idProofType} onChange={handleInputChange}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
-                    errors.idProofType ? 'border-red-500' : 'border-gray-300'}`}>
-            <option value="">Select ID Proof Type</option>
-            {idProofTypes.map(type => <option key={type} value={type}>{type}</option>)}
-          </select>
-          {errors.idProofType && <p className="text-red-500 text-sm mt-1">{errors.idProofType}</p>}
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">ID Proof Number *</label>
-          <input type="text" name="idProofNumber" value={formData.idProofNumber} onChange={handleInputChange}
-                 placeholder="As per selected ID proof" 
-                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
-                   errors.idProofNumber ? 'border-red-500' : 'border-gray-300'}`} />
-          {errors.idProofNumber && <p className="text-red-500 text-sm mt-1">{errors.idProofNumber}</p>}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">ID Proof Document Upload</label>
-          <input type="file" accept=".pdf,.jpg,.jpeg,.png" 
-                 onChange={(e) => setFormData(prev => ({ ...prev, idProofDocument: e.target.files[0] }))}
-                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Selfie / Photo (Optional)</label>
-          <input type="file" accept="image/*" 
-                 onChange={(e) => setFormData(prev => ({ ...prev, selfie: e.target.files[0] }))}
-                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" />
-        </div>
-      </div>
-
-      <div className="bg-yellow-50 p-4 rounded-lg">
-        <div className="flex items-center space-x-3">
-          <AlertCircle className="h-5 w-5 text-yellow-600" />
-          <p className="text-sm text-yellow-800">
-            <strong>Note:</strong> For government services, we may request access to your DigiLocker for document verification.
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderStepIndicator = () => (
-    <div className="mb-8">
-      <div className="flex items-center justify-between">
-        {[1, 2, 3, 4].map((stepNumber) => (
-          <div key={stepNumber} className="flex items-center">
-            <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
-              step >= stepNumber 
-                ? 'bg-primary-600 border-primary-600 text-white' 
-                : 'bg-gray-200 border-gray-300 text-gray-500'
-            }`}>
-              {step > stepNumber ? (
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-              ) : (
-                stepNumber
-              )}
-            </div>
-            {stepNumber < 4 && (
-              <div className={`w-20 h-1 ${step > stepNumber ? 'bg-primary-600' : 'bg-gray-300'}`} />
-            )}
-          </div>
-        ))}
-      </div>
-      <div className="flex justify-between mt-2 text-sm text-gray-600">
-        <span>Basic Details</span>
-        <span>Location</span>
-        <span>Evidence</span>
-        <span>Personal Info</span>
-      </div>
-    </div>
-  );
+  const getCategoryColor = (categoryId) => {
+    const category = categories.find(c => c.id === categoryId);
+    return category ? category.color : 'bg-gray-100 text-gray-800';
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-white rounded-lg shadow-lg p-8">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Register Your Complaint</h1>
-            <p className="text-gray-600">Help us serve you better by providing complete information</p>
-          </div>
-
-          {renderStepIndicator()}
-
-          <form onSubmit={(e) => e.preventDefault()}>
-            {step === 1 && renderStep1()}
-            {step === 2 && renderStep2()}
-            {step === 3 && renderStep3()}
-            {step === 4 && renderStep4()}
-
-            <div className="flex justify-between mt-8 pt-6 border-t border-gray-200">
-              {step > 1 && (
-                <button type="button" onClick={prevStep}
-                        className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
-                  Previous
-                </button>
-              )}
-              
-              <div className="ml-auto">
-                {step < 4 ? (
-                  <button type="button" onClick={nextStep}
-                          className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center space-x-2">
-                    <span>Next</span>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
-                ) : (
-                  <button type="button" onClick={handleSubmit}
-                          className="px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2">
-                    <Send className="h-5 w-5" />
-                    <span>Submit Complaint</span>
-                  </button>
-                )}
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between py-4">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <ArrowLeft className="w-6 h-6" />
+              </button>
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gradient-to-r from-red-600 to-pink-600 rounded-lg flex items-center justify-center">
+                  <AlertTriangle className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">Register Complaint</h1>
+                  <p className="text-sm text-gray-500">Report an issue to the municipal corporation</p>
+                </div>
               </div>
             </div>
-          </form>
+          </div>
         </div>
-      </div>
+      </header>
+
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Progress Steps */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            {[1, 2, 3, 4].map((stepNumber) => (
+              <div key={stepNumber} className="flex items-center">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium ${
+                  stepNumber < step 
+                    ? 'bg-green-500 text-white' 
+                    : stepNumber === step 
+                    ? 'bg-blue-500 text-white' 
+                    : 'bg-gray-200 text-gray-500'
+                }`}>
+                  {stepNumber < step ? (
+                    <CheckCircle className="w-5 h-5" />
+                  ) : (
+                    stepNumber
+                  )}
+                </div>
+                {stepNumber < 4 && (
+                  <div className={`w-16 h-1 mx-2 ${
+                    stepNumber < step ? 'bg-green-500' : 'bg-gray-200'
+                  }`}></div>
+                )}
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-between mt-2 text-sm text-gray-500">
+            <span>Issue Details</span>
+            <span>Location</span>
+            <span>Personal Info</span>
+            <span>Review & Submit</span>
+          </div>
+        </div>
+
+        {/* Form Content */}
+        <div className="bg-white rounded-2xl shadow-soft p-8">
+          {/* Step 1: Issue Details */}
+          {step === 1 && (
+            <div className="animate-fade-in-up">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">What's the issue?</h2>
+              
+              <div className="space-y-6">
+                {/* Title */}
+                <div>
+                  <label className="form-label">Complaint Title *</label>
+                  <input
+                    type="text"
+                    name="title"
+                    value={formData.title}
+                    onChange={handleInputChange}
+                    placeholder="Brief description of the issue"
+                    className="form-input"
+                    required
+                  />
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label className="form-label">Detailed Description *</label>
+                  <textarea
+                    name="description"
+                    value={formData.description}
+                    onChange={handleInputChange}
+                    placeholder="Provide detailed information about the issue, when it started, and how it affects you..."
+                    rows={4}
+                    className="form-input"
+                    required
+                  />
+                </div>
+
+                {/* Category */}
+                <div>
+                  <label className="form-label">Category *</label>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {categories.map((category) => (
+                      <button
+                        key={category.id}
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, category: category.id }))}
+                        className={`p-4 rounded-lg border-2 text-left transition-all duration-200 ${
+                          formData.category === category.id
+                            ? 'border-blue-500 bg-blue-50'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${category.color}`}>
+                            {React.createElement(category.icon, { className: "w-5 h-5" })}
+                          </div>
+                          <span className="font-medium text-gray-900">{category.name}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Date and Time */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="form-label">Incident Date *</label>
+                    <input
+                      type="date"
+                      name="incident_date"
+                      value={formData.incident_date}
+                      onChange={handleInputChange}
+                      className="form-input"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label">Incident Time (Optional)</label>
+                    <input
+                      type="time"
+                      name="incident_time"
+                      value={formData.incident_time}
+                      onChange={handleInputChange}
+                      className="form-input"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 2: Location */}
+          {step === 2 && (
+            <div className="animate-fade-in-up">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Where did this happen?</h2>
+              
+              <div className="space-y-6">
+                {/* Address */}
+                <div>
+                  <label className="form-label">Full Address *</label>
+                  <textarea
+                    name="address"
+                    value={formData.address}
+                    onChange={handleInputChange}
+                    placeholder="Enter the complete address where the issue occurred"
+                    rows={3}
+                    className="form-input"
+                    required
+                  />
+                </div>
+
+                {/* Ward and Zone */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="form-label">Ward *</label>
+                    {/* Debug info */}
+                    <div className="text-xs text-gray-500 mb-2">
+                      Debug: {wardsLoading ? 'Loading...' : `${wards.length} wards loaded`}
+                    </div>
+                    <select
+                      name="ward"
+                      value={formData.ward}
+                      onChange={handleInputChange}
+                      className="form-input"
+                      required
+                    >
+                      <option value="">Select Ward</option>
+                      {wardsLoading ? (
+                        <option value="">Loading wards...</option>
+                      ) : wards.length === 0 ? (
+                        <option value="">No wards found. Please try again later.</option>
+                      ) : (
+                        wards.map((ward) => (
+                          <option key={ward} value={ward}>{ward}</option>
+                        ))
+                      )}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="form-label">Zone *</label>
+                    <select
+                      name="zone"
+                      value={formData.zone}
+                      onChange={handleInputChange}
+                      className="form-input"
+                      required
+                    >
+                      <option value="">Select Zone</option>
+                      {zones.map((zone) => (
+                        <option key={zone} value={zone}>{zone}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Landmark */}
+                <div>
+                  <label className="form-label">Landmark (Optional)</label>
+                  <input
+                    type="text"
+                    name="landmark"
+                    value={formData.landmark}
+                    onChange={handleInputChange}
+                    placeholder="Nearby landmark or reference point"
+                    className="form-input"
+                  />
+                </div>
+
+                {/* Coordinates */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="form-label">Latitude (Optional)</label>
+                    <input
+                      type="text"
+                      name="latitude"
+                      value={formData.latitude}
+                      onChange={handleInputChange}
+                      placeholder="e.g., 22.7196"
+                      className="form-input"
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label">Longitude (Optional)</label>
+                    <input
+                      type="text"
+                      name="longitude"
+                      value={formData.longitude}
+                      onChange={handleInputChange}
+                      placeholder="e.g., 75.8577"
+                      className="form-input"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: Personal Information */}
+          {step === 3 && (
+            <div className="animate-fade-in-up">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Your Information</h2>
+              
+              <div className="space-y-6">
+                {/* Personal Details */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="form-label">Full Name *</label>
+                    <input
+                      type="text"
+                      name="full_name"
+                      value={formData.full_name}
+                      onChange={handleInputChange}
+                      placeholder="Your full name"
+                      className="form-input"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label">Contact Number *</label>
+                    <input
+                      type="tel"
+                      name="contact_number"
+                      value={formData.contact_number}
+                      onChange={handleInputChange}
+                      placeholder="Your mobile number"
+                      className="form-input"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="form-label">Father's Name (Optional)</label>
+                    <input
+                      type="text"
+                      name="father_name"
+                      value={formData.father_name}
+                      onChange={handleInputChange}
+                      placeholder="Your father's name"
+                      className="form-input"
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label">Mother's Name (Optional)</label>
+                    <input
+                      type="text"
+                      name="mother_name"
+                      value={formData.mother_name}
+                      onChange={handleInputChange}
+                      placeholder="Your mother's name"
+                      className="form-input"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="form-label">Date of Birth (Optional)</label>
+                    <input
+                      type="date"
+                      name="date_of_birth"
+                      value={formData.date_of_birth}
+                      onChange={handleInputChange}
+                      className="form-input"
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label">Gender (Optional)</label>
+                    <select
+                      name="gender"
+                      value={formData.gender}
+                      onChange={handleInputChange}
+                      className="form-input"
+                    >
+                      <option value="">Select Gender</option>
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Addresses */}
+                <div>
+                  <label className="form-label">Residential Address (Optional)</label>
+                  <textarea
+                    name="residential_address"
+                    value={formData.residential_address}
+                    onChange={handleInputChange}
+                    placeholder="Your current residential address"
+                    rows={2}
+                    className="form-input"
+                  />
+                </div>
+
+                <div>
+                  <label className="form-label">Permanent Address (Optional)</label>
+                  <textarea
+                    name="permanent_address"
+                    value={formData.permanent_address}
+                    onChange={handleInputChange}
+                    placeholder="Your permanent address"
+                    rows={2}
+                    className="form-input"
+                  />
+                </div>
+
+                {/* ID Proof */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="form-label">ID Proof Type *</label>
+                    <select
+                      name="id_proof_type"
+                      value={formData.id_proof_type}
+                      onChange={handleInputChange}
+                      className="form-input"
+                      required
+                    >
+                      <option value="">Select ID Proof</option>
+                      {idProofTypes.map((type) => (
+                        <option key={type} value={type}>{type}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="form-label">ID Proof Number *</label>
+                    <input
+                      type="text"
+                      name="id_proof_number"
+                      value={formData.id_proof_number}
+                      onChange={handleInputChange}
+                      placeholder="Your ID proof number"
+                      className="form-input"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 4: Review and Submit */}
+          {step === 4 && (
+            <div className="animate-fade-in-up">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Review and Submit</h2>
+              
+              <div className="space-y-6">
+                {/* Summary */}
+                <div className="bg-gray-50 p-6 rounded-lg">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Complaint Summary</h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-gray-600">Title</p>
+                      <p className="font-medium text-gray-900">{formData.title}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Category</p>
+                      <div className="flex items-center space-x-2">
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getCategoryColor(formData.category)}`}>
+                          {getCategoryIcon(formData.category)}
+                          <span className="ml-1">
+                            {categories.find(c => c.id === formData.category)?.name}
+                          </span>
+                        </span>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Location</p>
+                      <p className="font-medium text-gray-900">{formData.address}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Ward & Zone</p>
+                      <p className="font-medium text-gray-900">{formData.ward}, {formData.zone}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Complainant</p>
+                      <p className="font-medium text-gray-900">{formData.full_name}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Contact</p>
+                      <p className="font-medium text-gray-900">{formData.contact_number}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* File Uploads */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Supporting Documents</h3>
+                  
+                  <div className="space-y-4">
+                    {/* Photos */}
+                    <div>
+                      <label className="form-label">Photos (Optional)</label>
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                        <input
+                          type="file"
+                          multiple
+                          accept="image/*"
+                          onChange={(e) => handleFileChange(e, 'photos')}
+                          className="hidden"
+                          id="photos-upload"
+                        />
+                        <label htmlFor="photos-upload" className="cursor-pointer">
+                          <Camera className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                          <p className="text-gray-600">Click to upload photos</p>
+                          <p className="text-sm text-gray-500">PNG, JPG up to 10MB each</p>
+                        </label>
+                      </div>
+                      {files.photos.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {files.photos.map((file, index) => (
+                            <div key={index} className="flex items-center space-x-2 bg-gray-100 px-3 py-1 rounded-full">
+                              <span className="text-sm text-gray-700">{file.name}</span>
+                              <button
+                                type="button"
+                                onClick={() => removeFile('photos', index)}
+                                className="text-red-500 hover:text-red-700"
+                              >
+                                <XCircle className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Videos */}
+                    <div>
+                      <label className="form-label">Videos (Optional)</label>
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                        <input
+                          type="file"
+                          multiple
+                          accept="video/*"
+                          onChange={(e) => handleFileChange(e, 'videos')}
+                          className="hidden"
+                          id="videos-upload"
+                        />
+                        <label htmlFor="videos-upload" className="cursor-pointer">
+                          <Video className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                          <p className="text-gray-600">Click to upload videos</p>
+                          <p className="text-sm text-gray-500">MP4, AVI up to 50MB each</p>
+                        </label>
+                      </div>
+                      {files.videos.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {files.videos.map((file, index) => (
+                            <div key={index} className="flex items-center space-x-2 bg-gray-100 px-3 py-1 rounded-full">
+                              <span className="text-sm text-gray-700">{file.name}</span>
+                              <button
+                                type="button"
+                                onClick={() => removeFile('videos', index)}
+                                className="text-red-500 hover:text-red-700"
+                              >
+                                <XCircle className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Documents */}
+                    <div>
+                      <label className="form-label">Documents (Optional)</label>
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                        <input
+                          type="file"
+                          multiple
+                          accept=".pdf,.doc,.docx"
+                          onChange={(e) => handleFileChange(e, 'documents')}
+                          className="hidden"
+                          id="documents-upload"
+                        />
+                        <label htmlFor="documents-upload" className="cursor-pointer">
+                          <FileText className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                          <p className="text-gray-600">Click to upload documents</p>
+                          <p className="text-sm text-gray-500">PDF, DOC up to 20MB each</p>
+                        </label>
+                      </div>
+                      {files.documents.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {files.documents.map((file, index) => (
+                            <div key={index} className="flex items-center space-x-2 bg-gray-100 px-3 py-1 rounded-full">
+                              <span className="text-sm text-gray-700">{file.name}</span>
+                              <button
+                                type="button"
+                                onClick={() => removeFile('documents', index)}
+                                className="text-red-500 hover:text-red-700"
+                              >
+                                <XCircle className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* ID Proof Document */}
+                    <div>
+                      <label className="form-label">ID Proof Document (Optional)</label>
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                        <input
+                          type="file"
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          onChange={(e) => handleFileChange(e, 'id_proof_document')}
+                          className="hidden"
+                          id="id-proof-upload"
+                        />
+                        <label htmlFor="id-proof-upload" className="cursor-pointer">
+                          <Shield className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                          <p className="text-gray-600">Click to upload ID proof</p>
+                          <p className="text-sm text-gray-500">PDF, JPG, PNG up to 10MB</p>
+                        </label>
+                      </div>
+                      {files.id_proof_document && (
+                        <div className="mt-2 flex items-center space-x-2 bg-gray-100 px-3 py-1 rounded-full w-fit">
+                          <span className="text-sm text-gray-700">{files.id_proof_document.name}</span>
+                          <button
+                            type="button"
+                            onClick={() => removeFile('id_proof_document')}
+                            className="text-red-500 hover:text-red-700"
+                          >
+                            <XCircle className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Selfie */}
+                    <div>
+                      <label className="form-label">Selfie (Optional)</label>
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleFileChange(e, 'selfie')}
+                          className="hidden"
+                          id="selfie-upload"
+                        />
+                        <label htmlFor="selfie-upload" className="cursor-pointer">
+                          <User className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                          <p className="text-gray-600">Click to upload selfie</p>
+                          <p className="text-sm text-gray-500">JPG, PNG up to 5MB</p>
+                        </label>
+                      </div>
+                      {files.selfie && (
+                        <div className="mt-2 flex items-center space-x-2 bg-gray-100 px-3 py-1 rounded-full w-fit">
+                          <span className="text-sm text-gray-700">{files.selfie.name}</span>
+                          <button
+                            type="button"
+                            onClick={() => removeFile('selfie')}
+                            className="text-red-500 hover:text-red-700"
+                          >
+                            <XCircle className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Navigation Buttons */}
+          <div className="flex justify-between mt-8">
+            <button
+              type="button"
+              onClick={prevStep}
+              disabled={step === 1}
+              className="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            
+            <div className="flex space-x-4">
+              {step < 4 ? (
+                <button
+                  type="button"
+                  onClick={nextStep}
+                  className="btn-primary"
+                >
+                  Next Step
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={loading}
+                  className="btn-success"
+                >
+                  {loading ? (
+                    <div className="flex items-center">
+                      <RefreshCw className="w-4 h-4 animate-spin mr-2" />
+                      Submitting...
+                    </div>
+                  ) : (
+                    <div className="flex items-center">
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Submit Complaint
+                    </div>
+                  )}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
   );
 };

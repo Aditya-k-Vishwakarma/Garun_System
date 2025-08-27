@@ -12,6 +12,9 @@ from pathlib import Path
 
 app = FastAPI(title="Garun System Backend", version="1.0.0")
 
+# Import ward service after app creation to avoid circular imports
+from ward_service import ward_service
+
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
@@ -64,7 +67,6 @@ ILLEGAL_FILE = DATA_DIR / "illegal_constructions.json"
 # Create data directory
 DATA_DIR.mkdir(exist_ok=True)
 
-# Load data from files if they exist
 def load_data():
     """Load data from JSON files"""
     global complaints_db, property_verifications_db, building_approvals_db, surveys_db, illegal_constructions_db
@@ -89,6 +91,21 @@ def load_data():
         if ILLEGAL_FILE.exists():
             with open(ILLEGAL_FILE, 'r', encoding='utf-8') as f:
                 illegal_constructions_db = json.load(f)
+        
+        # Load admin data if it exists
+        admin_file = DATA_DIR / "admin_data.json"
+        if admin_file.exists():
+            try:
+                with open(admin_file, 'r', encoding='utf-8') as f:
+                    loaded_admin_data = json.load(f)
+                    # Update admin_data with loaded data
+                    admin_data.update(loaded_admin_data)
+                    print("Admin data loaded from file")
+            except Exception as e:
+                print(f"Warning: Failed to load admin data: {e}")
+        
+        # Ensure admin data is synchronized with current databases
+        update_admin_data()
                 
         print(f"Loaded {len(complaints_db)} complaints, {len(property_verifications_db)} property verifications, {len(building_approvals_db)} building approvals")
     except Exception as e:
@@ -100,27 +117,13 @@ def load_data():
         surveys_db = []
         illegal_constructions_db = []
 
-def save_data():
-    """Save data to JSON files"""
-    try:
-        with open(COMPLAINTS_FILE, 'w', encoding='utf-8') as f:
-            json.dump(complaints_db, f, indent=2, ensure_ascii=False)
-        
-        with open(PROPERTY_FILE, 'w', encoding='utf-8') as f:
-            json.dump(property_verifications_db, f, indent=2, ensure_ascii=False)
-        
-        with open(BUILDING_FILE, 'w', encoding='utf-8') as f:
-            json.dump(building_approvals_db, f, indent=2, ensure_ascii=False)
-        
-        with open(SURVEYS_FILE, 'w', encoding='utf-8') as f:
-            json.dump(surveys_db, f, indent=2, ensure_ascii=False)
-        
-        with open(ILLEGAL_FILE, 'w', encoding='utf-8') as f:
-            json.dump(illegal_constructions_db, f, indent=2, ensure_ascii=False)
-            
-        print("Data saved successfully")
-    except Exception as e:
-        print(f"Error saving data: {e}")
+def update_admin_data():
+    """Update admin dashboard data"""
+    admin_data["complaints"] = complaints_db
+    admin_data["property_verifications"] = property_verifications_db
+    admin_data["building_approvals"] = building_approvals_db
+    admin_data["surveys"] = surveys_db
+    admin_data["illegal_constructions"] = illegal_constructions_db
 
 # Load data on startup
 load_data()
@@ -145,14 +148,6 @@ def save_file(file: UploadFile, directory: Path) -> str:
         shutil.copyfileobj(file.file, buffer)
     
     return str(file_path)
-
-def update_admin_data():
-    """Update admin dashboard data"""
-    admin_data["complaints"] = complaints_db
-    admin_data["property_verifications"] = property_verifications_db
-    admin_data["building_approvals"] = building_approvals_db
-    admin_data["surveys"] = surveys_db
-    admin_data["illegal_constructions"] = illegal_constructions_db
 
 def validate_and_clean_survey_data(survey_data):
     """Validate and clean survey data to ensure proper types"""
@@ -376,6 +371,78 @@ def detect_illegal_constructions(survey_data, regulations):
     
     return violations
 
+# Ward endpoints
+@app.get("/api/wards")
+async def get_all_wards():
+    """Get all wards from Excel data"""
+    try:
+        wards = ward_service.get_all_wards()
+        return {
+            "success": True,
+            "wards": wards,
+            "total": len(wards)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch wards: {str(e)}")
+
+@app.get("/api/wards/search")
+async def search_wards(query: str):
+    """Search wards by name or number"""
+    try:
+        if not query or len(query) < 2:
+            return {
+                "success": True,
+                "wards": [],
+                "total": 0
+            }
+        
+        wards = ward_service.search_wards(query)
+        return {
+            "success": True,
+            "wards": wards,
+            "total": len(wards)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to search wards: {str(e)}")
+
+@app.get("/api/wards/{ward_number}")
+async def get_ward_by_number(ward_number: int):
+    """Get ward data by ward number"""
+    try:
+        ward = ward_service.get_ward_by_number(ward_number)
+        if not ward:
+            raise HTTPException(status_code=404, detail=f"Ward {ward_number} not found")
+        
+        return {
+            "success": True,
+            "ward": ward
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch ward: {str(e)}")
+
+@app.get("/api/wards/coordinates/{ward_name}")
+async def get_ward_coordinates(ward_name: str):
+    """Get coordinates for a ward, fetching if not available"""
+    try:
+        coordinates = ward_service.get_ward_coordinates(ward_name)
+        if coordinates:
+            return {
+                "success": True,
+                "ward_name": ward_name,
+                "coordinates": {
+                    "latitude": coordinates[0],
+                    "longitude": coordinates[1]
+                }
+            }
+        else:
+            raise HTTPException(status_code=404, detail=f"Coordinates not found for ward: {ward_name}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch coordinates: {str(e)}")
+
 # Complaint endpoints
 @app.post("/api/complaints/register")
 async def register_complaint(
@@ -488,12 +555,34 @@ async def register_complaint(
             "resolved_at": None
         }
         
+        # Auto-fetch coordinates if not provided but ward is available
+        if not latitude and not longitude and ward:
+            try:
+                coordinates = ward_service.get_ward_coordinates(ward)
+                if coordinates:
+                    complaint["latitude"] = str(coordinates[0])
+                    complaint["longitude"] = str(coordinates[1])
+                    print(f"Auto-fetched coordinates for ward {ward}: ({coordinates[0]}, {coordinates[1]})")
+            except Exception as e:
+                print(f"Failed to auto-fetch coordinates for ward {ward}: {e}")
+        
         complaints_db.append(complaint)
+        
+        # Update admin data and save to persistent storage
         update_admin_data()
-        save_data()  # Save data after each complaint registration
+        save_data()
+        
+        # Also update the admin data file specifically for better persistence
+        try:
+            admin_file = DATA_DIR / "admin_data.json"
+            with open(admin_file, 'w', encoding='utf-8') as f:
+                json.dump(admin_data, f, indent=2, ensure_ascii=False, default=str)
+        except Exception as e:
+            print(f"Warning: Failed to save admin data: {e}")
         
         print(f"Complaint registered successfully: {complaint_id}")
         print(f"Total complaints in database: {len(complaints_db)}")
+        print(f"Admin data updated with {len(admin_data['complaints'])} complaints")
         
         return {
             "success": True,
@@ -505,6 +594,208 @@ async def register_complaint(
     except Exception as e:
         print(f"Error registering complaint: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to register complaint: {str(e)}")
+
+# Dynamic Dashboard Endpoints
+@app.get("/api/dashboard/stats/{user_contact}")
+async def get_user_dashboard_stats(user_contact: str):
+    """Get comprehensive dashboard statistics for a user"""
+    try:
+        # Get user complaints
+        user_complaints = [c for c in complaints_db if c["complainant"]["contact_number"] == user_contact]
+        
+        # Get user property verifications
+        user_property_verifications = [v for v in property_verifications_db if v.get("contact_number") == user_contact]
+        
+        # Get user building approvals
+        user_building_approvals = [a for a in building_approvals_db if a.get("contact_number") == user_contact]
+        
+        # Calculate complaint statistics
+        total_complaints = len(user_complaints)
+        resolved_complaints = len([c for c in user_complaints if c["status"] == "Resolved"])
+        in_progress_complaints = len([c for c in user_complaints if c["status"] in ["In Progress", "Under Review", "Assigned"]])
+        pending_complaints = len([c for c in user_complaints if c["status"] in ["New", "Pending"]])
+        
+        # Calculate property verification statistics
+        total_property_verifications = len(user_property_verifications)
+        pending_verifications = len([v for v in user_property_verifications if v["status"] == "Pending"])
+        verified_properties = len([v for v in user_property_verifications if v["status"] == "Verified"])
+        
+        # Calculate building approval statistics
+        total_building_approvals = len(user_building_approvals)
+        pending_approvals = len([a for a in user_building_approvals if a["status"] == "Pending"])
+        approved_buildings = len([a for a in user_building_approvals if a["status"] == "Approved"])
+        rejected_buildings = len([a for a in user_building_approvals if a["status"] == "Rejected"])
+        
+        # Recent activity (last 30 days)
+        from datetime import datetime, timedelta
+        thirty_days_ago = datetime.now() - timedelta(days=30)
+        
+        recent_complaints = [c for c in user_complaints if datetime.fromisoformat(c["submitted_at"]) > thirty_days_ago]
+        recent_property_verifications = [v for v in user_property_verifications if datetime.fromisoformat(v["submitted_at"]) > thirty_days_ago]
+        recent_building_approvals = [a for a in user_building_approvals if datetime.fromisoformat(a["submitted_at"]) > thirty_days_ago]
+        
+        # Category-wise complaint breakdown
+        complaint_categories = {}
+        for complaint in user_complaints:
+            category = complaint["category"]
+            if category not in complaint_categories:
+                complaint_categories[category] = 0
+            complaint_categories[category] += 1
+        
+        # Priority-wise complaint breakdown
+        complaint_priorities = {}
+        for complaint in user_complaints:
+            priority = complaint["priority"]
+            if priority not in complaint_priorities:
+                complaint_priorities[priority] = 0
+            complaint_priorities[priority] += 1
+        
+        return {
+            "success": True,
+            "stats": {
+                "complaints": {
+                    "total": total_complaints,
+                    "resolved": resolved_complaints,
+                    "in_progress": in_progress_complaints,
+                    "pending": pending_complaints,
+                    "resolution_rate": round((resolved_complaints / total_complaints) * 100, 2) if total_complaints > 0 else 0
+                },
+                "property_verifications": {
+                    "total": total_property_verifications,
+                    "pending": pending_verifications,
+                    "verified": verified_properties,
+                    "verification_rate": round((verified_properties / total_property_verifications) * 100, 2) if total_property_verifications > 0 else 0
+                },
+                "building_approvals": {
+                    "total": total_building_approvals,
+                    "pending": pending_approvals,
+                    "approved": approved_buildings,
+                    "rejected": rejected_buildings,
+                    "approval_rate": round((approved_buildings / total_building_approvals) * 100, 2) if total_building_approvals > 0 else 0
+                },
+                "recent_activity": {
+                    "complaints_last_30_days": len(recent_complaints),
+                    "property_verifications_last_30_days": len(recent_property_verifications),
+                    "building_approvals_last_30_days": len(recent_building_approvals)
+                },
+                "breakdowns": {
+                    "complaint_categories": complaint_categories,
+                    "complaint_priorities": complaint_priorities
+                }
+            }
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch dashboard stats: {str(e)}")
+
+@app.get("/api/dashboard/recent-activity/{user_contact}")
+async def get_user_recent_activity(user_contact: str):
+    """Get recent activity for a user"""
+    try:
+        # Get all user activities
+        user_complaints = [c for c in complaints_db if c["complainant"]["contact_number"] == user_contact]
+        user_property_verifications = [v for v in property_verifications_db if v.get("contact_number") == user_contact]
+        user_building_approvals = [a for a in building_approvals_db if a.get("contact_number") == user_contact]
+        
+        # Combine all activities with timestamps
+        all_activities = []
+        
+        for complaint in user_complaints:
+            all_activities.append({
+                "id": complaint["id"],
+                "type": "complaint",
+                "title": complaint["title"],
+                "status": complaint["status"],
+                "timestamp": complaint["submitted_at"],
+                "category": complaint["category"],
+                "priority": complaint["priority"],
+                "description": complaint["description"][:100] + "..." if len(complaint["description"]) > 100 else complaint["description"]
+            })
+        
+        for verification in user_property_verifications:
+            all_activities.append({
+                "id": verification["id"],
+                "type": "property_verification",
+                "title": f"Property Verification - {verification['document_type']}",
+                "status": verification["status"],
+                "timestamp": verification["submitted_at"],
+                "category": "Property Documents",
+                "priority": verification["priority"],
+                "description": f"Property verification for {verification['citizen']}"
+            })
+        
+        for approval in user_building_approvals:
+            all_activities.append({
+                "id": approval["id"],
+                "type": "building_approval",
+                "title": f"Building Approval - {approval['project']}",
+                "status": approval["status"],
+                "timestamp": approval["submitted_at"],
+                "category": "Building Construction",
+                "priority": "High" if approval["status"] == "Pending" else "Medium",
+                "description": f"Building approval for {approval['building_purpose']} project"
+            })
+        
+        # Sort by timestamp (most recent first)
+        all_activities.sort(key=lambda x: x["timestamp"], reverse=True)
+        
+        # Return recent activities (last 10)
+        recent_activities = all_activities[:10]
+        
+        return {
+            "success": True,
+            "recent_activities": recent_activities,
+            "total_activities": len(all_activities)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch recent activity: {str(e)}")
+
+@app.get("/api/dashboard/notifications/{user_contact}")
+async def get_user_notifications(user_contact: str):
+    """Get notifications for a user"""
+    try:
+        # Get user complaints for status updates
+        user_complaints = [c for c in complaints_db if c["complainant"]["contact_number"] == user_contact]
+        
+        notifications = []
+        
+        # Generate notifications based on complaint status changes
+        for complaint in user_complaints:
+            if len(complaint["updates"]) > 1:  # Has status updates
+                latest_update = complaint["updates"][-1]
+                if latest_update["status"] != "New":
+                    notifications.append({
+                        "id": f"NOT_{complaint['id']}",
+                        "title": f"Complaint Status Updated",
+                        "message": f"Your complaint '{complaint['title']}' has been {latest_update['status'].lower()}",
+                        "type": "complaint_update",
+                        "timestamp": latest_update["date"],
+                        "read": False,
+                        "data": {
+                            "complaint_id": complaint["id"],
+                            "status": latest_update["status"],
+                            "officer": latest_update["officer"]
+                        }
+                    })
+        
+        # Sort by timestamp (most recent first)
+        notifications.sort(key=lambda x: x["timestamp"], reverse=True)
+        
+        return {
+            "success": True,
+            "notifications": notifications,
+            "total": len(notifications)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch notifications: {str(e)}")
+
+@app.put("/api/dashboard/notifications/{notification_id}/read")
+async def mark_notification_read(notification_id: str):
+    """Mark a notification as read"""
+    # In a real application, you'd update the database
+    return {
+        "success": True,
+        "message": "Notification marked as read"
+    }
 
 @app.get("/api/complaints/track/{complaint_id}")
 async def track_complaint(complaint_id: str):

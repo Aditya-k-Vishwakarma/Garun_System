@@ -1,408 +1,529 @@
-import React, { useState, useContext } from 'react';
-import { Search, Clock, CheckCircle, XCircle, AlertCircle, FileText, MapPin, Camera } from 'lucide-react';
+import React, { useState, useContext, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { 
+  Search, 
+  ArrowLeft, 
+  Clock, 
+  CheckCircle, 
+  XCircle, 
+  AlertTriangle,
+  User,
+  MapPin,
+  Calendar,
+  Phone,
+  Mail,
+  FileText,
+  Download,
+  Share2,
+  RefreshCw,
+  Eye,
+  MessageSquare,
+  Building,
+  Shield,
+  Award,
+  Activity,
+  TrendingUp,
+  BarChart3,
+  Info
+} from 'lucide-react';
 import AuthContext from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 
 const ComplaintTracking = () => {
   const { user } = useContext(AuthContext);
+  const navigate = useNavigate();
   const [complaintId, setComplaintId] = useState('');
-  const [trackedComplaint, setTrackedComplaint] = useState(null);
+  const [complaint, setComplaint] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [searchPerformed, setSearchPerformed] = useState(false);
+  const [userComplaints, setUserComplaints] = useState([]);
+  const [showUserComplaints, setShowUserComplaints] = useState(false);
 
-  // Mock complaint data - in real app this would come from API
-  const mockComplaints = {
-    'GRV001': {
-      id: 'GRV001',
-      title: 'Pothole on Main Street',
-      description: 'Large pothole causing traffic issues and vehicle damage',
-      category: 'Road Issues',
-      status: 'In Progress',
-      priority: 'High',
-      submittedAt: '2024-01-15T10:30:00Z',
-      estimatedResolution: '2024-01-25',
-      location: {
-        address: 'Main Street, Ward 3, Central Zone',
-        coordinates: { lat: 23.2599, lng: 77.4126 }
-      },
-      updates: [
-        {
-          date: '2024-01-15T10:30:00Z',
-          status: 'New',
-          message: 'Complaint registered successfully',
-          officer: 'System'
-        },
-        {
-          date: '2024-01-16T09:15:00Z',
-          status: 'Under Review',
-          message: 'Complaint assigned to Road Maintenance Department',
-          officer: 'Mr. Sharma'
-        },
-        {
-          date: '2024-01-17T14:20:00Z',
-          status: 'In Progress',
-          message: 'Work order issued to contractor. Work to begin within 48 hours.',
-          officer: 'Mrs. Patel'
-        }
-      ],
-      assignedTo: 'Road Maintenance Department',
-      officer: 'Mrs. Patel',
-      contact: '+91-98765-43210'
-    },
-    'GRV002': {
-      id: 'GRV002',
-      title: 'Garbage not collected',
-      description: 'Garbage collection missed for 3 consecutive days',
-      category: 'Sanitation',
-      status: 'Resolved',
-      priority: 'Medium',
-      submittedAt: '2024-01-10T08:00:00Z',
-      resolvedAt: '2024-01-12T16:45:00Z',
-      location: {
-        address: 'Park Street, Ward 5, North Zone',
-        coordinates: { lat: 23.2599, lng: 77.4126 }
-      },
-      updates: [
-        {
-          date: '2024-01-10T08:00:00Z',
-          status: 'New',
-          message: 'Complaint registered successfully',
-          officer: 'System'
-        },
-        {
-          date: '2024-01-11T10:30:00Z',
-          status: 'Under Review',
-          message: 'Complaint forwarded to Sanitation Department',
-          officer: 'Mr. Kumar'
-        },
-        {
-          date: '2024-01-12T14:00:00Z',
-          status: 'In Progress',
-          message: 'Garbage collection scheduled for today',
-          officer: 'Mrs. Singh'
-        },
-        {
-          date: '2024-01-12T16:45:00Z',
-          status: 'Resolved',
-          message: 'Garbage collected successfully. Area cleaned.',
-          officer: 'Mrs. Singh'
-        }
-      ],
-      assignedTo: 'Sanitation Department',
-      officer: 'Mrs. Singh',
-      contact: '+91-98765-43211'
+  // Fetch user's complaints on component mount
+  useEffect(() => {
+    if (user?.contactNumber) {
+      fetchUserComplaints();
+    }
+  }, [user?.contactNumber]);
+
+  const fetchUserComplaints = async () => {
+    try {
+      const response = await fetch(`http://localhost:8000/api/complaints/user/${user.contactNumber}`);
+      if (response.ok) {
+        const data = await response.json();
+        setUserComplaints(data.complaints || []);
+      }
+    } catch (error) {
+      console.error('Error fetching user complaints:', error);
     }
   };
 
-  const handleTrackComplaint = async () => {
+  const trackComplaint = async () => {
     if (!complaintId.trim()) {
       toast.error('Please enter a complaint ID');
       return;
     }
 
     setLoading(true);
-    
     try {
       const response = await fetch(`http://localhost:8000/api/complaints/track/${complaintId.trim()}`);
       
-      if (!response.ok) {
-        if (response.status === 404) {
-          setTrackedComplaint(null);
-          toast.error('Complaint not found. Please check the ID and try again.');
-        } else {
-          throw new Error('Failed to fetch complaint');
-        }
+      if (response.ok) {
+        const data = await response.json();
+        setComplaint(data.complaint);
+        setSearchPerformed(true);
+        toast.success('Complaint found successfully');
       } else {
-        const result = await response.json();
-        console.log('Complaint data received:', result.complaint);
-        setTrackedComplaint(result.complaint);
-        toast.success('Complaint found!');
+        const errorData = await response.json();
+        toast.error(errorData.detail || 'Complaint not found');
+        setComplaint(null);
+        setSearchPerformed(true);
       }
     } catch (error) {
       console.error('Error tracking complaint:', error);
       toast.error('Failed to track complaint. Please try again.');
-      setTrackedComplaint(null);
+      setComplaint(null);
+      setSearchPerformed(true);
+    } finally {
+      setLoading(false);
     }
-    
-    setLoading(false);
   };
 
   const getStatusColor = (status) => {
-    switch (status) {
-      case 'New': return 'bg-blue-100 text-blue-800';
-      case 'Under Review': return 'bg-yellow-100 text-yellow-800';
-      case 'In Progress': return 'bg-orange-100 text-orange-800';
-      case 'Resolved': return 'bg-green-100 text-green-800';
-      case 'Closed': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
+    switch (status?.toLowerCase()) {
+      case 'resolved':
+        return 'text-green-600 bg-green-50 border-green-200';
+      case 'in progress':
+      case 'under review':
+      case 'assigned':
+        return 'text-blue-600 bg-blue-50 border-blue-200';
+      case 'new':
+      case 'pending':
+        return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+      case 'rejected':
+        return 'text-red-600 bg-red-50 border-red-200';
+      default:
+        return 'text-gray-600 bg-gray-50 border-gray-200';
+    }
+  };
+
+  const getStatusIcon = (status) => {
+    switch (status?.toLowerCase()) {
+      case 'resolved':
+        return <CheckCircle className="w-5 h-5" />;
+      case 'in progress':
+      case 'under review':
+      case 'assigned':
+        return <Clock className="w-5 h-5" />;
+      case 'new':
+      case 'pending':
+        return <AlertTriangle className="w-5 h-5" />;
+      case 'rejected':
+        return <XCircle className="w-5 h-5" />;
+      default:
+        return <Info className="w-5 h-5" />;
     }
   };
 
   const getPriorityColor = (priority) => {
-    switch (priority) {
-      case 'High': return 'bg-red-100 text-red-800';
-      case 'Medium': return 'bg-yellow-100 text-yellow-800';
-      case 'Low': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
+    switch (priority?.toLowerCase()) {
+      case 'high':
+        return 'text-red-600 bg-red-50 border-red-200';
+      case 'medium':
+        return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+      case 'low':
+        return 'text-green-600 bg-green-50 border-green-200';
+      default:
+        return 'text-gray-600 bg-gray-50 border-gray-200';
     }
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return 'Not available';
-    try {
-      return new Date(dateString).toLocaleDateString('en-IN', {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    } catch (error) {
-      return 'Invalid date';
-    }
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('en-IN', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const calculateResolutionTime = (submittedAt, resolvedAt) => {
+    if (!submittedAt || !resolvedAt) return null;
+    
+    const submitted = new Date(submittedAt);
+    const resolved = new Date(resolvedAt);
+    const diffTime = Math.abs(resolved - submitted);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    return diffDays;
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Track Your Complaint Status</h1>
-          <p className="text-gray-600">Monitor the progress of your registered complaints</p>
-        </div>
-
-        {/* Search Section */}
-        <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
-          <div className="max-w-2xl mx-auto">
-            <div className="flex space-x-4">
-              <div className="flex-1">
-                <label htmlFor="complaintId" className="block text-sm font-medium text-gray-700 mb-2">
-                  Enter Complaint ID
-                </label>
-                <input
-                  type="text"
-                  id="complaintId"
-                  value={complaintId}
-                  onChange={(e) => setComplaintId(e.target.value)}
-                  placeholder="e.g., GRV001"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                />
-              </div>
-              <div className="flex items-end">
-                <button
-                  onClick={handleTrackComplaint}
-                  disabled={loading}
-                  className="px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-                >
-                  {loading ? (
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  ) : (
-                    <Search className="h-5 w-5" />
-                  )}
-                  <span>{loading ? 'Searching...' : 'Track Complaint'}</span>
-                </button>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between py-4">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <ArrowLeft className="w-6 h-6" />
+              </button>
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
+                  <Search className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">Complaint Tracking</h1>
+                  <p className="text-sm text-gray-500">Track your complaint status in real-time</p>
+                </div>
               </div>
             </div>
             
-            <div className="mt-4 text-sm text-gray-600">
-              <p>💡 <strong>Tip:</strong> You can find your complaint ID in the confirmation email/SMS or in your dashboard.</p>
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => setShowUserComplaints(!showUserComplaints)}
+                className="btn-secondary"
+              >
+                <Eye className="w-4 h-4 mr-2" />
+                My Complaints
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Search Section */}
+        <div className="mb-8">
+          <div className="bg-white rounded-2xl shadow-soft p-8">
+            <div className="text-center mb-6">
+              <h2 className="text-3xl font-bold text-gray-900 mb-2">Track Your Complaint</h2>
+              <p className="text-gray-600">Enter your complaint ID to get real-time updates</p>
+            </div>
+            
+            <div className="max-w-2xl mx-auto">
+              <div className="flex space-x-4">
+                <div className="flex-1">
+                  <input
+                    type="text"
+                    value={complaintId}
+                    onChange={(e) => setComplaintId(e.target.value)}
+                    placeholder="Enter Complaint ID (e.g., GRV20250115123456)"
+                    className="form-input text-lg"
+                    onKeyPress={(e) => e.key === 'Enter' && trackComplaint()}
+                  />
+                </div>
+                <button
+                  onClick={trackComplaint}
+                  disabled={loading}
+                  className="btn-primary"
+                >
+                  {loading ? (
+                    <RefreshCw className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <Search className="w-5 h-5" />
+                  )}
+                  <span className="ml-2">Track</span>
+                </button>
+              </div>
+              
+              <div className="mt-4 text-center">
+                <p className="text-sm text-gray-500">
+                  Don't have your complaint ID?{' '}
+                  <button
+                    onClick={() => setShowUserComplaints(true)}
+                    className="text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    View all your complaints
+                  </button>
+                </p>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Loading State */}
-        {loading && (
-          <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Searching for your complaint...</p>
+        {/* User Complaints Section */}
+        {showUserComplaints && (
+          <div className="mb-8">
+            <div className="bg-white rounded-2xl shadow-soft p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-semibold text-gray-900">Your Complaints</h3>
+                <button
+                  onClick={() => setShowUserComplaints(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <XCircle className="w-5 h-5" />
+                </button>
+              </div>
+              
+              {userComplaints.length > 0 ? (
+                <div className="grid gap-4">
+                  {userComplaints.map((complaint) => (
+                    <div
+                      key={complaint.id}
+                      className="card p-4 hover:shadow-medium transition-all duration-200 cursor-pointer"
+                      onClick={() => {
+                        setComplaintId(complaint.id);
+                        setComplaint(complaint);
+                        setSearchPerformed(true);
+                        setShowUserComplaints(false);
+                      }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-3 mb-2">
+                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(complaint.status)}`}>
+                              {getStatusIcon(complaint.status)}
+                              <span className="ml-1">{complaint.status}</span>
+                            </span>
+                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getPriorityColor(complaint.priority)}`}>
+                              {complaint.priority}
+                            </span>
+                          </div>
+                          <h4 className="font-medium text-gray-900 mb-1">{complaint.title}</h4>
+                          <p className="text-sm text-gray-600 mb-2">{complaint.description.substring(0, 100)}...</p>
+                          <div className="flex items-center space-x-4 text-xs text-gray-500">
+                            <span>ID: {complaint.id}</span>
+                            <span>•</span>
+                            <span>{complaint.category}</span>
+                            <span>•</span>
+                            <span>{formatDate(complaint.submitted_at)}</span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                            View Details →
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500">No complaints found</p>
+                  <p className="text-sm text-gray-400">You haven't registered any complaints yet</p>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
         {/* Complaint Details */}
-        {!loading && trackedComplaint && trackedComplaint.id && (
-          <div className="space-y-6">
-            {/* Complaint Summary Card */}
-            <div className="bg-white rounded-lg shadow-lg p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">{trackedComplaint.title || 'Untitled Complaint'}</h2>
-                  <p className="text-gray-600 mb-4">{trackedComplaint.description || 'No description available'}</p>
-                </div>
-                <div className="text-right">
-                  <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium mb-2 ${getStatusColor(trackedComplaint.status || 'New')}`}>
-                    {trackedComplaint.status || 'New'}
-                  </div>
-                  <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getPriorityColor(trackedComplaint.priority || 'Medium')}`}>
-                    {trackedComplaint.priority || 'Medium'} Priority
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="flex items-center space-x-3">
-                  <FileText className="h-5 w-5 text-gray-400" />
+        {complaint && searchPerformed && (
+          <div className="animate-fade-in-up">
+            <div className="bg-white rounded-2xl shadow-soft overflow-hidden">
+              {/* Header */}
+              <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 text-white">
+                <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-500">Category</p>
-                    <p className="font-medium text-gray-900">{trackedComplaint.category || 'Not specified'}</p>
+                    <h2 className="text-2xl font-bold mb-2">{complaint.title}</h2>
+                    <p className="text-blue-100">Complaint ID: {complaint.id}</p>
                   </div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <Clock className="h-5 w-5 text-gray-400" />
-                  <div>
-                    <p className="text-sm text-gray-500">Submitted On</p>
-                    <p className="font-medium text-gray-900">{formatDate(trackedComplaint.submitted_at)}</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <MapPin className="h-5 w-5 text-gray-400" />
-                  <div>
-                    <p className="text-sm text-gray-500">Location</p>
-                    <p className="font-medium text-gray-900">{trackedComplaint.address}</p>
-                  </div>
-                </div>
-              </div>
-
-              {trackedComplaint.estimated_resolution && (
-                <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-                  <div className="flex items-center space-x-2">
-                    <Clock className="h-5 w-5 text-blue-600" />
-                    <span className="text-sm font-medium text-blue-900">
-                      Estimated Resolution Date: {trackedComplaint.estimated_resolution}
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Status Timeline */}
-            <div className="bg-white rounded-lg shadow-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6">Status Timeline</h3>
-              <div className="space-y-6">
-                {trackedComplaint.updates && trackedComplaint.updates.length > 0 ? (
-                  trackedComplaint.updates.map((update, index) => (
-                  <div key={index} className="flex items-start space-x-4">
-                    <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-                      update.status === 'Resolved' ? 'bg-green-500' :
-                      update.status === 'In Progress' ? 'bg-orange-500' :
-                      update.status === 'Under Review' ? 'bg-yellow-500' :
-                      'bg-blue-500'
-                    }`}>
-                      {update.status === 'Resolved' ? (
-                        <CheckCircle className="h-5 w-5 text-white" />
-                      ) : update.status === 'In Progress' ? (
-                        <Clock className="h-5 w-5 text-white" />
-                      ) : (
-                        <AlertCircle className="h-5 w-5 text-white" />
-                      )}
+                  <div className="text-right">
+                    <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-white/20 backdrop-blur-sm`}>
+                      {getStatusIcon(complaint.status)}
+                      <span className="ml-2">{complaint.status}</span>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center space-x-2 mb-1">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(update.status)}`}>
-                          {update.status}
-                        </span>
-                        <span className="text-sm text-gray-500">{formatDate(update.date)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="p-6">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Main Information */}
+                  <div className="lg:col-span-2 space-y-6">
+                    {/* Description */}
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-3">Description</h3>
+                      <p className="text-gray-700 bg-gray-50 p-4 rounded-lg">{complaint.description}</p>
+                    </div>
+
+                    {/* Details Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <div className="flex items-center space-x-3 mb-2">
+                          <MapPin className="w-5 h-5 text-blue-600" />
+                          <h4 className="font-medium text-gray-900">Location</h4>
+                        </div>
+                        <p className="text-gray-700">{complaint.address}</p>
+                        <p className="text-sm text-gray-500 mt-1">
+                          Ward: {complaint.ward} • Zone: {complaint.zone}
+                        </p>
                       </div>
-                      <p className="text-gray-900 mb-1">{update.message}</p>
-                      <p className="text-sm text-gray-600">Updated by: {update.officer}</p>
+
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <div className="flex items-center space-x-3 mb-2">
+                          <Calendar className="w-5 h-5 text-green-600" />
+                          <h4 className="font-medium text-gray-900">Timeline</h4>
+                        </div>
+                        <p className="text-gray-700">Submitted: {formatDate(complaint.submitted_at)}</p>
+                        {complaint.resolved_at && (
+                          <p className="text-gray-700 mt-1">
+                            Resolved: {formatDate(complaint.resolved_at)}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <div className="flex items-center space-x-3 mb-2">
+                          <AlertTriangle className="w-5 h-5 text-yellow-600" />
+                          <h4 className="font-medium text-gray-900">Category & Priority</h4>
+                        </div>
+                        <p className="text-gray-700">{complaint.category}</p>
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border mt-2 ${getPriorityColor(complaint.priority)}`}>
+                          {complaint.priority} Priority
+                        </span>
+                      </div>
+
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <div className="flex items-center space-x-3 mb-2">
+                          <User className="w-5 h-5 text-purple-600" />
+                          <h4 className="font-medium text-gray-900">Complainant</h4>
+                        </div>
+                        <p className="text-gray-700">{complaint.complainant.full_name}</p>
+                        <p className="text-sm text-gray-500 mt-1">
+                          {complaint.complainant.contact_number}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Status Updates Timeline */}
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Status Updates</h3>
+                      <div className="space-y-4">
+                        {complaint.updates.map((update, index) => (
+                          <div key={index} className="flex items-start space-x-4">
+                            <div className="flex-shrink-0">
+                              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
+                              </div>
+                            </div>
+                            <div className="flex-1 bg-gray-50 p-4 rounded-lg">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(update.status)}`}>
+                                  {getStatusIcon(update.status)}
+                                  <span className="ml-1">{update.status}</span>
+                                </span>
+                                <span className="text-sm text-gray-500">
+                                  {formatDate(update.date)}
+                                </span>
+                              </div>
+                              <p className="text-gray-700">{update.message}</p>
+                              {update.officer && (
+                                <p className="text-sm text-gray-500 mt-2">
+                                  Officer: {update.officer}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                ))
-                ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    <Clock className="mx-auto h-12 w-12 text-gray-300 mb-4" />
-                    <p>No status updates available yet.</p>
+
+                  {/* Sidebar */}
+                  <div className="space-y-6">
+                    {/* Quick Actions */}
+                    <div className="bg-blue-50 p-4 rounded-lg">
+                      <h4 className="font-medium text-blue-900 mb-3">Quick Actions</h4>
+                      <div className="space-y-2">
+                        <button className="w-full btn-primary text-sm py-2">
+                          <MessageSquare className="w-4 h-4 mr-2" />
+                          Contact Officer
+                        </button>
+                        <button className="w-full btn-secondary text-sm py-2">
+                          <Download className="w-4 h-4 mr-2" />
+                          Download Details
+                        </button>
+                        <button className="w-full btn-secondary text-sm py-2">
+                          <Share2 className="w-4 h-4 mr-2" />
+                          Share Status
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Statistics */}
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <h4 className="font-medium text-gray-900 mb-3">Statistics</h4>
+                      <div className="space-y-3">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Days Since Submission</span>
+                          <span className="font-medium text-gray-900">
+                            {Math.ceil((new Date() - new Date(complaint.submitted_at)) / (1000 * 60 * 60 * 24))}
+                          </span>
+                        </div>
+                        {complaint.resolved_at && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Resolution Time</span>
+                            <span className="font-medium text-green-600">
+                              {calculateResolutionTime(complaint.submitted_at, complaint.resolved_at)} days
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Updates</span>
+                          <span className="font-medium text-gray-900">{complaint.updates.length}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Contact Information */}
+                    {complaint.assigned_to && (
+                      <div className="bg-green-50 p-4 rounded-lg">
+                        <h4 className="font-medium text-green-900 mb-3">Assigned Officer</h4>
+                        <div className="space-y-2">
+                          <p className="text-green-800 font-medium">{complaint.assigned_to}</p>
+                          <div className="flex items-center space-x-2 text-sm text-green-700">
+                            <Phone className="w-4 h-4" />
+                            <span>+91-731-1234567</span>
+                          </div>
+                          <div className="flex items-center space-x-2 text-sm text-green-700">
+                            <Mail className="w-4 h-4" />
+                            <span>officer@indore.gov.in</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            </div>
-
-            {/* Department Details */}
-            <div className="bg-white rounded-lg shadow-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6">Department & Contact Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Assigned Department</h4>
-                  <p className="text-gray-600">{trackedComplaint.assigned_to || 'Not assigned yet'}</p>
                 </div>
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Responsible Officer</h4>
-                  <p className="text-gray-600">{trackedComplaint.officer || 'Not assigned yet'}</p>
-                </div>
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Contact Number</h4>
-                  <p className="text-gray-600">{trackedComplaint.contact || 'Not available'}</p>
-                </div>
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Complaint ID</h4>
-                  <p className="text-gray-600 font-mono">{trackedComplaint.id}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="bg-white rounded-lg shadow-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Need Help?</h3>
-              <div className="flex flex-wrap gap-4">
-                <button className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
-                  Contact Officer
-                </button>
-                <button className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-                  Request Update
-                </button>
-                <button className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
-                  Download Report
-                </button>
-                <button className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
-                  File New Complaint
-                </button>
               </div>
             </div>
           </div>
         )}
 
-        {/* No Complaint Found Message */}
-        {!loading && complaintId && !trackedComplaint && (
-          <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-            <XCircle className="mx-auto h-16 w-16 text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Complaint Not Found</h3>
-            <p className="text-gray-600 mb-4">
-              We couldn't find a complaint with ID "{complaintId}". Please check the ID and try again.
+        {/* No Results */}
+        {searchPerformed && !complaint && (
+          <div className="text-center py-12">
+            <Search className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-xl font-medium text-gray-900 mb-2">Complaint Not Found</h3>
+            <p className="text-gray-500 mb-6">
+              We couldn't find a complaint with the ID "{complaintId}". Please check the ID and try again.
             </p>
-            <div className="space-y-2 text-sm text-gray-500">
-              <p>• Make sure you've entered the correct complaint ID</p>
-              <p>• Check for any extra spaces or characters</p>
-              <p>• If you're still having trouble, contact our support team</p>
+            <div className="space-x-4">
+              <button
+                onClick={() => setSearchPerformed(false)}
+                className="btn-secondary"
+              >
+                Try Another ID
+              </button>
+              <button
+                onClick={() => setShowUserComplaints(true)}
+                className="btn-primary"
+              >
+                View My Complaints
+              </button>
             </div>
           </div>
         )}
-
-        {/* Help Section */}
-        <div className="bg-white rounded-lg shadow-lg p-6 mt-8">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">How to Track Your Complaint</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center">
-              <div className="mx-auto h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center mb-3">
-                <span className="text-blue-600 font-bold text-lg">1</span>
-              </div>
-              <h4 className="font-medium text-gray-900 mb-2">Enter Complaint ID</h4>
-              <p className="text-sm text-gray-600">Use the complaint ID you received when you filed the complaint</p>
-            </div>
-            <div className="text-center">
-              <div className="mx-auto h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center mb-3">
-                <span className="text-blue-600 font-bold text-lg">2</span>
-              </div>
-              <h4 className="font-medium text-gray-900 mb-2">Click Track</h4>
-              <p className="text-sm text-gray-600">Click the track button to search for your complaint</p>
-            </div>
-            <div className="text-center">
-              <div className="mx-auto h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center mb-3">
-                <span className="text-blue-600 font-bold text-lg">3</span>
-              </div>
-              <h4 className="font-medium text-gray-900 mb-2">View Status</h4>
-              <p className="text-sm text-gray-600">See real-time updates and current status of your complaint</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      </main>
     </div>
   );
 };

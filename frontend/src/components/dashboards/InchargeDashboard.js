@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Building2, 
@@ -77,6 +77,9 @@ const InchargeDashboard = () => {
   const [markerCluster, setMarkerCluster] = useState(null);
   const [wardSummary, setWardSummary] = useState({});
   const [mapLoading, setMapLoading] = useState(false);
+  const [detectedConstructions, setDetectedConstructions] = useState([]);
+  const [wardName, setWardName] = useState('');
+  const [wardNumber, setWardNumber] = useState('');
   
   // Wards data
   const wards = [
@@ -270,54 +273,193 @@ const InchargeDashboard = () => {
   const fetchSurveysData = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:8000/api/surveys/all');
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          const surveysData = data.surveys || [];
-          setSurveys(surveysData);
-          
-          // Calculate dynamic stats
-          const totalSurveys = surveysData.length;
-          const completedSurveys = surveysData.filter(s => s.status === 'completed').length;
-          const pendingSurveys = surveysData.filter(s => s.status === 'pending' || s.status === 'in_progress').length;
-          
-          // Calculate violations from surveys
-          const totalViolations = surveysData.reduce((total, survey) => {
-            return total + (survey.violations?.length || 0);
-          }, 0);
-          
-          const highSeverityViolations = surveysData.reduce((total, survey) => {
-            return total + (survey.violations?.filter(v => v.severity === 'high').length || 0);
-          }, 0);
-          
-          const mediumSeverityViolations = surveysData.reduce((total, survey) => {
-            return total + (survey.violations?.filter(v => v.severity === 'medium').length || 0);
-          }, 0);
-          
-          const lowSeverityViolations = surveysData.reduce((total, survey) => {
-            return total + (survey.violations?.filter(v => v.severity === 'low').length || 0);
-          }, 0);
-          
-          // Calculate compliance rate
-          const complianceRate = totalSurveys > 0 ? 
-            Math.round(((totalSurveys - totalViolations) / totalSurveys) * 100) : 100;
-          
-          setStats({
-            totalSurveys,
-            completedSurveys,
-            pendingSurveys,
-            totalViolations,
-            highSeverityViolations,
-            mediumSeverityViolations,
-            lowSeverityViolations,
-            complianceRate
-          });
+      // Simulate API call with dummy data
+      const dummySurveys = [
+        {
+          id: 'SUR001',
+          ward_no: 'Sirpur', // Use ward name instead of number for better mapping
+          ward_number: 1, // Keep ward number for reference
+          survey_date: '2024-01-15',
+          drone_id: 'DRONE001',
+          status: 'completed',
+          total_violations: 3,
+          total_buildings: 25,
+          compliance_score: 88,
+          survey_type: 'Drone Survey',
+          coordinates: { latitude: 22.7006, longitude: 75.8133 },
+          violations: [
+            {
+              type: 'Setback Violation',
+              current: '2m',
+              allowed: '3m',
+              severity: 'medium'
+            },
+            {
+              type: 'Height Violation',
+              current: '15m',
+              allowed: '12m',
+              severity: 'high'
+            },
+            {
+              type: 'Parking Violation',
+              current: '8 spaces',
+              allowed: '12 spaces',
+              severity: 'low'
+            }
+          ],
+          created_at: '2024-01-15T10:00:00Z'
+        },
+        {
+          id: 'SUR002',
+          ward_no: 'Chandan Nagar',
+          ward_number: 2,
+          survey_date: '2024-01-14',
+          drone_id: 'DRONE002',
+          status: 'completed',
+          total_violations: 1,
+          total_buildings: 18,
+          compliance_score: 94,
+          survey_type: 'Manual Survey',
+          coordinates: { latitude: 22.7128, longitude: 75.8208 },
+          violations: [
+            {
+              type: 'Green Area Violation',
+              current: '8%',
+              allowed: '10%',
+              severity: 'low'
+            }
+          ],
+          created_at: '2024-01-14T14:30:00Z'
+        },
+        {
+          id: 'SUR003',
+          ward_no: 'Kalani Nagar',
+          ward_number: 3,
+          survey_date: '2024-01-13',
+          drone_id: 'DRONE003',
+          status: 'completed',
+          total_violations: 5,
+          total_buildings: 32,
+          compliance_score: 84,
+          survey_type: 'Drone Survey',
+          coordinates: { latitude: 22.7217, longitude: 75.8235 },
+          violations: [
+            {
+              type: 'Floor Area Violation',
+              current: '120%',
+              allowed: '100%',
+              severity: 'high'
+            },
+            {
+              type: 'Setback Violation',
+              current: '1.5m',
+              allowed: '3m',
+              severity: 'high'
+            },
+            {
+              type: 'Height Violation',
+              current: '18m',
+              allowed: '15m',
+              severity: 'medium'
+            },
+            {
+              type: 'Parking Violation',
+              current: '6 spaces',
+              allowed: '15 spaces',
+              severity: 'medium'
+            },
+            {
+              type: 'Green Area Violation',
+              current: '5%',
+              allowed: '10%',
+              severity: 'low'
+            }
+          ],
+          created_at: '2024-01-13T09:15:00Z'
+        },
+        {
+          id: 'SUR004',
+          ward_no: 'Sukhdev Nagar',
+          ward_number: 4,
+          survey_date: '2024-01-12',
+          drone_id: 'DRONE001',
+          status: 'completed',
+          total_violations: 0,
+          total_buildings: 20,
+          compliance_score: 100,
+          survey_type: 'Drone Survey',
+          coordinates: { latitude: 22.7269, longitude: 75.8236 },
+          violations: [],
+          created_at: '2024-01-12T16:45:00Z'
+        },
+        {
+          id: 'SUR005',
+          ward_no: 'Juna Risala',
+          ward_number: 8,
+          survey_date: '2024-01-11',
+          drone_id: 'DRONE002',
+          status: 'completed',
+          total_violations: 2,
+          total_buildings: 28,
+          compliance_score: 93,
+          survey_type: 'Manual Survey',
+          coordinates: { latitude: 22.7238, longitude: 75.8501 },
+          violations: [
+            {
+              type: 'Setback Violation',
+              current: '2.5m',
+              allowed: '3m',
+              severity: 'low'
+            },
+            {
+              type: 'Parking Violation',
+              current: '10 spaces',
+              allowed: '14 spaces',
+              severity: 'low'
+            }
+          ],
+          created_at: '2024-01-11T11:20:00Z'
         }
-      } else {
-        console.error('Failed to fetch surveys data');
-        toast.error('Failed to fetch surveys data');
-      }
+      ];
+
+      setSurveys(dummySurveys);
+      
+      // Calculate dynamic stats
+      const totalSurveys = dummySurveys.length;
+      const completedSurveys = dummySurveys.filter(s => s.status === 'completed').length;
+      const pendingSurveys = dummySurveys.filter(s => s.status === 'pending' || s.status === 'in_progress').length;
+      
+      // Calculate violations from surveys
+      const totalViolations = dummySurveys.reduce((total, survey) => {
+        return total + (survey.violations?.length || 0);
+      }, 0);
+      
+      const highSeverityViolations = dummySurveys.reduce((total, survey) => {
+        return total + (survey.violations?.filter(v => v.severity === 'high').length || 0);
+      }, 0);
+      
+      const mediumSeverityViolations = dummySurveys.reduce((total, survey) => {
+        return total + (survey.violations?.filter(v => v.severity === 'medium').length || 0);
+      }, 0);
+      
+      const lowSeverityViolations = dummySurveys.reduce((total, survey) => {
+        return total + (survey.violations?.filter(v => v.severity === 'low').length || 0);
+      }, 0);
+      
+      // Calculate compliance rate
+      const complianceRate = totalSurveys > 0 ? 
+        Math.round(((totalSurveys - totalViolations) / totalSurveys) * 100) : 100;
+      
+      setStats({
+        totalSurveys,
+        completedSurveys,
+        pendingSurveys,
+        totalViolations,
+        highSeverityViolations,
+        mediumSeverityViolations,
+        lowSeverityViolations,
+        complianceRate
+      });
     } catch (error) {
       console.error('Error fetching surveys data:', error);
       toast.error('Error fetching surveys data');
@@ -419,36 +561,49 @@ const InchargeDashboard = () => {
     pending: 12,
     inProgress: 23,
     resolved: 54,
-    teamMembers: 8,
+    teamMembers: 6,
     avgResolutionTime: '2.1 days',
-    slaCompliance: '94.2%'
+    slaCompliance: '94.2%',
+    totalSurveys: 5,
+    totalViolations: 11,
+    complianceRate: 91.8
   };
 
   const teamMembers = [
     { id: 1, name: 'Rajesh Kumar', role: 'Senior Inspector', status: 'Active', complaints: 12, avgTime: '1.8 days' },
     { id: 2, name: 'Priya Sharma', role: 'Inspector', status: 'Active', complaints: 8, avgTime: '2.3 days' },
     { id: 3, name: 'Amit Patel', role: 'Field Officer', status: 'On Leave', complaints: 5, avgTime: '2.1 days' },
-    { id: 4, name: 'Sneha Reddy', role: 'Inspector', status: 'Active', complaints: 15, avgTime: '1.9 days' }
+    { id: 4, name: 'Sneha Reddy', role: 'Inspector', status: 'Active', complaints: 15, avgTime: '1.9 days' },
+    { id: 5, name: 'Vikram Singh', role: 'Field Officer', status: 'Active', complaints: 9, avgTime: '2.5 days' },
+    { id: 6, name: 'Arun Kumar', role: 'Inspector', status: 'Active', complaints: 11, avgTime: '2.0 days' }
   ];
 
   const assignedComplaints = [
     { id: 'GRV1247', title: 'Major road damage on Highway 101', priority: 'High', assignee: 'Rajesh Kumar', status: 'In Progress', date: '2024-01-15', sla: '2 days left' },
     { id: 'GRV1246', title: 'Water supply disruption in Ward 5', priority: 'High', assignee: 'Priya Sharma', status: 'Assigned', date: '2024-01-15', sla: '3 days left' },
     { id: 'GRV1245', title: 'Illegal construction in residential area', priority: 'Medium', assignee: 'Sneha Reddy', status: 'In Progress', date: '2024-01-14', sla: '1 day left' },
-    { id: 'GRV1244', title: 'Street light malfunction', priority: 'Low', assignee: 'Amit Patel', status: 'New', date: '2024-01-14', sla: '5 days left' }
+    { id: 'GRV1244', title: 'Street light malfunction', priority: 'Low', assignee: 'Amit Patel', status: 'New', date: '2024-01-14', sla: '5 days left' },
+    { id: 'GRV1243', title: 'Garbage collection issue in Ward 3', priority: 'Medium', assignee: 'Vikram Singh', status: 'In Progress', date: '2024-01-13', sla: '2 days left' },
+    { id: 'GRV1242', title: 'Traffic signal not working', priority: 'High', assignee: 'Arun Kumar', status: 'Assigned', date: '2024-01-13', sla: '1 day left' },
+    { id: 'GRV1241', title: 'Potholes on main road', priority: 'Medium', assignee: 'Rajesh Kumar', status: 'Under Review', date: '2024-01-12', sla: '4 days left' },
+    { id: 'GRV1240', title: 'Street dog menace', priority: 'Low', assignee: 'Priya Sharma', status: 'New', date: '2024-01-12', sla: '6 days left' }
   ];
 
   const slaAlerts = [
     { id: 1, complaintId: 'GRV1244', title: 'Street light malfunction', assignee: 'Amit Patel', timeLeft: '1 day', severity: 'critical' },
     { id: 2, complaintId: 'GRV1245', title: 'Illegal construction', assignee: 'Sneha Reddy', timeLeft: '2 days', severity: 'warning' },
-    { id: 3, complaintId: 'GRV1246', title: 'Water supply issue', assignee: 'Priya Sharma', timeLeft: '3 days', severity: 'warning' }
+    { id: 3, complaintId: 'GRV1246', title: 'Water supply issue', assignee: 'Priya Sharma', timeLeft: '3 days', severity: 'warning' },
+    { id: 4, complaintId: 'GRV1242', title: 'Traffic signal not working', assignee: 'Arun Kumar', timeLeft: '1 day', severity: 'critical' },
+    { id: 5, complaintId: 'GRV1243', title: 'Garbage collection issue', assignee: 'Vikram Singh', timeLeft: '2 days', severity: 'warning' }
   ];
 
   const performanceMetrics = [
     { metric: 'Response Time', current: '2.1 days', target: '2.0 days', status: 'good' },
     { metric: 'Resolution Rate', current: '94.2%', target: '90%', status: 'excellent' },
     { metric: 'Customer Satisfaction', current: '4.2/5', target: '4.0/5', status: 'good' },
-    { metric: 'SLA Compliance', current: '94.2%', target: '95%', status: 'warning' }
+    { metric: 'SLA Compliance', current: '94.2%', target: '95%', status: 'warning' },
+    { metric: 'First Response Time', current: '4.5 hours', target: '6 hours', status: 'excellent' },
+    { metric: 'Team Productivity', current: '87%', target: '85%', status: 'good' }
   ];
 
   const handleInputChange = (e) => {
@@ -778,62 +933,90 @@ const InchargeDashboard = () => {
     if (showMapView) {
       // Load Leaflet CSS and JS dynamically
       const loadLeaflet = async () => {
-        // Load Leaflet CSS
-        if (!document.querySelector('link[href*="leaflet"]')) {
-          const link = document.createElement('link');
-          link.rel = 'stylesheet';
-          link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-          document.head.appendChild(link);
-        }
+        try {
+          // Load Leaflet CSS
+          if (!document.querySelector('link[href*="leaflet"]')) {
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+            document.head.appendChild(link);
+          }
 
-        // Load Leaflet JS
-        if (!window.L) {
-          const script = document.createElement('script');
-          script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-          script.onload = () => {
-            // After Leaflet loads, load the marker cluster plugin
-            loadMarkerCluster();
-          };
-          document.head.appendChild(script);
-        } else {
-          loadMarkerCluster();
-        }
-      };
+          // Load Leaflet JS
+          if (!window.L) {
+            await new Promise((resolve, reject) => {
+              const script = document.createElement('script');
+              script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+              script.onload = resolve;
+              script.onerror = reject;
+              document.head.appendChild(script);
+            });
+          }
 
-      const loadMarkerCluster = () => {
-        // Load marker cluster CSS
-        if (!document.querySelector('link[href*="markercluster"]')) {
-          const clusterCSS = document.createElement('link');
-          clusterCSS.rel = 'stylesheet';
-          clusterCSS.href = 'https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css';
-          document.head.appendChild(clusterCSS);
-          
-          const clusterDefaultCSS = document.createElement('link');
-          clusterDefaultCSS.rel = 'stylesheet';
-          clusterDefaultCSS.href = 'https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css';
-          document.head.appendChild(clusterDefaultCSS);
-        }
-
-        // Load marker cluster JS
-        if (!window.L.markerClusterGroup) {
-          const clusterScript = document.createElement('script');
-          clusterScript.src = 'https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js';
-          clusterScript.onload = loadHeatLayer;
-          document.head.appendChild(clusterScript);
-        } else {
-          loadHeatLayer();
+          // After Leaflet loads, load the marker cluster plugin
+          await loadMarkerCluster();
+        } catch (error) {
+          console.error('Error loading Leaflet:', error);
+          toast.error('Failed to load map library');
         }
       };
 
-      const loadHeatLayer = () => {
-        // Load heat layer plugin if not available
-        if (!window.L.heatLayer) {
-          const heatScript = document.createElement('script');
-          heatScript.src = 'https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js';
-          heatScript.onload = initializeMap;
-          document.head.appendChild(heatScript);
-        } else {
-          initializeMap();
+      const loadMarkerCluster = async () => {
+        try {
+          // Load marker cluster CSS
+          if (!document.querySelector('link[href*="markercluster"]')) {
+            const clusterCSS = document.createElement('link');
+            clusterCSS.rel = 'stylesheet';
+            clusterCSS.href = 'https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css';
+            document.head.appendChild(clusterCSS);
+            
+            const clusterDefaultCSS = document.createElement('link');
+            clusterDefaultCSS.rel = 'stylesheet';
+            clusterDefaultCSS.href = 'https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css';
+            document.head.appendChild(clusterDefaultCSS);
+          }
+
+          // Load marker cluster JS
+          if (!window.L.markerClusterGroup) {
+            await new Promise((resolve, reject) => {
+              const clusterScript = document.createElement('script');
+              clusterScript.src = 'https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js';
+              clusterScript.onload = resolve;
+              clusterScript.onerror = reject;
+              document.head.appendChild(clusterScript);
+            });
+          }
+
+          await loadHeatLayer();
+        } catch (error) {
+          console.error('Error loading marker cluster:', error);
+          toast.error('Failed to load map plugins');
+        }
+      };
+
+      const loadHeatLayer = async () => {
+        try {
+          // Load heat layer plugin if not available
+          if (!window.L.heatLayer) {
+            await new Promise((resolve, reject) => {
+              const heatScript = document.createElement('script');
+              heatScript.src = 'https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js';
+              heatScript.onload = resolve;
+              heatScript.onerror = reject;
+              document.head.appendChild(heatScript);
+            });
+          }
+
+          // Initialize map after all plugins are loaded
+          setTimeout(() => {
+            initializeMap();
+          }, 100);
+        } catch (error) {
+          console.error('Error loading heat layer:', error);
+          // Continue without heat layer
+          setTimeout(() => {
+            initializeMap();
+          }, 100);
         }
       };
 
@@ -843,37 +1026,96 @@ const InchargeDashboard = () => {
     // Cleanup when map view is closed
     return () => {
       if (!showMapView) {
-        // Cleanup map resources
-        if (mapInstance && mapInstance._container) {
-          mapInstance.remove();
-          setMapInstance(null);
-        }
-        setMarkers([]);
-        setHeatLayer(null);
-        setMarkerCluster(null);
-        setWardSummary({});
-        setMapLoading(false);
+        cleanupMap();
       }
     };
-  }, [showMapView]); // Removed mapInstance dependency to prevent infinite loops
+  }, [showMapView]);
+
+  // Cleanup map resources safely
+  const cleanupMap = useCallback(() => {
+    try {
+      // Clear markers safely
+      if (markers.length > 0) {
+        markers.forEach(marker => {
+          try {
+            if (marker && marker.remove && typeof marker.remove === 'function') {
+              marker.remove();
+            }
+          } catch (error) {
+            console.warn('Error removing marker:', error);
+          }
+        });
+        setMarkers([]);
+      }
+      
+      // Clear heat layer safely
+      if (heatLayer && mapInstance) {
+        try {
+          if (mapInstance.removeLayer && typeof mapInstance.removeLayer === 'function') {
+            mapInstance.removeLayer(heatLayer);
+          }
+        } catch (error) {
+          console.warn('Error removing heat layer:', error);
+        }
+        setHeatLayer(null);
+      }
+      
+      // Clear marker cluster safely
+      if (markerCluster && mapInstance) {
+        try {
+          if (mapInstance.removeLayer && typeof mapInstance.removeLayer === 'function') {
+            mapInstance.removeLayer(markerCluster);
+          }
+        } catch (error) {
+          console.warn('Error removing marker cluster:', error);
+        }
+        setMarkerCluster(null);
+      }
+      
+      // Remove map instance safely
+      if (mapInstance && mapInstance._container) {
+        try {
+          if (mapInstance.remove && typeof mapInstance.remove === 'function') {
+            mapInstance.remove();
+          }
+        } catch (error) {
+          console.warn('Error removing map instance:', error);
+        }
+        setMapInstance(null);
+      }
+      
+      // Reset state
+      setWardSummary({});
+      setMapLoading(false);
+    } catch (error) {
+      console.error('Error during map cleanup:', error);
+    }
+  }, [markers, heatLayer, markerCluster, mapInstance]);
 
   // Initialize map
   const initializeMap = async () => {
     if (mapInstance) return;
     
     try {
-      // Load Leaflet if not already loaded
-      await loadLeaflet();
+      setMapLoading(true);
       
-      if (!isLeafletLoaded()) {
+      // Wait for Leaflet to be available
+      let attempts = 0;
+      while (!window.L && attempts < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
+      
+      if (!window.L) {
         toast.error('Failed to load map library. Please refresh the page.');
+        setMapLoading(false);
         return;
       }
       
-      // eslint-disable-next-line no-undef
+      // Create map instance
       const map = window.L.map('map').setView([22.7196, 75.8577], 12);
       
-      // eslint-disable-next-line no-undef
+      // Add tile layer
       window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors'
       }).addTo(map);
@@ -884,85 +1126,243 @@ const InchargeDashboard = () => {
       if (surveys.length > 0) {
         showConstructions(surveys.filter(s => s.coordinates));
       }
+      
+      setMapLoading(false);
     } catch (error) {
       console.error('Error initializing map:', error);
       toast.error('Failed to initialize map. Please try again.');
+      setMapLoading(false);
     }
   };
 
   // Reset map and charts
-  const resetMap = () => {
-    if (markers.length > 0 && markerCluster) {
-      // Remove markers from cluster/layer group
-      markers.forEach(m => {
-        if (markerCluster.removeLayer) {
-          markerCluster.removeLayer(m);
-        }
-      });
-      setMarkers([]);
-    }
-    
-    if (heatLayer && mapInstance) {
-      try {
-        mapInstance.removeLayer(heatLayer);
-      } catch (error) {
-        console.warn('Error removing heat layer:', error);
+  const resetMap = useCallback(() => {
+    try {
+      // Clear markers safely
+      if (markers.length > 0) {
+        markers.forEach(marker => {
+          try {
+            if (marker && marker.remove && typeof marker.remove === 'function') {
+              marker.remove();
+            }
+          } catch (error) {
+            console.warn('Error removing marker:', error);
+          }
+        });
+        setMarkers([]);
       }
-      setHeatLayer(null);
+      
+      // Clear heat layer safely
+      if (heatLayer && mapInstance) {
+        try {
+          if (mapInstance.removeLayer && typeof mapInstance.removeLayer === 'function') {
+            mapInstance.removeLayer(heatLayer);
+          }
+        } catch (error) {
+          console.warn('Error removing heat layer:', error);
+        }
+        setHeatLayer(null);
+      }
+      
+      // Clear marker cluster safely
+      if (markerCluster && mapInstance) {
+        try {
+          if (mapInstance.removeLayer && typeof mapInstance.removeLayer === 'function') {
+            mapInstance.removeLayer(markerCluster);
+          }
+        } catch (error) {
+          console.warn('Error removing marker cluster:', error);
+        }
+        setMarkerCluster(null);
+      }
+      
+      setWardSummary({});
+      setDetectedConstructions([]);
+    } catch (error) {
+      console.error('Error resetting map:', error);
     }
-    
-    setWardSummary({});
-    
-    // Clear detected list table
-    const detectedList = document.getElementById('detectedList');
-    if (detectedList) {
-      detectedList.innerHTML = `
-        <tr>
-          <td colspan="7" class="px-6 py-4 text-center text-gray-500">
-            Select a ward or show full Indore to view constructions
-          </td>
-        </tr>
-      `;
-    }
-  };
+  }, [markers, heatLayer, markerCluster, mapInstance]);
 
-  // Show constructions on map
-  const showConstructions = (constructions) => {
+  // Add ward boundary markers to map
+  const addWardBoundaries = useCallback(() => {
     if (!mapInstance || !window.L) return;
     
-    // Clear existing markers
-    markers.forEach(marker => marker.remove());
-    setMarkers([]);
-    
-    // Create new markers from survey data
-    const newMarkers = [];
-    surveys.forEach(survey => {
-      if (survey.coordinates && survey.violations && survey.violations.length > 0) {
-        // eslint-disable-next-line no-undef
-        const marker = window.L.marker([survey.coordinates.latitude, survey.coordinates.longitude])
-          .addTo(mapInstance)
-          .bindPopup(`
+    try {
+      // Add ward boundary markers (simplified as circles for demonstration)
+      const wardMarkers = [];
+      wards.forEach((ward, index) => {
+        try {
+          const marker = window.L.circleMarker([ward.lat, ward.lng], {
+            radius: 8,
+            fillColor: '#3B82F6',
+            color: '#1E40AF',
+            weight: 2,
+            opacity: 1,
+            fillOpacity: 0.7
+          }).addTo(mapInstance);
+          
+          marker.bindPopup(`
             <div class="p-2">
-              <h3 class="font-bold">Survey ${survey.id}</h3>
-              <p><strong>Ward:</strong> ${survey.ward_no}</p>
-              <p><strong>Violations:</strong> ${survey.violations.length}</p>
-              <p><strong>Date:</strong> ${survey.survey_date}</p>
-              <p><strong>Compliance:</strong> ${survey.compliance_score || 100}%</p>
+              <h3 class="font-bold">${ward.name}</h3>
+              <p><strong>Ward Number:</strong> ${index + 1}</p>
+              <p><strong>Coordinates:</strong> ${ward.lat.toFixed(4)}, ${ward.lng.toFixed(4)}</p>
+              <p class="text-sm text-gray-600 mt-2">Click on map to view ward details</p>
             </div>
           `);
-        newMarkers.push(marker);
-      }
-    });
-    
-    setMarkers(newMarkers);
-    
-    // Fit map to show all markers
-    if (newMarkers.length > 0) {
-      // eslint-disable-next-line no-undef
-      const group = window.L.featureGroup(newMarkers);
-      mapInstance.fitBounds(group.getBounds());
+          
+          // Add click event to center map on ward
+          marker.on('click', () => {
+            mapInstance.setView([ward.lat, ward.lng], 14);
+            // Auto-fill the ward inputs using state
+            setWardNumber(String(index + 1));
+            setWardName(ward.name);
+          });
+          
+          wardMarkers.push(marker);
+        } catch (error) {
+          console.warn('Error creating ward boundary marker:', error);
+        }
+      });
+      
+      return wardMarkers;
+    } catch (error) {
+      console.error('Error adding ward boundaries:', error);
+      toast.error('Error adding ward boundaries to map');
+      return [];
     }
-  };
+  }, [mapInstance]);
+
+  // Detect ward from map click
+  const detectWardFromMap = useCallback((wardName) => {
+    const ward = wards.find(w => w.name === wardName);
+    if (ward) {
+      // Set the ward number input
+      const wardNumberInput = document.querySelector('input[type="number"]');
+      if (wardNumberInput) {
+        wardNumberInput.value = wards.indexOf(ward) + 1;
+      }
+      
+      // Set the ward name input
+      const wardNameInput = document.querySelector('input[placeholder="Ward Name"]');
+      if (wardNameInput) {
+        wardNameInput.value = ward.name;
+      }
+      
+      // Trigger ward detection
+      detectWard();
+    }
+  }, [wards]);
+
+  // Cleanup function when component unmounts
+  useEffect(() => {
+    return () => {
+      cleanupMap();
+    };
+  }, [cleanupMap]);
+
+  // Show constructions on map
+  const showConstructions = useCallback((constructions) => {
+    if (!mapInstance || !window.L) return;
+    
+    try {
+      // Clear existing markers safely
+      if (markers.length > 0) {
+        markers.forEach(marker => {
+          try {
+            if (marker && marker.remove && typeof marker.remove === 'function') {
+              marker.remove();
+            }
+          } catch (error) {
+            console.warn('Error removing existing marker:', error);
+          }
+        });
+        setMarkers([]);
+      }
+      
+      // Create new markers from survey data
+      const newMarkers = [];
+      const wardData = {};
+      
+      constructions.forEach(survey => {
+        if (survey.coordinates && survey.violations && survey.violations.length > 0) {
+          try {
+            // Create marker with different colors based on violation severity
+            const highSeverity = survey.violations.filter(v => v.severity === 'high').length;
+            const mediumSeverity = survey.violations.filter(v => v.severity === 'medium').length;
+            
+            let markerColor = '#10B981'; // Green for compliant
+            if (highSeverity > 0) {
+              markerColor = '#EF4444'; // Red for high severity
+            } else if (mediumSeverity > 0) {
+              markerColor = '#F59E0B'; // Yellow for medium severity
+            }
+            
+            const marker = window.L.circleMarker([survey.coordinates.latitude, survey.coordinates.longitude], {
+              radius: 12,
+              fillColor: markerColor,
+              color: '#1F2937',
+              weight: 2,
+              opacity: 1,
+              fillOpacity: 0.8
+            }).addTo(mapInstance);
+            
+            marker.bindPopup(`
+              <div class="p-2">
+                <h3 class="font-bold">Survey ${survey.id}</h3>
+                <p><strong>Ward:</strong> ${survey.ward_no}</p>
+                <p><strong>Violations:</strong> ${survey.violations.length}</p>
+                <p><strong>Date:</strong> ${survey.survey_date}</p>
+                <p><strong>Compliance:</strong> ${survey.compliance_score || 100}%</p>
+                <p><strong>Coordinates:</strong> ${survey.coordinates.latitude.toFixed(4)}, ${survey.coordinates.longitude.toFixed(4)}</p>
+              </div>
+            `);
+            
+            newMarkers.push(marker);
+            
+            // Track ward data
+            if (!wardData[survey.ward_no]) {
+              wardData[survey.ward_no] = {
+                count: 0,
+                violations: 0,
+                surveys: []
+              };
+            }
+            wardData[survey.ward_no].count++;
+            wardData[survey.ward_no].violations += survey.violations.length;
+            wardData[survey.ward_no].surveys.push(survey);
+          } catch (error) {
+            console.warn('Error creating marker for survey:', survey.id, error);
+          }
+        }
+      });
+      
+      setMarkers(newMarkers);
+      setWardSummary(wardData);
+      
+      // Update detected list table
+      updateDetectedList(constructions);
+      
+      // Fit map to show all markers
+      if (newMarkers.length > 0) {
+        try {
+          const group = window.L.featureGroup(newMarkers);
+          mapInstance.fitBounds(group.getBounds());
+        } catch (error) {
+          console.warn('Error fitting map bounds:', error);
+        }
+      }
+    } catch (error) {
+      console.error('Error showing constructions:', error);
+      toast.error('Error displaying map data');
+    }
+  }, [mapInstance, markers]);
+
+  // Update detected list table
+  const updateDetectedList = useCallback((constructions) => {
+    // Instead of directly manipulating DOM, we'll use React state
+    // This will be handled by the component's render method
+    setDetectedConstructions(constructions);
+  }, []);
 
   // Detect specific ward
   const detectWard = () => {
@@ -972,24 +1372,72 @@ const InchargeDashboard = () => {
     }
     
     try {
-      const wardNumberInput = document.querySelector('input[type="number"]');
-      const wardNameInput = document.querySelector('input[placeholder="Ward Name"]');
+      const wardNum = parseInt(wardNumber);
+      const wardNameTrimmed = wardName.trim();
       
-      const wardNumber = parseInt(wardNumberInput?.value);
-      const wardName = wardNameInput?.value?.trim();
-      
-      if (!wardNumber && !wardName) {
+      if (!wardNum && !wardNameTrimmed) {
         toast.error("Please enter Ward Number or Name!");
         return;
       }
       
-      const wardIndex = wardNumber ? wardNumber - 1 : wards.findIndex(n => n.name.toLowerCase() === wardName.toLowerCase());
-      if (wardIndex < 0 || wardIndex >= wards.length) {
+      let targetWard;
+      if (wardNum) {
+        // Find ward by number (1-85)
+        if (wardNum < 1 || wardNum > 85) {
+          toast.error("Ward number must be between 1 and 85!");
+          return;
+        }
+        targetWard = wards[wardNum - 1];
+      } else {
+        // Find ward by name
+        targetWard = wards.find(w => w.name.toLowerCase().includes(wardNameTrimmed.toLowerCase()));
+      }
+      
+      if (!targetWard) {
         toast.error("Ward not found!");
         return;
       }
       
-      showConstructions(surveys.filter(s => s.ward_no == wardNumber));
+      // Filter surveys for this specific ward - check both ward name and ward number
+      const wardSurveys = surveys.filter(s => {
+        return s.ward_no === targetWard.name || s.ward_number === wards.indexOf(targetWard) + 1;
+      });
+      
+      if (wardSurveys.length === 0) {
+        toast.info(`No survey data found for ${targetWard.name}`);
+        // Center map on ward location
+        mapInstance.setView([targetWard.lat, targetWard.lng], 14);
+        
+        // Clear existing markers and show ward boundary
+        resetMap();
+        
+        try {
+          // Add ward boundary marker
+          const wardMarker = window.L.marker([targetWard.lat, targetWard.lng])
+            .addTo(mapInstance)
+            .bindPopup(`
+              <div class="p-2">
+                <h3 class="font-bold">${targetWard.name}</h3>
+                <p><strong>Ward Number:</strong> ${wards.indexOf(targetWard) + 1}</p>
+                <p><strong>Coordinates:</strong> ${targetWard.lat.toFixed(4)}, ${targetWard.lng.toFixed(4)}</p>
+                <p><strong>Status:</strong> No survey data available</p>
+              </div>
+            `);
+          
+          setMarkers([wardMarker]);
+        } catch (error) {
+          console.warn('Error creating ward marker:', error);
+        }
+        return;
+      }
+      
+      // Show constructions for this ward
+      showConstructions(wardSurveys);
+      
+      // Center map on ward
+      mapInstance.setView([targetWard.lat, targetWard.lng], 14);
+      
+      toast.success(`Showing data for ${targetWard.name} (${wardSurveys.length} surveys found)`);
     } catch (error) {
       console.error('Error detecting ward:', error);
       toast.error("An error occurred while detecting the ward. Please try again.");
@@ -1005,7 +1453,20 @@ const InchargeDashboard = () => {
     
     try {
       resetMap();
-      showConstructions(surveys.filter(s => s.coordinates));
+      
+      // Show all surveys with coordinates
+      const allSurveys = surveys.filter(s => s.coordinates);
+      if (allSurveys.length === 0) {
+        toast.info("No survey data available to display");
+        return;
+      }
+      
+      showConstructions(allSurveys);
+      
+      // Reset map view to show all of Indore
+      mapInstance.setView([22.7196, 75.8577], 12);
+      
+      toast.success("Showing all survey data for Indore");
     } catch (error) {
       console.error('Error showing full Indore:', error);
       toast.error("An error occurred while loading the full map. Please try again.");
@@ -1016,18 +1477,15 @@ const InchargeDashboard = () => {
   const handleWardNumberChange = (e) => {
     try {
       const num = parseInt(e.target.value);
-      const wardNameInput = document.querySelector('input[placeholder="Ward Name"]');
-      if (wardNameInput) {
-        if (num >= 1 && num <= 85) {
-          const ward = wards[num - 1];
-          if (ward) {
-            wardNameInput.value = ward.name;
-          } else {
-            wardNameInput.value = '';
-          }
+      if (num >= 1 && num <= 85) {
+        const ward = wards[num - 1];
+        if (ward) {
+          setWardName(ward.name);
         } else {
-          wardNameInput.value = '';
+          setWardName('');
         }
+      } else {
+        setWardName('');
       }
     } catch (error) {
       console.warn('Error handling ward number change:', error);
@@ -1090,7 +1548,7 @@ const InchargeDashboard = () => {
           }
         });
         
-        setShowSurveyForm(false);
+    setShowSurveyForm(false);
         
         // Refresh surveys list
         setTimeout(() => {
@@ -1364,6 +1822,81 @@ const InchargeDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Custom CSS for components */}
+      <style jsx>{`
+        .card {
+          background: white;
+          border-radius: 0.75rem;
+          box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+          transition: all 0.2s;
+        }
+        .card:hover {
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .btn-primary {
+          background: #2563eb;
+          color: white;
+          padding: 0.5rem 1rem;
+          border: none;
+          border-radius: 0.5rem;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .btn-primary:hover {
+          background: #1d4ed8;
+        }
+        .btn-secondary {
+          background: #6b7280;
+          color: white;
+          padding: 0.5rem 1rem;
+          border: none;
+          border-radius: 0.5rem;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .btn-secondary:hover {
+          background: #4b5563;
+        }
+        .btn-success {
+          background: #059669;
+          color: white;
+          padding: 0.5rem 1rem;
+          border: none;
+          border-radius: 0.5rem;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .btn-success:hover {
+          background: #047857;
+        }
+        .input-field {
+          width: 100%;
+          padding: 0.5rem 0.75rem;
+          border: 1px solid #d1d5db;
+          border-radius: 0.5rem;
+          font-size: 0.875rem;
+          transition: all 0.2s;
+        }
+        .input-field:focus {
+          outline: none;
+          border-color: #3b82f6;
+          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        .form-label {
+          display: block;
+          font-size: 0.875rem;
+          font-weight: 500;
+          color: #374151;
+          margin-bottom: 0.5rem;
+        }
+        .shadow-medium {
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+      `}</style>
+      
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -1894,7 +2427,7 @@ const InchargeDashboard = () => {
             <div className="p-6">
               {/* Essential Survey Fields */}
               <div className="space-y-6">
-                    <div>
+                  <div>
                   <label className="form-label">Ward Number *</label>
                   <input
                     type="text"
@@ -1904,9 +2437,9 @@ const InchargeDashboard = () => {
                     className="input-field"
                     placeholder="e.g., Ward 5"
                   />
-                  </div>
-                  
-                    <div>
+              </div>
+
+                <div>
                   <label className="form-label">Locality Name *</label>
                   <input
                     type="text"
@@ -1961,15 +2494,15 @@ const InchargeDashboard = () => {
                     rows="3"
                     placeholder="Brief description of survey purpose and objectives"
                   />
-              </div>
+                </div>
 
                   <div>
                     <label className="form-label">Construction Type</label>
                     <select
                       name="measuringParameters.constructionType"
                       value={surveyData.measuringParameters.constructionType}
-                      onChange={handleInputChange}
-                      className="input-field"
+                    onChange={handleInputChange}
+                    className="input-field"
                     >
                       <option value="">Select Type</option>
                       <option value="residential">Residential</option>
@@ -2111,8 +2644,8 @@ const InchargeDashboard = () => {
                         onChange={(e) => handleDroneInputChange(e, droneManagementData.selectedDrone)}
                         name="id"
                         className="input-field"
-                      />
-                    </div>
+                  />
+                </div>
                     <div>
                       <label className="form-label">UIN (Unique Identification Number)</label>
                       <input
@@ -2175,8 +2708,8 @@ const InchargeDashboard = () => {
                         <option value="Maintenance">Maintenance</option>
                         <option value="Charging">Charging</option>
                       </select>
-                    </div>
-                  </div>
+                </div>
+              </div>
 
                   {/* Flight Parameters */}
                   <div className="p-4 bg-blue-50 rounded-lg">
@@ -2253,14 +2786,14 @@ const InchargeDashboard = () => {
                       <div className="flex items-center justify-between mb-3">
                         <h6 className="font-semibold text-gray-900">GPS/GNSS Sensor</h6>
                         <label className="flex items-center space-x-2 cursor-pointer">
-                          <input
-                            type="checkbox"
+                    <input
+                      type="checkbox"
                             checked={droneManagementData.drones[droneManagementData.selectedDrone].sensors.gps.enabled}
                             onChange={(e) => handleDroneInputChange(e, droneManagementData.selectedDrone, 'gps', 'enabled')}
                             className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
                           />
                           <span className="text-sm text-gray-700">Enabled</span>
-                        </label>
+                  </label>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
@@ -2309,14 +2842,14 @@ const InchargeDashboard = () => {
                       <div className="flex items-center justify-between mb-3">
                         <h6 className="font-semibold text-gray-900">IMU (Inertial Measurement Unit)</h6>
                         <label className="flex items-center space-x-2 cursor-pointer">
-                          <input
-                            type="checkbox"
+                    <input
+                      type="checkbox"
                             checked={droneManagementData.drones[droneManagementData.selectedDrone].sensors.imu.enabled}
                             onChange={(e) => handleDroneInputChange(e, droneManagementData.selectedDrone, 'imu', 'enabled')}
                             className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
                           />
                           <span className="text-sm text-gray-700">Enabled</span>
-                        </label>
+                  </label>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
@@ -2363,14 +2896,14 @@ const InchargeDashboard = () => {
                       <div className="flex items-center justify-between mb-3">
                         <h6 className="font-semibold text-gray-900">Camera/EO-IR Sensor</h6>
                         <label className="flex items-center space-x-2 cursor-pointer">
-                          <input
-                            type="checkbox"
+                    <input
+                      type="checkbox"
                             checked={droneManagementData.drones[droneManagementData.selectedDrone].sensors.camera.enabled}
                             onChange={(e) => handleDroneInputChange(e, droneManagementData.selectedDrone, 'camera', 'enabled')}
                             className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
                           />
                           <span className="text-sm text-gray-700">Enabled</span>
-                        </label>
+                  </label>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
@@ -2420,14 +2953,14 @@ const InchargeDashboard = () => {
                       <div className="flex items-center justify-between mb-3">
                         <h6 className="font-semibold text-gray-900">ADS-B Transponder (Govt. Requirement)</h6>
                         <label className="flex items-center space-x-2 cursor-pointer">
-                          <input
-                            type="checkbox"
+                    <input
+                      type="checkbox"
                             checked={droneManagementData.drones[droneManagementData.selectedDrone].sensors.adsb.enabled}
                             onChange={(e) => handleDroneInputChange(e, droneManagementData.selectedDrone, 'adsb', 'enabled')}
                             className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
                           />
                           <span className="text-sm text-gray-700">Enabled</span>
-                        </label>
+                  </label>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -2459,9 +2992,9 @@ const InchargeDashboard = () => {
                     <div className="p-4 bg-white rounded-lg border">
                       <h6 className="font-semibold text-gray-900 mb-3">Payload Sensors</h6>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <label className="flex items-center space-x-3 cursor-pointer">
-                          <input
-                            type="checkbox"
+                  <label className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="checkbox"
                             checked={droneManagementData.drones[droneManagementData.selectedDrone].sensors.payload.multispectral}
                             onChange={(e) => handleDroneInputChange(e, droneManagementData.selectedDrone, 'payload', 'multispectral')}
                             className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
@@ -2485,20 +3018,20 @@ const InchargeDashboard = () => {
                             className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
                           />
                           <span className="text-sm text-gray-700">Thermal Sensor</span>
-                        </label>
+                  </label>
                       </div>
-                    </div>
-                  </div>
+                </div>
+              </div>
 
                   {/* Fleet Settings */}
                   {droneManagementData.fleetMode && (
                     <div className="p-4 bg-orange-50 rounded-lg">
                       <h5 className="text-lg font-semibold text-gray-900 mb-4">Fleet Settings</h5>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
+                    <div>
                           <label className="form-label">Collision Avoidance</label>
                           <label className="flex items-center space-x-3 cursor-pointer">
-                            <input
+                      <input
                               type="checkbox"
                               checked={droneManagementData.swarmSettings.collisionAvoidance}
                               onChange={(e) => setDroneManagementData(prev => ({
@@ -2509,11 +3042,11 @@ const InchargeDashboard = () => {
                             />
                             <span className="text-sm text-gray-700">Enable collision avoidance between drones</span>
                           </label>
-                        </div>
-                        <div>
+                    </div>
+                    <div>
                           <label className="form-label">Data Synchronization</label>
                           <label className="flex items-center space-x-3 cursor-pointer">
-                            <input
+                      <input
                               type="checkbox"
                               checked={droneManagementData.swarmSettings.dataSync}
                               onChange={(e) => setDroneManagementData(prev => ({
@@ -2524,7 +3057,7 @@ const InchargeDashboard = () => {
                             />
                             <span className="text-sm text-gray-700">Centralized data sync</span>
                           </label>
-                        </div>
+                    </div>
                       </div>
                     </div>
                   )}
@@ -2577,7 +3110,7 @@ const InchargeDashboard = () => {
             <div className="p-6">
               {/* Header */}
               <div className="flex items-center justify-between mb-6">
-                <div>
+                    <div>
                   <h4 className="text-xl font-bold text-gray-900">Indore Data Collection 2025</h4>
                   <p className="text-gray-600">View and manage Excel data in tabular format</p>
                 </div>
@@ -2618,15 +3151,15 @@ const InchargeDashboard = () => {
               <div className="mb-6">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <input
-                    type="text"
+                      <input
+                        type="text"
                     placeholder="Search in data..."
                     value={excelData.searchTerm}
                     onChange={(e) => handleSearch(e.target.value)}
                     className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                  />
-                </div>
-              </div>
+                      />
+                    </div>
+                  </div>
 
               {/* Data Table */}
               {excelData.headers.length > 0 && (
@@ -2690,7 +3223,7 @@ const InchargeDashboard = () => {
                                       <div key={colIndex} className="bg-white p-3 rounded border">
                                         <div className="text-xs font-medium text-gray-500 uppercase mb-1">
                                           {header}
-                                        </div>
+                </div>
                                         <div className="text-sm text-gray-900 break-words">
                                           {row[header] || 'N/A'}
                                         </div>
@@ -2711,7 +3244,7 @@ const InchargeDashboard = () => {
                     <div className="flex items-center justify-between">
                       <div className="text-sm text-gray-700">
                         Showing 1 to {Math.min(10, excelData.filteredData.length)} of {excelData.filteredData.length} results
-                      </div>
+              </div>
                       <div className="text-sm text-gray-500">
                         {excelData.data.length} total records
                       </div>
@@ -2767,7 +3300,7 @@ const InchargeDashboard = () => {
                 <h3 className="text-xl font-bold">UrbanGuard - Indore Detection</h3>
                 <p className="text-sm opacity-90">Illegal Construction Detection & Mapping System</p>
               </div>
-              <button
+                <button
                 onClick={() => setShowMapView(false)}
                 className="text-white hover:text-gray-200 transition-colors p-2 hover:bg-white hover:bg-opacity-20 rounded"
               >
@@ -2787,7 +3320,11 @@ const InchargeDashboard = () => {
                     min="1"
                     max="85"
                     className="input-field w-32"
-                    onChange={handleWardNumberChange}
+                    value={wardNumber}
+                    onChange={(e) => {
+                      setWardNumber(e.target.value);
+                      handleWardNumberChange(e);
+                    }}
                   />
                 </div>
                 <div>
@@ -2796,6 +3333,7 @@ const InchargeDashboard = () => {
                     type="text"
                     placeholder="Ward Name"
                     className="input-field w-48"
+                    value={wardName}
                     readOnly
                   />
                 </div>
@@ -2811,6 +3349,17 @@ const InchargeDashboard = () => {
                     className="btn-secondary"
                   >
                     Show Full Indore
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (mapInstance && window.L) {
+                        addWardBoundaries();
+                        toast.success('Ward boundaries added to map');
+                      }
+                    }}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors font-medium"
+                  >
+                    Show Ward Boundaries
                   </button>
                   <button
                     onClick={openFullScreenMap}
@@ -2866,12 +3415,51 @@ const InchargeDashboard = () => {
                             </th>
                           </tr>
                         </thead>
-                        <tbody id="detectedList" className="bg-white divide-y divide-gray-200">
-                          <tr>
-                            <td colSpan="7" className="px-6 py-4 text-center text-gray-500">
-                              Select a ward or show full Indore to view constructions
-                            </td>
-                          </tr>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {detectedConstructions.length === 0 ? (
+                            <tr>
+                              <td colSpan="7" className="px-6 py-4 text-center text-gray-500">
+                                Select a ward or show full Indore to view constructions
+                              </td>
+                            </tr>
+                          ) : (
+                            detectedConstructions.map((survey, index) => {
+                              const violations = survey.violations || [];
+                              const highSeverity = violations.filter(v => v.severity === 'high').length;
+                              const mediumSeverity = violations.filter(v => v.severity === 'medium').length;
+                              const lowSeverity = violations.filter(v => v.severity === 'low').length;
+                              
+                              return (
+                                <tr key={index} className="hover:bg-gray-50">
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    Ward {survey.ward_no}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap">
+                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                      {violations.length > 0 ? 'Violations Detected' : 'Compliant'}
+                                    </span>
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {highSeverity > 0 && <span className="text-red-600 font-medium mr-2">{highSeverity} High</span>}
+                                    {mediumSeverity > 0 && <span className="text-yellow-600 font-medium mr-2">{mediumSeverity} Medium</span>}
+                                    {lowSeverity > 0 && <span className="text-green-600 font-medium mr-2">{lowSeverity} Low</span>}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {survey.compliance_score || 100}%
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    Survey {survey.id}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {survey.coordinates?.latitude?.toFixed(4)}, {survey.coordinates?.longitude?.toFixed(4)}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                    <button className="text-blue-600 hover:text-blue-900">View Details</button>
+                                  </td>
+                                </tr>
+                              );
+                            })
+                          )}
                         </tbody>
                       </table>
                     </div>
@@ -2913,7 +3501,7 @@ const InchargeDashboard = () => {
                     <div className="flex items-center space-x-4 mb-2">
                       <span className="text-lg font-semibold text-gray-900">Survey {survey.id}</span>
                       <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
-                        Ward {survey.ward_no}
+                        {survey.ward_no} (Ward {survey.ward_number})
                       </span>
                       <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
                         {survey.drone_id}

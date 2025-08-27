@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import AuthContext from './contexts/AuthContext';
+import LandingPage from './components/LandingPage';
 import Login from './components/auth/Login';
 import Signup from './components/auth/Signup';
 import CitizenDashboard from './components/dashboards/CitizenDashboard';
@@ -59,7 +60,7 @@ function App() {
         <div className="App">
           <Toaster position="top-right" />
           <Routes>
-            <Route path="/" element={user ? <Navigate to="/dashboard" /> : <Login />} />
+            <Route path="/" element={user ? <Navigate to="/dashboard" /> : <LandingPage />} />
             <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <Login />} />
             <Route path="/signup" element={user ? <Navigate to="/dashboard" /> : <Signup />} />
             
