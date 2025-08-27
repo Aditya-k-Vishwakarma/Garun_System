@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   AlertTriangle, 
@@ -31,10 +31,16 @@ import {
   BarChart3,
   Settings,
   HelpCircle,
-  Info,
   Zap,
   FileBarChart,
-  Building2
+  Building2,
+  AlertCircle,
+  Users,
+  Map,
+  Globe,
+  Wifi,
+  Battery,
+  Signal
 } from 'lucide-react';
 import AuthContext from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
@@ -49,9 +55,18 @@ const CitizenDashboard = () => {
   const [recentActivities, setRecentActivities] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [lastUpdate, setLastUpdate] = useState(null);
+  const [connectionStatus, setConnectionStatus] = useState('online');
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [refreshInterval, setRefreshInterval] = useState(30000); // 30 seconds
+  const [error, setError] = useState(null);
+  const [statsAnimation, setStatsAnimation] = useState(false);
+  const [trackingId, setTrackingId] = useState('');
+  const [trackingResult, setTrackingResult] = useState(null);
+  const [trackingLoading, setTrackingLoading] = useState(false);
 
-  // Fetch all dashboard data
-  const fetchDashboardData = async () => {
+  // Enhanced fetch function with better error handling
+  const fetchDashboardData = useCallback(async (showToast = false) => {
     if (!user?.contactNumber) {
       console.log('No user contact number available');
       setLoading(false);
@@ -59,6 +74,7 @@ const CitizenDashboard = () => {
     }
 
     try {
+      setError(null);
       setLoading(true);
       
       // Fetch dashboard stats
@@ -66,6 +82,12 @@ const CitizenDashboard = () => {
       if (statsResponse.ok) {
         const statsData = await statsResponse.json();
         setDashboardData(statsData.stats);
+        
+        // Trigger stats animation
+        setStatsAnimation(true);
+        setTimeout(() => setStatsAnimation(false), 1000);
+      } else {
+        throw new Error(`Stats API returned ${statsResponse.status}`);
       }
 
       // Fetch recent activities
@@ -73,6 +95,8 @@ const CitizenDashboard = () => {
       if (activityResponse.ok) {
         const activityData = await activityResponse.json();
         setRecentActivities(activityData.recent_activities);
+      } else {
+        throw new Error(`Activity API returned ${activityResponse.status}`);
       }
 
       // Fetch notifications
@@ -80,32 +104,119 @@ const CitizenDashboard = () => {
       if (notificationsResponse.ok) {
         const notificationsData = await notificationsResponse.json();
         setNotifications(notificationsData.notifications);
+      } else {
+        throw new Error(`Notifications API returned ${notificationsResponse.status}`);
+      }
+
+      setLastUpdate(new Date());
+      if (showToast) {
+        toast.success('Dashboard updated successfully');
       }
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
+      setError(error.message);
       toast.error('Failed to fetch dashboard data');
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.contactNumber]);
 
   // Refresh dashboard data
   const refreshDashboard = async () => {
     setRefreshing(true);
-    await fetchDashboardData();
+    await fetchDashboardData(true);
     setRefreshing(false);
-    toast.success('Dashboard refreshed successfully');
+  };
+
+  // Toggle auto-refresh
+  const toggleAutoRefresh = () => {
+    setAutoRefresh(!autoRefresh);
+    toast.success(autoRefresh ? 'Auto-refresh disabled' : 'Auto-refresh enabled');
+  };
+
+  // Change refresh interval
+  const changeRefreshInterval = (interval) => {
+    setRefreshInterval(interval);
+    toast.success(`Refresh interval set to ${interval / 1000} seconds`);
+  };
+
+  // Mark notification as read
+  const markNotificationRead = async (notificationId) => {
+    try {
+      const response = await fetch(`http://localhost:8000/api/dashboard/notifications/${notificationId}/read`, {
+        method: 'PUT'
+      });
+      
+      if (response.ok) {
+        setNotifications(prev => prev.map(n => 
+          n.id === notificationId ? { ...n, read: true } : n
+        ));
+        toast.success('Notification marked as read');
+      }
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
+  };
+
+  // Check connection status
+  const checkConnectionStatus = () => {
+    if (navigator.onLine) {
+      setConnectionStatus('online');
+    } else {
+      setConnectionStatus('offline');
+      toast.error('You are currently offline');
+    }
+  };
+
+  // Track complaint function
+  const trackComplaint = async () => {
+    if (!trackingId.trim()) {
+      toast.error('Please enter a complaint ID');
+      return;
+    }
+
+    setTrackingLoading(true);
+    try {
+      const response = await fetch(`http://localhost:8000/api/complaints/track/${trackingId.trim()}`);
+      
+      if (response.ok) {
+        const result = await response.json();
+        setTrackingResult(result);
+        toast.success('Complaint found successfully!');
+      } else {
+        const error = await response.json();
+        toast.error(error.detail || 'Complaint not found');
+        setTrackingResult(null);
+      }
+    } catch (error) {
+      console.error('Error tracking complaint:', error);
+      toast.error('Failed to track complaint. Please try again.');
+      setTrackingResult(null);
+    } finally {
+      setTrackingLoading(false);
+    }
   };
 
   useEffect(() => {
     fetchDashboardData();
     
-    // Set up auto-refresh every 30 seconds
-    const interval = setInterval(fetchDashboardData, 30000);
+    // Set up auto-refresh if enabled
+    let interval;
+    if (autoRefresh) {
+      interval = setInterval(fetchDashboardData, refreshInterval);
+    }
     
-    return () => clearInterval(interval);
-  }, [user?.contactNumber]);
+    // Set up connection status monitoring
+    window.addEventListener('online', checkConnectionStatus);
+    window.addEventListener('offline', checkConnectionStatus);
+    
+    return () => {
+      if (interval) clearInterval(interval);
+      window.removeEventListener('online', checkConnectionStatus);
+      window.removeEventListener('offline', checkConnectionStatus);
+    };
+  }, [fetchDashboardData, autoRefresh, refreshInterval]);
 
   const handleLogout = () => {
     logout();
@@ -148,7 +259,7 @@ const CitizenDashboard = () => {
       case 'rejected':
         return <XCircle className="w-4 h-4" />;
       default:
-        return <Info className="w-4 h-4" />;
+        return <HelpCircle className="w-4 h-4" />;
     }
   };
 
@@ -171,6 +282,11 @@ const CitizenDashboard = () => {
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600 text-lg">Loading your dashboard...</p>
+          <div className="mt-4 flex items-center justify-center space-x-2">
+            <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
+            <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+            <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+          </div>
         </div>
       </div>
     );
@@ -195,6 +311,19 @@ const CitizenDashboard = () => {
             </div>
             
             <div className="flex items-center space-x-4">
+              {/* Connection Status */}
+              <div className="flex items-center space-x-2 px-3 py-1 rounded-full bg-gray-100">
+                <div className={`w-2 h-2 rounded-full ${connectionStatus === 'online' ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                <span className="text-xs text-gray-600">{connectionStatus}</span>
+              </div>
+
+              {/* Last Update */}
+              {lastUpdate && (
+                <div className="text-xs text-gray-500">
+                  Last updated: {lastUpdate.toLocaleTimeString()}
+                </div>
+              )}
+
               {/* Notifications */}
               <div className="relative">
                 <button
@@ -202,9 +331,9 @@ const CitizenDashboard = () => {
                   className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors"
                 >
                   <Bell className="w-6 h-6" />
-                  {notifications.length > 0 && (
+                  {notifications.filter(n => !n.read).length > 0 && (
                     <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                      {notifications.length}
+                      {notifications.filter(n => !n.read).length}
                     </span>
                   )}
                 </button>
@@ -214,13 +343,23 @@ const CitizenDashboard = () => {
                   <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
                     <div className="p-4 border-b border-gray-200">
                       <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
+                      <button
+                        onClick={() => setNotifications(prev => prev.map(n => ({ ...n, read: true })))}
+                        className="text-sm text-blue-600 hover:text-blue-800"
+                      >
+                        Mark all as read
+                      </button>
                     </div>
                     <div className="max-h-96 overflow-y-auto">
                       {notifications.length > 0 ? (
                         notifications.map((notification) => (
-                          <div key={notification.id} className="p-4 border-b border-gray-100 hover:bg-gray-50">
+                          <div 
+                            key={notification.id} 
+                            className={`p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${!notification.read ? 'bg-blue-50' : ''}`}
+                            onClick={() => markNotificationRead(notification.id)}
+                          >
                             <div className="flex items-start space-x-3">
-                              <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
+                              <div className={`w-2 h-2 rounded-full mt-2 ${!notification.read ? 'bg-blue-500' : 'bg-gray-300'}`}></div>
                               <div className="flex-1">
                                 <p className="text-sm font-medium text-gray-900">{notification.title}</p>
                                 <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
@@ -228,6 +367,9 @@ const CitizenDashboard = () => {
                                   {new Date(notification.timestamp).toLocaleDateString()}
                                 </p>
                               </div>
+                              {!notification.read && (
+                                <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full">New</span>
+                              )}
                             </div>
                           </div>
                         ))
@@ -264,7 +406,7 @@ const CitizenDashboard = () => {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Welcome Section */}
+        {/* Welcome Section with Performance Score */}
         <div className="mb-8">
           <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-8 text-white">
             <div className="flex items-center justify-between">
@@ -272,9 +414,11 @@ const CitizenDashboard = () => {
                 <h2 className="text-3xl font-bold mb-2">
                   Welcome back, {user?.fullName || 'Citizen'}! 👋
                 </h2>
-                <p className="text-blue-100 text-lg">
+                <p className="text-blue-100 text-lg mb-4">
                   Track your complaints, property verifications, and building approvals in real-time
                 </p>
+                
+
               </div>
               <div className="hidden md:block">
                 <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center">
@@ -285,13 +429,73 @@ const CitizenDashboard = () => {
           </div>
         </div>
 
+        {/* Dashboard Controls */}
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+          <h3 className="text-xl font-semibold text-gray-900">Dashboard Controls</h3>
+          <div className="flex items-center space-x-4">
+            {/* Auto-refresh toggle */}
+            <button
+              onClick={toggleAutoRefresh}
+              className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                autoRefresh 
+                  ? 'bg-green-100 text-green-700 border border-green-300' 
+                  : 'bg-gray-100 text-gray-700 border border-gray-300'
+              }`}
+            >
+              <RefreshCw className={`w-4 h-4 ${autoRefresh ? 'animate-spin' : ''}`} />
+              <span>Auto-refresh {autoRefresh ? 'ON' : 'OFF'}</span>
+            </button>
+
+            {/* Refresh interval selector */}
+            <select
+              value={refreshInterval}
+              onChange={(e) => changeRefreshInterval(Number(e.target.value))}
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value={15000}>15s</option>
+              <option value={30000}>30s</option>
+              <option value={60000}>1m</option>
+              <option value={300000}>5m</option>
+            </select>
+
+            {/* Manual refresh */}
+            <button
+              onClick={refreshDashboard}
+              disabled={refreshing}
+              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+              <span>{refreshing ? 'Refreshing...' : 'Refresh Now'}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Error Display */}
+        {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-center space-x-3">
+              <AlertCircle className="w-5 h-5 text-red-500" />
+              <div>
+                <h4 className="text-sm font-medium text-red-800">Connection Error</h4>
+                <p className="text-sm text-red-700">{error}</p>
+              </div>
+              <button
+                onClick={() => fetchDashboardData()}
+                className="text-sm text-red-600 hover:text-red-800 underline"
+              >
+                Retry
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Quick Actions */}
         <div className="mb-8">
           <h3 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <Link
               to="/register-complaint"
-              className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow group"
+              className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-300 transform hover:scale-105 group"
             >
               <div className="flex items-center space-x-4">
                 <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center group-hover:bg-red-200 transition-colors">
@@ -306,7 +510,7 @@ const CitizenDashboard = () => {
 
             <Link
               to="/property-verification"
-              className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow group"
+              className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-300 transform hover:scale-105 group"
             >
               <div className="flex items-center space-x-4">
                 <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors">
@@ -321,7 +525,7 @@ const CitizenDashboard = () => {
 
             <Link
               to="/building-approval"
-              className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow group"
+              className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-300 transform hover:scale-105 group"
             >
               <div className="flex items-center space-x-4">
                 <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center group-hover:bg-green-200 transition-colors">
@@ -336,7 +540,7 @@ const CitizenDashboard = () => {
 
             <Link
               to="/track-complaint"
-              className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow group"
+              className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-300 transform hover:scale-105 group"
             >
               <div className="flex items-center space-x-4">
                 <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center group-hover:bg-purple-200 transition-colors">
@@ -356,19 +560,16 @@ const CitizenDashboard = () => {
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-semibold text-gray-900">Statistics Overview</h3>
-              <button
-                onClick={refreshDashboard}
-                disabled={refreshing}
-                className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
-              >
-                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-                <span>Refresh</span>
-              </button>
+              <div className="flex items-center space-x-2 text-sm text-gray-500">
+                <span>Last updated: {lastUpdate?.toLocaleTimeString()}</span>
+              </div>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {/* Complaints Stats */}
-              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+              <div className={`bg-white p-6 rounded-xl shadow-sm border border-gray-200 transition-all duration-500 ${
+                statsAnimation ? 'scale-105 shadow-lg' : ''
+              }`}>
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Total Complaints</p>
@@ -385,15 +586,20 @@ const CitizenDashboard = () => {
                   </div>
                   <div className="mt-2 bg-gray-200 rounded-full h-2">
                     <div 
-                      className="bg-green-500 h-2 rounded-full transition-all duration-500"
+                      className="bg-green-500 h-2 rounded-full transition-all duration-1000 ease-out"
                       style={{ width: `${dashboardData.complaints.resolution_rate}%` }}
                     ></div>
+                  </div>
+                  <div className="mt-2 text-xs text-gray-500">
+                    Resolution Rate: {dashboardData.complaints.resolution_rate}%
                   </div>
                 </div>
               </div>
 
               {/* Property Verifications Stats */}
-              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+              <div className={`bg-white p-6 rounded-xl shadow-sm border border-gray-200 transition-all duration-500 ${
+                statsAnimation ? 'scale-105 shadow-lg' : ''
+              }`}>
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Property Verifications</p>
@@ -410,15 +616,20 @@ const CitizenDashboard = () => {
                   </div>
                   <div className="mt-2 bg-gray-200 rounded-full h-2">
                     <div 
-                      className="bg-blue-500 h-2 rounded-full transition-all duration-500"
+                      className="bg-blue-500 h-2 rounded-full transition-all duration-1000 ease-out"
                       style={{ width: `${dashboardData.property_verifications.verification_rate}%` }}
                     ></div>
+                  </div>
+                  <div className="mt-2 text-xs text-gray-500">
+                    Verification Rate: {dashboardData.property_verifications.verification_rate}%
                   </div>
                 </div>
               </div>
 
               {/* Building Approvals Stats */}
-              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+              <div className={`bg-white p-6 rounded-xl shadow-sm border border-gray-200 transition-all duration-500 ${
+                statsAnimation ? 'scale-105 shadow-lg' : ''
+              }`}>
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Building Approvals</p>
@@ -435,15 +646,20 @@ const CitizenDashboard = () => {
                   </div>
                   <div className="mt-2 bg-gray-200 rounded-full h-2">
                     <div 
-                      className="bg-green-500 h-2 rounded-full transition-all duration-500"
+                      className="bg-green-500 h-2 rounded-full transition-all duration-1000 ease-out"
                       style={{ width: `${dashboardData.building_approvals.approval_rate}%` }}
                     ></div>
+                  </div>
+                  <div className="mt-2 text-xs text-gray-500">
+                    Approval Rate: {dashboardData.building_approvals.approval_rate}%
                   </div>
                 </div>
               </div>
 
               {/* Recent Activity Stats */}
-              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+              <div className={`bg-white p-6 rounded-xl shadow-sm border border-gray-200 transition-all duration-500 ${
+                statsAnimation ? 'scale-105 shadow-lg' : ''
+              }`}>
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Recent Activity</p>
@@ -464,11 +680,123 @@ const CitizenDashboard = () => {
                     <div className="flex-1 bg-green-500 h-2 rounded-full"></div>
                     <div className="flex-1 bg-purple-500 h-2 rounded-full"></div>
                   </div>
+                  <div className="mt-2 text-xs text-gray-500">
+                    <div className="flex justify-between">
+                      <span>Complaints: {dashboardData.recent_activity.complaints_last_30_days}</span>
+                      <span>Property: {dashboardData.recent_activity.property_verifications_last_30_days}</span>
+                      <span>Building: {dashboardData.recent_activity.building_approvals_last_30_days}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         )}
+
+        {/* Complaint Tracking */}
+        <div className="mb-8">
+          <h3 className="text-xl font-semibold text-gray-900 mb-4">Track Your Complaints</h3>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="p-6">
+              <div className="flex space-x-4 mb-4">
+                <input
+                  type="text"
+                  placeholder="Enter Complaint ID (e.g., GRV20250820034301b945a803)"
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  value={trackingId}
+                  onChange={(e) => setTrackingId(e.target.value)}
+                />
+                <button
+                  onClick={trackComplaint}
+                  disabled={!trackingId.trim() || trackingLoading}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
+                >
+                  {trackingLoading ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>Tracking...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Search className="w-4 h-4" />
+                      <span>Track</span>
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={() => {
+                    setTrackingId('');
+                    setTrackingResult(null);
+                  }}
+                  className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                >
+                  Clear
+                </button>
+              </div>
+              
+              {trackingResult && (
+                <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <h4 className="font-semibold text-blue-900 mb-2">Complaint Details</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="font-medium text-gray-700">ID:</span> 
+                      <div className="flex items-center space-x-2">
+                        <span className="font-mono text-blue-800">{trackingResult.complaint.id}</span>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(trackingResult.complaint.id);
+                            toast.success('Complaint ID copied to clipboard!');
+                          }}
+                          className="p-1 text-blue-600 hover:text-blue-800 transition-colors"
+                          title="Copy to clipboard"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-700">Status:</span> 
+                      <span className={`ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(trackingResult.complaint.status)}`}>
+                        {trackingResult.complaint.status}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-700">Title:</span> {trackingResult.complaint.title}
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-700">Category:</span> {trackingResult.complaint.category}
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-700">Submitted:</span> {new Date(trackingResult.complaint.submitted_at).toLocaleDateString()}
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-700">Priority:</span> {trackingResult.complaint.priority}
+                    </div>
+                  </div>
+                  {trackingResult.complaint.updates && trackingResult.complaint.updates.length > 0 && (
+                    <div className="mt-4">
+                      <h5 className="font-medium text-blue-900 mb-2">Latest Updates</h5>
+                      <div className="space-y-2">
+                        {trackingResult.complaint.updates.slice(-3).reverse().map((update, index) => (
+                          <div key={index} className="text-sm bg-white p-2 rounded border">
+                            <div className="flex justify-between">
+                              <span className="font-medium">{update.status}</span>
+                              <span className="text-gray-500">{new Date(update.date).toLocaleDateString()}</span>
+                            </div>
+                            <p className="text-gray-600">{update.message}</p>
+                            {update.officer && <p className="text-xs text-gray-500">By: {update.officer}</p>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
 
         {/* Recent Activities */}
         <div className="mb-8">
@@ -478,7 +806,7 @@ const CitizenDashboard = () => {
               {recentActivities.length > 0 ? (
                 <div className="space-y-4">
                   {recentActivities.map((activity) => (
-                    <div key={activity.id} className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <div key={activity.id} className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all duration-300 transform hover:scale-102">
                       <div className="flex-shrink-0">
                         {getActivityIcon(activity.type)}
                       </div>
@@ -491,6 +819,8 @@ const CitizenDashboard = () => {
                           </span>
                           <span className="text-xs text-gray-500">•</span>
                           <span className="text-xs text-gray-500">{activity.category}</span>
+                          <span className="text-xs text-gray-500">•</span>
+                          <span className="text-xs text-gray-500">Priority: {activity.priority}</span>
                         </div>
                       </div>
                       <div className="flex-shrink-0">
@@ -519,7 +849,7 @@ const CitizenDashboard = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Link
               to="/direct-communication"
-              className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow group"
+              className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-300 transform hover:scale-105 group"
             >
               <div className="flex items-center space-x-4">
                 <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center group-hover:bg-indigo-200 transition-colors">
@@ -534,7 +864,7 @@ const CitizenDashboard = () => {
 
             <Link
               to="/anonymous-complaint"
-              className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow group"
+              className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-300 transform hover:scale-105 group"
             >
               <div className="flex items-center space-x-4">
                 <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center group-hover:bg-orange-200 transition-colors">
@@ -549,7 +879,7 @@ const CitizenDashboard = () => {
 
             <Link
               to="/profile"
-              className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow group"
+              className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-300 transform hover:scale-105 group"
             >
               <div className="flex items-center space-x-4">
                 <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center group-hover:bg-gray-200 transition-colors">

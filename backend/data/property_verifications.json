@@ -1,1 +1,33 @@
-[]
+[
+  {
+    "id": "PVT20250828005523f70e9ae9",
+    "citizen": "Aditya Kumar Vishwakarma",
+    "aadhaar_number": "FACV",
+    "contact_number": "7987214753",
+    "email_id": "av591426@gmail.com",
+    "permanent_address": "FVC",
+    "files": {
+      "sale_deed": "uploads\\property\\11dac817-1d3a-4b0d-b674-be11a8ed0d26.jpg",
+      "property_tax_receipt": "uploads\\property\\03be1e7f-9e38-4912-8405-4fbb1442a4ef.jpg",
+      "khata_certificate": "uploads\\property\\62c39972-caf2-4dbd-90aa-6a43eb1027e7.jpg",
+      "encumbrance_certificate": "uploads\\property\\98cfe947-546f-4cb4-874a-54f34ebbf243.jpg",
+      "mutation_certificate": "uploads\\property\\44e24c3e-c801-4612-815d-ced1be1b52a2.jpg",
+      "rtc_document": "uploads\\property\\d11f0c76-5749-4a53-ae7c-bc3a566e47a1.jpg",
+      "layout_plan": "uploads\\property\\1b96a323-db02-4caf-844d-94262dd32c8f.jpg",
+      "architectural_drawings": "uploads\\property\\942edae2-8a5a-4e69-9c7d-729d09289c96.jpg",
+      "structural_certificate": "uploads\\property\\2fd18da9-ace0-42b4-98fc-1bfbeb4701af.jpg",
+      "aadhaar_card": "uploads\\property\\e43dfd50-1ce2-4847-a75c-3d48e4e565d5.jpg",
+      "pan_card": "uploads\\property\\00b0d11e-0199-498b-a35b-10b353b26f91.jpg",
+      "electricity_bill": "uploads\\property\\fb9a4464-9ea6-40d5-96f3-9db32977d968.jpg"
+    },
+    "document_type": "Property Papers",
+    "ward": "Ward 1",
+    "status": "Pending",
+    "priority": "Medium",
+    "submitted_date": "2025-08-28",
+    "submitted_at": "2025-08-28T00:55:23.756481",
+    "verified_at": null,
+    "verified_by": null,
+    "verification_notes": null
+  }
+]
