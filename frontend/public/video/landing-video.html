@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Landing Video</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: transparent;
+      height: 100%;
+    }
+    .container {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+    }
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  </style>
+  <script>
+    // Attempt to autoplay on load; some browsers require muted + playsinline
+    window.addEventListener('DOMContentLoaded', () => {
+      const vid = document.getElementById('landing-video');
+      if (vid) {
+        const tryPlay = () => vid.play().catch(() => {});
+        tryPlay();
+        document.addEventListener('click', tryPlay, { once: true });
+      }
+    });
+  </script>
+  </head>
+  <body>
+    <div class="container">
+      <video id="landing-video" src="/video/WhatsApp Video 2025-08-28 at 12.17.20 PM.mp4" autoplay muted loop playsinline></video>
+    </div>
+  </body>
+</html>
+
+
